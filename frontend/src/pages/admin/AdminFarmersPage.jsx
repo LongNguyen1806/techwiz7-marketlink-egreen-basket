@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
+import { ApiError } from '../../lib/ApiError';
 import {
   fetchFarmerImpact,
   useAdminFarmers,
@@ -10,19 +10,19 @@ import {
   useReinstateFarmer,
   useRejectFarmer,
   useSuspendFarmer,
-} from '@/hooks/queries/admin/useAdminFarmers';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
-import { SortableTh } from '@/components/common/SortableTh';
-import { farmerStatusLabel, farmerStatusVariant } from '@/utils/labels';
+} from '../../hooks/queries/admin/useAdminFarmers';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
+import { SortableTh } from '../../components/common/SortableTh';
+import { farmerStatusLabel, farmerStatusVariant } from '../../utils/labels';
 
-import '@/styles/admin/AdminFarmersPage.css';
+import '../../styles/admin/AdminFarmersPage.css';
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'];
 

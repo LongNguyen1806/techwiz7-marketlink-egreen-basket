@@ -1,8 +1,8 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import { Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/cn';
-import '@/styles/common/Input.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/Input.css';
 
 export const Input = React.forwardRef(({ className, type, id, label, placeholder, disabled, requiredMark, ...props }, ref) => {
     const generatedId = React.useId();

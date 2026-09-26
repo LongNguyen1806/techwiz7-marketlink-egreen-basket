@@ -22,18 +22,18 @@ import {
   useCreateCategory,
   useDeleteCategory,
   useReorderCategories,
-} from '@/hooks/queries/admin/useAdminCategories';
-import { categorySchema } from '@/schemas/admin/category.schema';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { ApiError } from '@/lib/ApiError';
-import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
-import { CategoryIcon } from '@/components/common/badges/CategoryIcon';
-import { IconPicker } from '@/components/admin/IconPicker';
-import '@/styles/admin/AdminCategoriesPage.css';
+} from '../../hooks/queries/admin/useAdminCategories';
+import { categorySchema } from '../../schemas/admin/category.schema';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { ApiError } from '../../lib/ApiError';
+import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
+import { CategoryIcon } from '../../components/common/badges/CategoryIcon';
+import { IconPicker } from '../../components/admin/IconPicker';
+import '../../styles/admin/AdminCategoriesPage.css';
 
 function SortableRow({ cat, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({

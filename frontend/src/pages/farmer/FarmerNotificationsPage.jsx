@@ -1,12 +1,12 @@
 ﻿import { Link } from 'react-router-dom';
-import { ApiError } from '@/lib/ApiError';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Button } from '@/components/ui/Button';
-import { useNotifications } from '@/features/notifications/hooks/useNotifications';
-import { formatRelative } from '@/utils/formatters';
-import '@/styles/farmer/FarmerNotificationsPage.css';
+import { ApiError } from '../../lib/ApiError';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Button } from '../../components/ui/Button';
+import { useNotifications } from '../../features/notifications/hooks/useNotifications';
+import { formatRelative } from '../../utils/formatters';
+import '../../styles/farmer/FarmerNotificationsPage.css';
 export default function FarmerNotificationsPage() {
     const { query, results, unread, markAll, markOne } = useNotifications('FARMER');
     if (query.isLoading)

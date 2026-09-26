@@ -1,16 +1,16 @@
 ﻿import { Link, useParams } from 'react-router-dom';
-import { useFarmerOrder } from '@/features/farmer/hooks/useFarmerOrders';
-import { Countdown } from '@/components/common/Countdown';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { OrderTimeline } from '@/features/customer/components/OrderTimeline';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { PriceTag } from '@/components/common/PriceTag';
-import { StatusBadge } from '@/components/common/StatusBadge';
-import { FarmerOrderActions } from '@/features/farmer/components/FarmerOrderActions';
-import { Button } from '@/components/ui/Button';
-import { formatDateTime, formatVnd } from '@/utils/formatters';
-import '@/styles/farmer/FarmerOrderDetailPage.css';
+import { useFarmerOrder } from '../../features/farmer/hooks/useFarmerOrders';
+import { Countdown } from '../../components/common/Countdown';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { OrderTimeline } from '../../features/customer/components/OrderTimeline';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { PriceTag } from '../../components/common/PriceTag';
+import { StatusBadge } from '../../components/common/StatusBadge';
+import { FarmerOrderActions } from '../../features/farmer/components/FarmerOrderActions';
+import { Button } from '../../components/ui/Button';
+import { formatDateTime, formatVnd } from '../../utils/formatters';
+import '../../styles/farmer/FarmerOrderDetailPage.css';
 export default function FarmerOrderDetailPage() {
     const { id = '' } = useParams();
     const query = useFarmerOrder(id);

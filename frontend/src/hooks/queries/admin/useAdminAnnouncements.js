@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
-import { adminApi } from '@/api/admin/adminApi';
+import { ApiError } from '../../../lib/ApiError';
+import { adminApi } from '../../../api/admin/adminApi';
 
 export function useAdminAnnouncements() {
   return useQuery({

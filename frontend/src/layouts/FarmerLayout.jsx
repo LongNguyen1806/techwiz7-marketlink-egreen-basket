@@ -1,15 +1,15 @@
 ﻿import { NavLink, Outlet, Link } from 'react-router-dom';
 import { BarChart3, Boxes, CalendarClock, Home, LayoutDashboard, Menu, MessageSquare, Package, Settings, Store, UserRound } from 'lucide-react';
-import { FarmerStatusGate } from '@/features/farmer/components/FarmerStatusGate';
-import { ThemeToggle } from '@/components/layout/ThemeToggle';
-import { Button } from '@/components/ui/Button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/Sheet';
-import { UserMenu } from '@/features/auth/components/UserMenu';
-import { NotificationBell } from '@/features/notifications/components/NotificationBell';
-import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useUiStore } from '@/stores/ui.store';
-import { cn } from '@/lib/cn';
-import '@/styles/farmer/FarmerLayout.css';
+import { FarmerStatusGate } from '../features/farmer/components/FarmerStatusGate';
+import { ThemeToggle } from '../components/layout/ThemeToggle';
+import { Button } from '../components/ui/Button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/Sheet';
+import { UserMenu } from '../features/auth/components/UserMenu';
+import { NotificationBell } from '../features/notifications/components/NotificationBell';
+import { useAuth } from '../features/auth/hooks/useAuth';
+import { useUiStore } from '../stores/ui.store';
+import { cn } from '../lib/cn';
+import '../styles/farmer/FarmerLayout.css';
 const navItems = [
     { to: '/farmer', label: 'Overview', icon: LayoutDashboard, end: true },
     { to: '/farmer/orders', label: 'Orders', icon: Package, end: false },

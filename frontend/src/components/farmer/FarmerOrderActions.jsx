@@ -1,11 +1,11 @@
 ﻿import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { Button } from '@/components/ui/Button';
-import { Textarea } from '@/components/ui/Textarea';
-import { useFarmerOrderActions } from '@/features/farmer/hooks/useFarmerOrderActions';
-import '@/styles/farmer/FarmerOrderActions.css';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { Button } from '../ui/Button';
+import { Textarea } from '../ui/Textarea';
+import { useFarmerOrderActions } from '../../features/farmer/hooks/useFarmerOrderActions';
+import '../../styles/farmer/FarmerOrderActions.css';
 export function FarmerOrderActions({ order, size = 'sm' }) {
     const { run } = useFarmerOrderActions(order);
     const [declineOpen, setDeclineOpen] = useState(false);

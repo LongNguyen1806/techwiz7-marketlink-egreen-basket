@@ -1,5 +1,5 @@
-﻿import { Skeleton } from '@/components/ui/Skeleton';
-import '@/styles/common/PageSkeleton.css';
+﻿import { Skeleton } from '../ui/Skeleton';
+import '../../styles/common/PageSkeleton.css';
 export function PageSkeleton() {
     return (<div className="page-skeleton" aria-busy aria-label="Loading">
       <div className="page-skeleton__header">

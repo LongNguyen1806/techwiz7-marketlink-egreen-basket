@@ -12,20 +12,20 @@ import 'leaflet/dist/leaflet.css';
 import {
   useAdminMarket,
   useSaveAdminMarket,
-} from '@/hooks/queries/admin/useAdminMarkets';
-import { marketSchema } from '@/schemas/admin/market.schema';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Textarea } from '@/components/ui/Textarea';
-import { MarketClosuresPanel } from '@/components/admin/MarketClosuresPanel';
-import { ApiError } from '@/lib/ApiError';
-import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
+} from '../../hooks/queries/admin/useAdminMarkets';
+import { marketSchema } from '../../schemas/admin/market.schema';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
+import { Textarea } from '../../components/ui/Textarea';
+import { MarketClosuresPanel } from '../../components/admin/MarketClosuresPanel';
+import { ApiError } from '../../lib/ApiError';
+import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
 
-import '@/styles/admin/AdminMarketFormPage.css';
+import '../../styles/admin/AdminMarketFormPage.css';
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,

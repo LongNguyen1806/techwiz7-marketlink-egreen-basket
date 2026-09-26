@@ -1,6 +1,6 @@
 ﻿import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { cn } from '@/lib/cn';
-import '@/styles/common/Tabs.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/Tabs.css';
 export const Tabs = TabsPrimitive.Root;
 export function TabsList({ className, ...props }) {
     return <TabsPrimitive.List className={cn('tabs-list', className)} {...props}/>;

@@ -1,11 +1,11 @@
 ﻿import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useFarmerStats } from '@/features/farmer/hooks/useFarmerStats';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { formatVnd } from '@/utils/formatters';
-import '@/styles/farmer/FarmerStatsPage.css';
+import { useFarmerStats } from '../../features/farmer/hooks/useFarmerStats';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { formatVnd } from '../../utils/formatters';
+import '../../styles/farmer/FarmerStatsPage.css';
 export default function FarmerStatsPage() {
     const query = useFarmerStats();
     if (query.isLoading)

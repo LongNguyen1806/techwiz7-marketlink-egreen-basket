@@ -1,6 +1,6 @@
-import { CategoryIcon } from '@/components/common/badges/CategoryIcon';
-import { CATEGORY_ICON_NAMES } from '@/utils/categoryIcon';
-import '@/styles/admin/IconPicker.css';
+import { CategoryIcon } from '../common/badges/CategoryIcon';
+import { CATEGORY_ICON_NAMES } from '../../utils/categoryIcon';
+import '../../styles/admin/IconPicker.css';
 
 /** A category stores its icon by lucide name. */
 export function IconPicker({ value, onChange }) {

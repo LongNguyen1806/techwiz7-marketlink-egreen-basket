@@ -1,7 +1,7 @@
-import { useAdminChangeLog } from '@/hooks/queries/admin/useAdminChangeLog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { formatDateTime } from '@/utils/formatters';
-import '@/styles/admin/ChangeLogPanel.css';
+import { useAdminChangeLog } from '../../hooks/queries/admin/useAdminChangeLog';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { formatDateTime } from '../../utils/formatters';
+import '../../styles/admin/ChangeLogPanel.css';
 
 const TYPE_LABEL = {
   CREATED: 'Created',

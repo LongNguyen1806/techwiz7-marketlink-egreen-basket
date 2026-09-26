@@ -1,5 +1,5 @@
-import { Label } from '@/components/ui/Label';
-import '@/styles/common/SortSelect.css';
+import { Label } from '../ui/Label';
+import '../../styles/common/SortSelect.css';
 
 /** Sorting for the lists drawn as cards rather than tables. */
 export function SortSelect({ id, options, value, onChange }) {

@@ -2,21 +2,21 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import { ApiError } from '@/lib/ApiError';
-import { useFarmerProfile, useUpdateFarmerProfile } from '@/features/farmer/hooks/useFarmerProfile';
-import { farmerProfileSchema } from '@/features/farmer/schemas/profile.schema';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { LazyImage } from '@/components/common/LazyImage';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Textarea } from '@/components/ui/Textarea';
-import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
-import '@/styles/farmer/FarmerProfilePage.css';
+import { ApiError } from '../../lib/ApiError';
+import { useFarmerProfile, useUpdateFarmerProfile } from '../../features/farmer/hooks/useFarmerProfile';
+import { farmerProfileSchema } from '../../features/farmer/schemas/profile.schema';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { LazyImage } from '../../components/common/LazyImage';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/Avatar';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
+import { Textarea } from '../../components/ui/Textarea';
+import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
+import '../../styles/farmer/FarmerProfilePage.css';
 function initials(name, email) {
     const parts = name.trim().split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {

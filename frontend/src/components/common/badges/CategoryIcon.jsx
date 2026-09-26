@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import { resolveCategoryIcon } from '@/utils/categoryIcon';
+import { resolveCategoryIcon } from '../../../utils/categoryIcon';
 
 export function CategoryIcon({ icon, className }) {
   return createElement(resolveCategoryIcon(icon), {

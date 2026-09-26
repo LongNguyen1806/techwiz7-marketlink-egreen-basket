@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { useAdminAuditLogs } from '@/hooks/queries/admin/useAdminAuditLogs';
+import { useAdminAuditLogs } from '../../hooks/queries/admin/useAdminAuditLogs';
 import {
   AUDIT_ACTION_OPTIONS,
   auditActionLabel,
@@ -8,18 +8,18 @@ import {
   auditOutcome,
   auditReason,
   auditSubject,
-} from '@/utils/auditLabels';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { SortableTh } from '@/components/common/SortableTh';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/Sheet';
-import { formatDateTime } from '@/utils/formatters';
-import '@/styles/admin/AdminAuditLogsPage.css';
+} from '../../utils/auditLabels';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
+import { SortableTh } from '../../components/common/SortableTh';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/Sheet';
+import { formatDateTime } from '../../utils/formatters';
+import '../../styles/admin/AdminAuditLogsPage.css';
 
 const TONE_VARIANT = {
   neutral: 'secondary',

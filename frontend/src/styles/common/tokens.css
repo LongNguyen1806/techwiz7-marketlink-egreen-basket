@@ -1,9 +1,3 @@
-/**
- * Design tokens — MarketLink
- * Source of truth for color, type, space, radius, shadow.
- * Component CSS must use these vars (no hard-coded palette hex unless one-off).
- */
-
 :root {
   /* Typography */
   --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;

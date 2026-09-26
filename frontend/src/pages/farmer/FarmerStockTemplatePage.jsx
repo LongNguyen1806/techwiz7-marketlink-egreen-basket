@@ -1,12 +1,12 @@
 ﻿import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { useApplyStockTemplate, useStockTemplatePreview } from '@/features/farmer/hooks/useFarmerProducts';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Button } from '@/components/ui/Button';
-import '@/styles/farmer/FarmerStockTemplatePage.css';
+import { useApplyStockTemplate, useStockTemplatePreview } from '../../features/farmer/hooks/useFarmerProducts';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Button } from '../../components/ui/Button';
+import '../../styles/farmer/FarmerStockTemplatePage.css';
 export default function FarmerStockTemplatePage() {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const previewQuery = useStockTemplatePreview();

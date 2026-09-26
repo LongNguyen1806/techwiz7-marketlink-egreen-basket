@@ -1,8 +1,8 @@
 ﻿import PropTypes from 'prop-types';
 import { Minus, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/cn';
-import '@/styles/common/QuantityStepper.css';
+import { Button } from '../ui/Button';
+import { cn } from '../../lib/cn';
+import '../../styles/common/QuantityStepper.css';
 export function QuantityStepper({ value, min = 1, max = 99, onChange, className, disabled = false, }) {
     return (<div className={cn('quantity-stepper', className)}>
       <Button type="button" variant="outline" size="icon" className="quantity-stepper__btn" disabled={disabled || value <= min} aria-label="Decrease quantity" onClick={() => onChange(Math.max(min, value - 1))}>

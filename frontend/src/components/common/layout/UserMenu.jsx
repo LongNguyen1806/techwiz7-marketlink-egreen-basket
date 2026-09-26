@@ -1,76 +1,83 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Heart, KeyRound, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
-import { DASHBOARD_PATH } from '@/config/constants';
-import { useAuth } from '@/features/auth/hooks/useAuth';
-import '@/styles/common/UserMenu.css';
+import { Avatar, AvatarFallback } from '../../ui/Avatar';
+import { Button } from '../../ui/Button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../ui/DropdownMenu';
+import { ROLES } from '../../../constants/roles';
+import { ROUTES } from '../../../constants/routes';
+import { useAuth, useLogout } from '../../../hooks/authentication/useAuth';
+import '../../../styles/common/UserMenu.css';
+
+const LINKS_BY_ROLE = {
+  [ROLES.CUSTOMER]: [
+    { to: ROUTES.CUSTOMER.PROFILE, label: 'Your profile', icon: UserRound },
+    { to: ROUTES.CUSTOMER.FAVORITES, label: 'Saved favorites', icon: Heart },
+    { to: ROUTES.CUSTOMER.ORDERS, label: 'Your orders', icon: LayoutDashboard },
+    { to: ROUTES.CUSTOMER.CHANGE_PASSWORD, label: 'Change password', icon: KeyRound },
+  ],
+  [ROLES.FARMER]: [
+    { to: ROUTES.FARMER.PROFILE, label: 'Stall profile', icon: UserRound },
+    { to: ROUTES.FARMER.HOME, label: 'Stall overview', icon: LayoutDashboard },
+    { to: ROUTES.FARMER.CHANGE_PASSWORD, label: 'Change password', icon: KeyRound },
+  ],
+};
+
 function initials(displayName, email) {
-    const parts = displayName.trim().split(/\s+/);
-    if (parts.length >= 2) {
-        return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
-    }
-    if (parts[0])
-        return parts[0].charAt(0).toUpperCase();
-    return email.trim().charAt(0).toUpperCase() || '?';
+  const parts = (displayName ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (email ?? '?').trim().charAt(0).toUpperCase() || '?';
 }
-function linksForRole(role) {
-    if (role === 'CUSTOMER') {
-        return [
-            { to: '/app/profile', label: 'Your profile', icon: UserRound },
-            { to: '/app/favorites', label: 'Saved favorites', icon: Heart },
-            { to: DASHBOARD_PATH.CUSTOMER, label: 'Your overview', icon: LayoutDashboard },
-            { to: '/app/change-password', label: 'Change password', icon: KeyRound },
-        ];
-    }
-    if (role === 'FARMER') {
-        return [
-            { to: '/farmer/profile', label: 'Stall profile', icon: UserRound },
-            { to: DASHBOARD_PATH.FARMER, label: 'Stall overview', icon: LayoutDashboard },
-            { to: '/farmer/settings', label: 'Change password', icon: KeyRound },
-        ];
-    }
-    return [
-        { to: DASHBOARD_PATH.ADMIN, label: 'Admin overview', icon: LayoutDashboard },
-        { to: '/admin/settings', label: 'Change password', icon: KeyRound },
-    ];
-}
+
 export function UserMenu() {
-    const { user, logout } = useAuth();
-    if (!user)
-        return null;
-    const name = user.display_name || user.email;
-    const fallback = initials(user.display_name, user.email);
-    const links = linksForRole(user.role);
-    return (<DropdownMenu>
+  const { user } = useAuth();
+  const logout = useLogout();
+  if (!user) return null;
+
+  const links = LINKS_BY_ROLE[user.role] ?? [];
+
+  return (
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Account" className="user-menu__trigger">
+        <Button variant="ghost" size="icon" aria-label="Account menu" className="user-menu__trigger">
           <Avatar className="user-menu__avatar">
             <AvatarFallback className="user-menu__avatar-fallback">
-              {fallback}
+              {initials(user.display_name, user.email)}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="user-menu__content">
         <DropdownMenuLabel className="user-menu__label">
-          <p className="user-menu__name">{name}</p>
+          <p className="user-menu__name">{user.display_name || user.email}</p>
           <p className="user-menu__email">{user.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {links.map(({ to, label, icon: Icon }) => (<DropdownMenuItem key={to} asChild>
+        {links.map(({ to, label, icon: Icon }) => (
+          <DropdownMenuItem key={to} asChild>
             <Link to={to} className="user-menu__nav-link">
-              <Icon className="user-menu__nav-icon"/>
+              <Icon className="user-menu__nav-icon" />
               {label}
             </Link>
-          </DropdownMenuItem>))}
+          </DropdownMenuItem>
+        ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="user-menu__logout" onSelect={() => logout()}>
-          <LogOut className="user-menu__logout-icon"/>
+        <DropdownMenuItem
+          className="user-menu__logout"
+          disabled={logout.isPending}
+          onSelect={() => logout.mutate()}
+        >
+          <LogOut className="user-menu__logout-icon" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>);
+    </DropdownMenu>
+  );
 }
-

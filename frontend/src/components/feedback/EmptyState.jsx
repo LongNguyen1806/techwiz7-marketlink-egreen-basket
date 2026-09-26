@@ -1,8 +1,8 @@
 ﻿import PropTypes from 'prop-types';
 import { Inbox } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/cn';
-import '@/styles/common/EmptyState.css';
+import { Button } from '../ui/Button';
+import { cn } from '../../lib/cn';
+import '../../styles/common/EmptyState.css';
 export function EmptyState({ title, description, actionLabel, onAction, icon, className, }) {
     return (<div className={cn('empty-state', className)}>
       <div className="empty-state__icon-wrap">

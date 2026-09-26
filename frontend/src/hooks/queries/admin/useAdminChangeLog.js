@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { adminApi } from '@/api/admin/adminApi';
+import { adminApi } from '../../../api/admin/adminApi';
 
 export function useAdminChangeLog(model, id, enabled = true) {
   return useQuery({

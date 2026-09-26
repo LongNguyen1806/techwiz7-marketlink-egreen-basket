@@ -18,3 +18,12 @@
    - Liệt kê các file mà AI sẽ chỉnh sửa để người dùng biết, rồi hỏi và chờ người dùng đồng ý ("Đồng ý", "Làm đi", "OK") mới được phép thực thi thao tác chỉnh sửa file.
    - Không được tự ý sửa xong rồi mới trình bày.
 
+5. **PHÂN ĐỊNH PHẠM VI TEST (SCOPE-AWARE TESTING & TOKEN OPTIMIZATION)**:
+   - **Khi làm việc trên Frontend (`frontend/`):**
+     - TUYỆT ĐỐI KHÔNG chạy kiểm tra backend (`pytest`, `python manage.py test`,...). Việc chạy pytest backend khi đang làm việc ở frontend là hoàn toàn vô nghĩa, làm tốn thời gian và gây lãng phí nghiêm trọng token ngữ cảnh.
+     - Chỉ thực hiện kiểm tra tương thích cho frontend: ví dụ `npm run build` hoặc build check khi cần xác thực.
+   - **Khi làm việc trên Backend (`backend/`):**
+     - Chỉ chạy đúng file test mục tiêu liên quan trực tiếp đến module/tính năng đang làm (ví dụ: `pytest backend/.../test_target.py -q`).
+     - KHÔNG tự ý chạy toàn bộ test suite trừ khi người dùng yêu cầu rõ ràng.
+   - Luôn sử dụng cờ rút gọn output (`-q`) để tránh in hàng trăm dòng log làm tràn context window.
+

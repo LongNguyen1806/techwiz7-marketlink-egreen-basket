@@ -1,1 +1,4 @@
-﻿/* Empty CSS placeholder */
+/* App stylesheet entry: design tokens, reset, base and utilities (colors from the mockup). */
+@import './common/global.css';
+/* Shared layout primitives used across pages. */
+@import './common/page-primitives.css';

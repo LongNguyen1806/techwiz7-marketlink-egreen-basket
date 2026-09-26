@@ -1,6 +1,6 @@
 ﻿import PropTypes from 'prop-types';
-import { cn } from '@/lib/cn';
-import '@/styles/common/Card.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/Card.css';
 export function Card({ className, ...props }) {
     return <div className={cn('card', className)} {...props}/>;
 }

@@ -1,7 +1,7 @@
 ﻿import PropTypes from 'prop-types';
 import { Slot } from '@radix-ui/react-slot';
-import { cn } from '@/lib/cn';
-import '@/styles/common/Button.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/Button.css';
 
 function sizeClass(size) {
     if (size === 'sm')

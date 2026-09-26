@@ -1,9 +1,9 @@
 ﻿import PropTypes from 'prop-types';
 import { AlertTriangle, Ban, Clock } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
-import { cn } from '@/lib/cn';
-import '@/styles/farmer/FarmerStatusGate.css';
+import { Badge } from '../ui/Badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/Tooltip';
+import { cn } from '../../lib/cn';
+import '../../styles/farmer/FarmerStatusGate.css';
 export function FarmerStatusGate({ status, rejectionReason, children, className, }) {
     const isWriteLocked = status === 'PENDING' || status === 'REJECTED' || status === 'SUSPENDED';
     return (<div className={cn('farmer-status-gate', className)}>

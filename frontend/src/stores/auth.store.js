@@ -1,0 +1,48 @@
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
+// Only the session tokens live here. The signed-in user comes from GET /auth/me/ through
+// React Query (authKeys.me), so server data never sits in Zustand.
+
+// Reads the user_id claim so an account switch can be told apart from a token rotation.
+// The token is not verified here; the backend does that on every request.
+function userIdFromToken(token) {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).user_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const EMPTY_SESSION = { accessToken: null, refreshToken: null, userId: null };
+
+export const useAuthStore = create(
+  persist(
+    (set) => ({
+      ...EMPTY_SESSION,
+      setTokens: ({ access, refresh }) =>
+        set((state) => ({
+          accessToken: access,
+          refreshToken: refresh ?? state.refreshToken,
+          userId: userIdFromToken(access),
+        })),
+      clearSession: () => set(EMPTY_SESSION),
+    }),
+    {
+      name: STORAGE_KEYS.AUTH,
+      storage: createJSONStorage(() => localStorage),
+      partialize: ({ accessToken, refreshToken, userId }) => ({ accessToken, refreshToken, userId }),
+    },
+  ),
+);
+
+export const selectIsAuthenticated = (state) => Boolean(state.accessToken && state.refreshToken);
+
+// A sign-in, sign-out or token rotation in another tab applies to this one too.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEYS.AUTH) void useAuthStore.persist.rehydrate();
+  });
+}

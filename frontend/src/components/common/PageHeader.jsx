@@ -1,6 +1,6 @@
 ﻿import PropTypes from 'prop-types';
-import { cn } from '@/lib/cn';
-import '@/styles/common/PageHeader.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/PageHeader.css';
 export function PageHeader({ title, description, actions, className }) {
     return (<div className={cn('page-header', className)}>
       <div>

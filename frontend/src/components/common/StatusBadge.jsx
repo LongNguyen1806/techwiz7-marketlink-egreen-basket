@@ -1,6 +1,6 @@
 ﻿import PropTypes from 'prop-types';
-import { cn } from '@/lib/cn';
-import '@/styles/common/StatusBadge.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/StatusBadge.css';
 const STATUS_META = {
     PLACED: { label: 'Placed', modifier: 'status-badge--placed' },
     ACCEPTED: { label: 'Accepted', modifier: 'status-badge--accepted' },

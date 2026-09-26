@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
-import { toggleOrdering } from '@/utils/ordering';
-import '@/styles/common/SortableTh.css';
+import { toggleOrdering } from '../../utils/ordering';
+import '../../styles/common/SortableTh.css';
 
 export function SortableTh({ column, current, onSort, children }) {
   const active = current === column || current === `-${column}`;

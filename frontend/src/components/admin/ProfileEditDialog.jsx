@@ -6,14 +6,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
-import { ApiError } from '@/lib/ApiError';
-import '@/styles/admin/ProfileEditDialog.css';
+} from '../ui/Dialog';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Textarea } from '../ui/Textarea';
+import { ApiError } from '../../lib/ApiError';
+import '../../styles/admin/ProfileEditDialog.css';
 
-/** The admin's version of a profile form: contact details only. */
 export function ProfileEditDialog({
   open,
   onOpenChange,

@@ -1,5 +1,5 @@
-import axiosClient from '@/lib/axiosClient';
-import { adaptPaginated } from '@/lib/adapters/pagination.adapter';
+import axiosClient from '../../lib/axiosClient';
+import { adaptPaginated } from '../../lib/adapters/pagination.adapter';
 
 function reviewSegment(type) {
   return type === 'FARMER' ? 'farmer-reviews' : 'product-reviews';

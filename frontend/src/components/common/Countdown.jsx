@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { cn } from '@/lib/cn';
-import '@/styles/common/Countdown.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/Countdown.css';
 function formatRemaining(ms) {
     if (ms <= 0)
         return 'Expired';

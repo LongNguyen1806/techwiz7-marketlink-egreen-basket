@@ -1,7 +1,8 @@
 # MarketLink — Tóm tắt thay đổi tài liệu (v1.7)
 
 > Chỉ ghi **nội dung mới** sau khi cập nhật.
-> Tài liệu gốc: `Document/doc/MarketLink_requirement_analysis_ok (5).md` (D-001 → D-035).
+> Tài liệu gốc: `Document/doc/MarketLink_requirement_analysis_ok (5).md` (D-001 → D-039).
+> Mục 1 → 7 tóm tắt v1.7 (D-029 → D-035). Thay đổi v1.9 (D-037 → D-039 và các thay đổi của nhánh Admin) tóm tắt ở **mục 8**. Chi tiết v1.8 (D-036) xem change log §8 của tài liệu gốc.
 > Các file đã đồng bộ: `MarketLink_requirement_analysis_ok (5).md`, `MarketLink_Implementation_Notes.md`, `MarketLink_phan_cong(new).md`, `Document/skill/SKILL.md`, `Document/skill/django-backend_skill.md`.
 
 ---
@@ -131,3 +132,55 @@
 | FSM | Thêm mục 7.5 Tồn kho theo cạnh và 7.6 Yêu cầu thay đổi đơn |
 | Settings | Thêm `BOOKING_HORIZON_DAYS = 7`, cấu hình Nominatim |
 | Upload ảnh | Tối đa **2 MB** |
+
+---
+
+## 8. Bổ sung v1.9
+
+### 8.1 Quyết định mới
+
+| Mã | Chủ đề | Nội dung mới |
+| :---: | :--- | :--- |
+| D-037 | Admin đóng chợ | Đóng chợ (AD-17) **không còn bị chặn** khi còn đơn mở. Admin nhập lý do và gõ đúng chữ **`Confirm`** để chống bấm nhầm (backend kiểm tra lại). Mọi đơn mở tại chợ bị từ chối với lý do hệ thống "chợ đóng" (`MARKET_CLOSED_BY_ADMIN`), hoàn kho đơn đã duyệt / sẵn sàng, xóa yêu cầu thay đổi; mọi khung giờ của chợ tắt. **Không** đình chỉ Farmer. Khách có đơn bị hủy và Farmer có sạp tại chợ nhận **một** thông báo `MARKET_CLOSED` (in-app + email, kèm lý do Admin nhập — ngoại lệ của D-033). Mở lại chợ không tự bật khung giờ. Lịch đóng cửa tạm thời theo ngày vẫn bị chặn khi còn đơn mở |
+| D-038 | Bảo mật backend | Chỉ tin IP do proxy gắn vào (`NUM_PROXIES`, Render = 1); giới hạn đăng nhập sai theo email (20 lần/giờ); cấu hình mặc định an toàn (`DEBUG` mặc định tắt, production bắt buộc có `SECRET_KEY`); ảnh upload giới hạn 36 megapixel và được mã hóa lại (xóa EXIF / GPS); báo cáo Excel không để tên thành công thức; logout / khóa khách thì đóng kết nối WebSocket |
+| D-039 | Dọn tài khoản không dùng | Lệnh `purge_stale_accounts`: xóa khách và sạp chưa được duyệt, không đăng nhập ≥ 3 tháng, chưa từng có đơn. Mặc định chỉ liệt kê, `--apply` mới xóa, có ghi nhật ký. **Chưa được chạy `--apply`** cho tới khi đăng nhập cập nhật `last_login` |
+
+### 8.2 Vòng đời đơn hàng (FSM)
+
+| Hạng mục | Nội dung mới |
+| :--- | :--- |
+| T3 / T4 / T12 do Admin | Nhận lý do hệ thống `FARMER_SUSPENDED_BY_ADMIN` (đình chỉ Farmer, mặc định) hoặc `MARKET_CLOSED_BY_ADMIN` (đóng chợ) |
+| Lõi FSM | `transition_order()` thêm `admin_reason` và `notify_customer` (chỉ dùng cho Admin). Đóng chợ không gửi `ORDER_DECLINED` theo từng đơn, vì khách đã nhận `MARKET_CLOSED` |
+
+### 8.3 Cơ sở dữ liệu
+
+| Hạng mục | Nội dung mới |
+| :--- | :--- |
+| `customer_profiles.image` | Cột ảnh mới (migration `accounts/0008`); chưa có API ghi |
+| `NotificationType` | Thêm `MARKET_CLOSED` (migration `notifications/0004`) |
+| `AuditAction` | Thêm `FARMER_UPDATED`, `CUSTOMER_UPDATED` (`system/0004`), `ACCOUNT_PURGED` (`system/0005`) |
+| `ChangeReason` | Thêm `MARKET_CLOSED_BY_ADMIN` (không cần migration) |
+| Số bảng | Giữ nguyên **30 bảng** (24 + 6 bảng lịch sử từ v1.8) |
+
+### 8.4 API
+
+| Mã | Nội dung mới |
+| :--- | :--- |
+| AD-17 | Body `{ reason, confirmation: "Confirm" }`; response thêm `cancelled_orders`; chợ đã đóng → `400 INVALID_STATUS_TRANSITION`; bỏ lỗi `RESOURCE_IN_USE` |
+| **AD-03b, AD-10b** | **Mới**: Admin sửa thông tin liên lạc của sạp (`stall_name`, `contact_person`, `phone`, `description`, `order_cutoff_hours`) và của khách (`full_name`, `phone`, `address`) |
+| AD-02, AD-09, AD-14, AD-20, AD-22, AD-29 | Thêm `ordering`; giá trị lạ → `400` |
+| **AD-34** | **Mới**: `GET /api/admin/audit-trail/<model>/<id>/` — lịch sử thay đổi của một bản ghi, mới nhất trước |
+| AU-03, AU-09 | Thêm giới hạn `login_email`: 20 lần sai / giờ / email |
+| AU-08 | Vé WebSocket mang `sid`; socket bị đóng (`4401`) khi logout hoặc khi tài khoản bị khóa |
+
+### 8.5 Màn hình
+
+| Màn hình | Nội dung mới |
+| :--- | :--- |
+| A-05 Danh sách chợ | Nút "Ngừng hoạt động" luôn bấm được; hộp thoại hiện số đơn sẽ bị từ chối, ô Lý do và ô gõ `Confirm` |
+| A-03, A-04 | Form sửa thông tin liên lạc (AD-03b, AD-10b) |
+| Danh sách Admin | Sắp xếp theo cột (tham số `ordering`) |
+
+### 8.6 Việc còn mở
+
+Danh sách đầy đủ kèm nhánh phụ trách ở **§8.1 "Việc còn mở sau v1.9"** của tài liệu gốc. Quan trọng nhất: backend kiểm tra chữ `Confirm`, mẫu email `MARKET_CLOSED`, đăng nhập cập nhật `last_login` (chặn D-039), và khôi phục AU-01 bị xóa khi merge nhánh Admin.

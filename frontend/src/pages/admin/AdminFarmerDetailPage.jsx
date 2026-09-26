@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import { useAdminFarmer, useUpdateFarmer } from '@/hooks/queries/admin/useAdminFarmers';
-import { ProfileEditDialog } from '@/components/admin/ProfileEditDialog';
-import { ChangeLogPanel } from '@/components/admin/ChangeLogPanel';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { PriceTag } from '@/components/common/PriceTag';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { formatDateTime } from '@/utils/formatters';
-import { farmerStatusLabel, farmerStatusVariant } from '@/utils/labels';
+import { useAdminFarmer, useUpdateFarmer } from '../../hooks/queries/admin/useAdminFarmers';
+import { ProfileEditDialog } from '../../components/admin/ProfileEditDialog';
+import { ChangeLogPanel } from '../../components/admin/ChangeLogPanel';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { PriceTag } from '../../components/common/PriceTag';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { formatDateTime } from '../../utils/formatters';
+import { farmerStatusLabel, farmerStatusVariant } from '../../utils/labels';
 
-import '@/styles/admin/AdminFarmerDetailPage.css';
+import '../../styles/admin/AdminFarmerDetailPage.css';
 
 export default function AdminFarmerDetailPage() {
   const { id = '' } = useParams();

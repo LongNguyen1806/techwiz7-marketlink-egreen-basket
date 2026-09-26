@@ -1,7 +1,7 @@
 ﻿import PropTypes from 'prop-types';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
-import '@/styles/common/ConfirmDialog.css';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/Dialog';
+import { Button } from '../ui/Button';
+import '../../styles/common/ConfirmDialog.css';
 export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel = 'Confirm', cancelLabel = 'Cancel', loading = false, destructive = false, onConfirm, children, }) {
     return (<Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

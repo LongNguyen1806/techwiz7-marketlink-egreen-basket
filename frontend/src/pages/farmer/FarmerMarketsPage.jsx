@@ -5,14 +5,14 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet/dist/leaflet.css';
-import { useAddFarmerMarket, useCreatePickupSlot, useFarmerMarkets, usePublicMarketsForJoin, useRemoveFarmerMarket, useTogglePickupSlot, useUpdateFarmerMarketStall } from '@/features/farmer/hooks/useFarmerMarkets';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
-import '@/styles/farmer/FarmerMarketsPage.css';
+import { useAddFarmerMarket, useCreatePickupSlot, useFarmerMarkets, usePublicMarketsForJoin, useRemoveFarmerMarket, useTogglePickupSlot, useUpdateFarmerMarketStall } from '../../features/farmer/hooks/useFarmerMarkets';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Switch } from '../../components/ui/Switch';
+import '../../styles/farmer/FarmerMarketsPage.css';
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
     iconUrl: markerIcon,

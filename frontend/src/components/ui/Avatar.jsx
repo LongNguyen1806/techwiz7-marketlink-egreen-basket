@@ -1,6 +1,6 @@
 ﻿import * as AvatarPrimitive from '@radix-ui/react-avatar';
-import { cn } from '@/lib/cn';
-import '@/styles/common/Avatar.css';
+import { cn } from '../../lib/cn';
+import '../../styles/common/Avatar.css';
 export function Avatar({ className, ...props }) {
     return <AvatarPrimitive.Root className={cn('avatar', className)} {...props}/>;
 }

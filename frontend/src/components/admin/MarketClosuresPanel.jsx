@@ -5,12 +5,12 @@ import {
   useCreateMarketClosure,
   useDeleteMarketClosure,
   useMarketClosures,
-} from '@/hooks/queries/admin/useAdminMarkets';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+} from '../../hooks/queries/admin/useAdminMarkets';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Label } from '../ui/Label';
 
-import '@/styles/admin/MarketClosuresPanel.css';
+import '../../styles/admin/MarketClosuresPanel.css';
 
 const REASON_MAX_LENGTH = 200;
 

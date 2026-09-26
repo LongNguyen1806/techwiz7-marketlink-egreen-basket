@@ -1,14 +1,14 @@
 ﻿import { useState } from 'react';
 import { toast } from 'sonner';
-import { useFarmerMyReviews, useReplyReview } from '@/features/farmer/hooks/useFarmerReviews';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { RatingStars } from '@/components/common/RatingStars';
-import { Button } from '@/components/ui/Button';
-import { Textarea } from '@/components/ui/Textarea';
-import { formatRelative } from '@/utils/formatters';
-import '@/styles/farmer/FarmerReviewsPage.css';
+import { useFarmerMyReviews, useReplyReview } from '../../features/farmer/hooks/useFarmerReviews';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { RatingStars } from '../../components/common/RatingStars';
+import { Button } from '../../components/ui/Button';
+import { Textarea } from '../../components/ui/Textarea';
+import { formatRelative } from '../../utils/formatters';
+import '../../styles/farmer/FarmerReviewsPage.css';
 export default function FarmerReviewsPage() {
     const [targetType, setTargetType] = useState('ALL');
     const [rating, setRating] = useState('');

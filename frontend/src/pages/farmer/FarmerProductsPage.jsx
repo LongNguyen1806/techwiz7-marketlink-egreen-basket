@@ -1,16 +1,16 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useArchiveProduct, useFarmerMyProducts, useMarkSoldOut, useUpdateFarmerStock } from '@/features/farmer/hooks/useFarmerProducts';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { QuantityStepper } from '@/components/common/QuantityStepper';
-import { LazyImage } from '@/components/common/LazyImage';
-import { PriceTag } from '@/components/common/PriceTag';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import '@/styles/farmer/FarmerProductsPage.css';
+import { useArchiveProduct, useFarmerMyProducts, useMarkSoldOut, useUpdateFarmerStock } from '../../features/farmer/hooks/useFarmerProducts';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { QuantityStepper } from '../../components/common/QuantityStepper';
+import { LazyImage } from '../../components/common/LazyImage';
+import { PriceTag } from '../../components/common/PriceTag';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import '../../styles/farmer/FarmerProductsPage.css';
 const STATE_OPTIONS = [
     { value: '', label: 'All statuses' },
     { value: 'in_stock', label: 'In stock' },

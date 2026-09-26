@@ -4,18 +4,18 @@ import { Link, useParams } from 'react-router-dom';
 import {
   useAdminCustomer,
   useUpdateCustomer,
-} from '@/hooks/queries/admin/useAdminCustomers';
-import { ProfileEditDialog } from '@/components/admin/ProfileEditDialog';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { StatusBadge } from '@/components/common/StatusBadge';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { formatDate, formatDateTime, formatMoney } from '@/utils/formatters';
+} from '../../hooks/queries/admin/useAdminCustomers';
+import { ProfileEditDialog } from '../../components/admin/ProfileEditDialog';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { StatusBadge } from '../../components/common/StatusBadge';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { formatDate, formatDateTime, formatMoney } from '../../utils/formatters';
 
-import '@/styles/admin/AdminCustomerDetailPage.css';
+import '../../styles/admin/AdminCustomerDetailPage.css';
 
 export default function AdminCustomerDetailPage() {
   const { id = '' } = useParams();

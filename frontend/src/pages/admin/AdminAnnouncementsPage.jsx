@@ -6,22 +6,22 @@ import {
   useCreateAnnouncement,
   useDeleteAnnouncement,
   useToggleAnnouncement,
-} from '@/hooks/queries/admin/useAdminAnnouncements';
-import { announcementSchema } from '@/schemas/admin/announcement.schema';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Switch } from '@/components/ui/Switch';
-import { Textarea } from '@/components/ui/Textarea';
-import { ApiError } from '@/lib/ApiError';
-import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
-import { formatDateTime } from '@/utils/formatters';
-import { audienceLabel } from '@/utils/labels';
-import '@/styles/admin/AdminAnnouncementsPage.css';
+} from '../../hooks/queries/admin/useAdminAnnouncements';
+import { announcementSchema } from '../../schemas/admin/announcement.schema';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
+import { Switch } from '../../components/ui/Switch';
+import { Textarea } from '../../components/ui/Textarea';
+import { ApiError } from '../../lib/ApiError';
+import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
+import { formatDateTime } from '../../utils/formatters';
+import { audienceLabel } from '../../utils/labels';
+import '../../styles/admin/AdminAnnouncementsPage.css';
 
 export default function AdminAnnouncementsPage() {
   const query = useAdminAnnouncements();

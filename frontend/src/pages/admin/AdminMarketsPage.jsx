@@ -4,16 +4,16 @@ import { Link } from 'react-router-dom';
 import {
   useAdminMarkets,
   useToggleAdminMarket,
-} from '@/hooks/queries/admin/useAdminMarkets';
-import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton } from '@/components/feedback/PageSkeleton';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { SortSelect } from '@/components/common/SortSelect';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { Textarea } from '@/components/ui/Textarea';
-import '@/styles/admin/AdminMarketsPage.css';
+} from '../../hooks/queries/admin/useAdminMarkets';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { SortSelect } from '../../components/common/SortSelect';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { Textarea } from '../../components/ui/Textarea';
+import '../../styles/admin/AdminMarketsPage.css';
 
 const REASON_MIN_LENGTH = 5;
 
