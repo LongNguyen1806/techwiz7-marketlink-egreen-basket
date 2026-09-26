@@ -1,6 +1,8 @@
 import ipaddress
 import uuid
 
+from rest_framework.settings import api_settings
+
 from marketlink_core.exceptions import BusinessValidationError, ErrorCode, PreconditionRequiredError
 
 
@@ -15,15 +17,21 @@ def normalize_request_id(raw: str | None) -> str | None:
 
 
 def client_ip(request) -> str | None:
+    """The client IP by the same rule as DRF's throttle ident (NUM_PROXIES).
+
+    X-Forwarded-For is only trusted for the entry appended by our own proxies; the first
+    entry is whatever the client sent and must never be used.
+    """
+    candidate = request.META.get("REMOTE_ADDR") or ""
+    num_proxies = api_settings.NUM_PROXIES
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    candidates = [forwarded.split(",")[0].strip()] if forwarded else []
-    candidates.append(request.META.get("REMOTE_ADDR") or "")
-    for candidate in candidates:
-        try:
-            return str(ipaddress.ip_address(candidate))
-        except ValueError:
-            continue
-    return None
+    if num_proxies and forwarded:
+        addresses = forwarded.split(",")
+        candidate = addresses[-min(num_proxies, len(addresses))].strip()
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return None
 
 
 def parse_if_match(request) -> int:

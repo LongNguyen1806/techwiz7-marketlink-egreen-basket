@@ -1,12 +1,14 @@
 import io
 import logging
+import warnings
 from pathlib import Path
 from typing import Any
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.db.models import Avg, Count, Sum
 from django.utils import timezone
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from accounts.models import FarmerProfile
 from catalog.models import Product
@@ -35,20 +37,26 @@ MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024  # 2MB per F-05 spec
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 IMAGE_FORMAT_EXTENSIONS = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}
+IMAGE_CONTENT_TYPES = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
+MAX_IMAGE_PIXELS = 6000 * 6000
+REENCODE_QUALITY = 85
 
 
 def _image_error(message: str) -> BusinessValidationError:
     return BusinessValidationError(message, code=ErrorCode.VALIDATION_ERROR, errors={"image": [message]})
 
 
-def validate_image_upload(file: Any) -> None:
+def validate_image_upload(file: Any) -> Any:
     """
-    NFR-01 / CT-18: check extension, declared MIME type, size and the real content (Pillow).
-    On success the upload is renamed so the stored extension matches the decoded format;
-    the client's filename is never trusted.
+    NFR-01 / CT-18: check extension, declared MIME type, size, pixel count and the real
+    content (Pillow), then return a re-encoded copy to store instead of the upload.
+
+    Re-encoding drops EXIF (a phone photo can carry the GPS position of the farm) and any
+    bytes hidden around the picture. The stored extension follows the decoded format; the
+    client's filename is never trusted.
     """
     if file is None:
-        return
+        return None
 
     extension = Path(getattr(file, "name", "") or "").suffix.lower()
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
@@ -62,18 +70,63 @@ def validate_image_upload(file: Any) -> None:
     if size and size > MAX_IMAGE_SIZE_BYTES:
         raise _image_error("Image file size cannot exceed 2MB.")
 
-    try:
-        content = file.read()
-        file.seek(0)
-        img = Image.open(io.BytesIO(content))
-        img.verify()
-        image_format = (img.format or "").upper()
-    except (UnidentifiedImageError, OSError, SyntaxError):
-        raise _image_error("The uploaded file is not a valid image.") from None
+    content = file.read()
+    file.seek(0)
+    image_format, pixels = _probe_image(content)
 
     if image_format not in IMAGE_FORMAT_EXTENSIONS:
         raise _image_error("Unsupported image format. Allowed: JPG, PNG, WEBP.")
-    file.name = f"image{IMAGE_FORMAT_EXTENSIONS[image_format]}"
+    # A small file can still declare a huge canvas (a "decompression bomb"): check the pixel
+    # count before anything decodes the picture.
+    if pixels > MAX_IMAGE_PIXELS:
+        raise _image_error("Image dimensions are too large (at most 36 megapixels).")
+
+    extension = IMAGE_FORMAT_EXTENSIONS[image_format]
+    return SimpleUploadedFile(
+        f"image{extension}", _reencode(content, image_format), content_type=IMAGE_CONTENT_TYPES[image_format]
+    )
+
+
+def _probe_image(content: bytes) -> tuple[str, int]:
+    """Read the format and pixel count from the header only, without decoding the picture."""
+    try:
+        with warnings.catch_warnings():
+            # Pillow only warns between 89 and 179 megapixels; treat that as invalid too.
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(content)) as probe:
+                image_format = (probe.format or "").upper()
+                width, height = probe.size
+                probe.verify()
+    except (
+        UnidentifiedImageError,
+        OSError,
+        SyntaxError,
+        ValueError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+    ):
+        raise _image_error("The uploaded file is not a valid image.") from None
+    return image_format, width * height
+
+
+def _reencode(content: bytes, image_format: str) -> bytes:
+    """Decode and save again: only the pixels survive, never metadata or appended bytes."""
+    try:
+        with Image.open(io.BytesIO(content)) as source:
+            # EXIF is dropped below, so its rotation flag is applied to the pixels first.
+            image = ImageOps.exif_transpose(source)
+            output = io.BytesIO()
+            if image_format == "JPEG":
+                if image.mode not in ("RGB", "L"):
+                    image = image.convert("RGB")
+                image.save(output, format="JPEG", quality=REENCODE_QUALITY, optimize=True)
+            elif image_format == "PNG":
+                image.save(output, format="PNG", optimize=True)
+            else:
+                image.save(output, format="WEBP", quality=REENCODE_QUALITY)
+    except (OSError, ValueError, SyntaxError):
+        raise _image_error("The uploaded file is not a valid image.") from None
+    return output.getvalue()
 
 
 def notify_restock_for_product(*, product: Product) -> int:

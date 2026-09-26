@@ -2,6 +2,8 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from catalog.services.farmer_product import validate_image_upload
+from marketlink_core.exceptions import BusinessValidationError
 from markets.models import DayOfWeek, Market
 from markets.serializers import ClosureSerializer
 from markets.selectors import OPERATING_DAYS_ATTR, UPCOMING_CLOSURES_ATTR, today
@@ -119,6 +121,7 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
         min_length=1,
         help_text="ISO weekday numbers, 1 = Monday through 7 = Sunday.",
     )
+    image = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = Market
@@ -136,6 +139,15 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
 
     def validate_name(self, value: str) -> str:
         return value.strip()
+
+    def validate_image(self, value):
+        # NFR-01: same checks as farmer uploads (type, 2MB, real content); the re-encoded copy is stored.
+        if not value:
+            return value
+        try:
+            return validate_image_upload(value)
+        except BusinessValidationError as exc:
+            raise serializers.ValidationError(exc.errors.get("image", [str(exc.detail)])) from None
 
     def validate(self, attrs):
         instance = self.instance

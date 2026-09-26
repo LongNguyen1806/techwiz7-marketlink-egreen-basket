@@ -17,6 +17,7 @@ from accounts.auth.tokens import PASSWORD_VERSION_CLAIM, SESSION_CLAIM, issue_to
 from accounts.exceptions import AccountLockedError, InvalidCredentialsError, TokenInvalidError
 from accounts.models import CustomUser
 from marketlink_core.policies.roles import RoleCode
+from notifications.services import disconnect_realtime
 
 MARKET_PORTAL_ROLES = frozenset({RoleCode.CUSTOMER, RoleCode.FARMER})
 ADMIN_PORTAL_ROLES = frozenset({RoleCode.ADMIN})
@@ -118,6 +119,8 @@ def logout(*, user: CustomUser, session_id: str, refresh: str) -> None:
     if str(payload.get(jwt_settings.USER_ID_CLAIM)) != str(user.pk) or payload.get(SESSION_CLAIM) != session_id:
         raise TokenInvalidError()
     revoke_session(session_id)
+    # Only this device's sockets close; the user's other sessions stay connected.
+    disconnect_realtime(session_id=session_id)
 
 
 def change_password(*, user: CustomUser, current_password: str, new_password: str, session_id: str) -> None:

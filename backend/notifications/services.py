@@ -62,16 +62,48 @@ def serialize_notification(notification: Notification) -> dict[str, Any]:
     }
 
 
+def user_group(user_id: int) -> str:
+    return f"user_{user_id}"
+
+
+def session_group(session_id: str) -> str:
+    return f"session_{session_id}"
+
+
 def _push_realtime(user_id: int, payload: dict[str, Any]) -> None:
     channel_layer = get_channel_layer()
     if channel_layer is None:
         return
     try:
         async_to_sync(channel_layer.group_send)(
-            f"user_{user_id}", {"type": "notify", "data": payload}
+            user_group(user_id), {"type": "notify", "data": payload}
         )
     except Exception:  # noqa: BLE001 - the row is already saved; the bell reloads it later
         logger.exception("WebSocket push failed for user %s", user_id)
+
+
+def disconnect_realtime(*, user_id: int | None = None, session_id: str | None = None) -> None:
+    """Close live notification sockets after a lock (every device) or a logout (one device).
+
+    Runs after the commit, so a rolled-back lock never disconnects anyone.
+    """
+    groups = []
+    if user_id is not None:
+        groups.append(user_group(user_id))
+    if session_id:
+        groups.append(session_group(session_id))
+    for group in groups:
+        transaction.on_commit(partial(_send_disconnect, group))
+
+
+def _send_disconnect(group: str) -> None:
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    try:
+        async_to_sync(channel_layer.group_send)(group, {"type": "force.disconnect"})
+    except Exception:  # noqa: BLE001 - access tokens still expire; the socket carries no data back
+        logger.exception("WebSocket disconnect failed for group %s", group)
 
 
 def _absolute_url(path: str | None) -> str | None:

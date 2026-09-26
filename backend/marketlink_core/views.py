@@ -5,6 +5,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from accounts.auth.tokens import SESSION_CLAIM
 from marketlink_core.exceptions import ErrorCode
 from marketlink_core.permissions import IsCustomerOrFarmer
 from marketlink_core.responses import api_response
@@ -74,7 +75,8 @@ class WebSocketTicketView(APIView):
     )
     def post(self, request):
         role_code = getattr(getattr(request.user, "role", None), "code", "")
-        ticket = create_ws_ticket(user_id=request.user.pk, role=role_code)
+        session_id = request.auth.get(SESSION_CLAIM) if request.auth is not None else None
+        ticket = create_ws_ticket(user_id=request.user.pk, role=role_code, session_id=session_id)
         return api_response(
             message="Ticket generated.",
             data={"ticket": ticket, "expires_in": DEFAULT_TTL},

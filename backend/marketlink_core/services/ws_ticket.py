@@ -47,11 +47,16 @@ def _decode(raw: Any) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) and "user_id" in payload else None
 
 
-def create_ws_ticket(*, user_id: int, role: str) -> str:
-    """AU-08: store a single-use ticket for WS_TICKET_TTL seconds and return it."""
+def create_ws_ticket(*, user_id: int, role: str, session_id: str | None = None) -> str:
+    """AU-08: store a single-use ticket for WS_TICKET_TTL seconds and return it.
+
+    session_id (the JWT "sid") lets a logout close the sockets of that one device only.
+    """
     ticket = str(uuid.uuid4())
     key = f"{TICKET_PREFIX}{ticket}"
-    payload = {"user_id": user_id, "role": role}
+    payload: dict[str, Any] = {"user_id": user_id, "role": role}
+    if session_id:
+        payload["sid"] = session_id
     if _use_redis():
         _redis().set(key, json.dumps(payload), ex=DEFAULT_TTL)
     else:

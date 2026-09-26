@@ -12,7 +12,9 @@ from accounts.auth.serializers_common import (
     RefreshTokenWriteSerializer,
     build_auth_payload,
 )
+from accounts.auth.throttles import LoginEmailThrottle, RecordableThrottleViewMixin
 from accounts.auth.tokens import SESSION_CLAIM
+from accounts.exceptions import InvalidCredentialsError
 from accounts.services.auth_service import (
     ADMIN_PORTAL_ROLES,
     MARKET_PORTAL_ROLES,
@@ -27,12 +29,13 @@ from system.models import AuditAction
 from system.services import log_request_event
 
 
-class LoginView(APIView):
+class LoginView(RecordableThrottleViewMixin, APIView):
     """AU-03: Customer and Farmer portal (D-027)."""
 
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [ScopedRateThrottle]
+    # Per IP (every attempt) and per email (failed attempts only, from any IP).
+    throttle_classes = [ScopedRateThrottle, LoginEmailThrottle]
     throttle_scope = "login"
     portal_roles = MARKET_PORTAL_ROLES
     audit_details: dict = {}
@@ -49,6 +52,8 @@ class LoginView(APIView):
         try:
             user = authenticate_user(**serializer.validated_data, roles=self.portal_roles)
         except DomainError as exc:
+            if isinstance(exc, InvalidCredentialsError):
+                self.record_throttle(LoginEmailThrottle)
             log_request_event(request, action=AuditAction.LOGIN_FAILED, status_code=exc.status_code,
                                details={"email": email, "error": exc.code, **self.audit_details})
             raise

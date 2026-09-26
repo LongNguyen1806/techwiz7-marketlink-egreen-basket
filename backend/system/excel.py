@@ -38,6 +38,15 @@ def _autosize(sheet, columns: int) -> None:
         sheet.column_dimensions[get_column_letter(index)].width = max(MIN_WIDTH, longest + PADDING)
 
 
+def _keep_text_as_text(cells) -> None:
+    # openpyxl stores any string starting with "=" as a formula. Names come from users (a
+    # farmer picks the stall name), so every text cell is forced back to plain text: a name
+    # like "=HYPERLINK(...)" is shown, never evaluated, when an admin opens the file.
+    for cell in cells:
+        if isinstance(cell.value, str):
+            cell.data_type = "s"
+
+
 def build_report_workbook(summary: dict) -> bytes:
     workbook = Workbook()
     workbook.remove(workbook.active)
@@ -51,6 +60,7 @@ def build_report_workbook(summary: dict) -> bytes:
             sheet.append(
                 [float(row[f]) if f == "revenue" else row[f] for f in fields]
             )
+            _keep_text_as_text(sheet[sheet.max_row])
         _autosize(sheet, len(headers))
 
     stream = BytesIO()

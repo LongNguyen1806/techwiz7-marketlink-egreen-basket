@@ -2,19 +2,30 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from corsheaders.defaults import default_headers
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "django-insecure-marketlink-secret-key-techwiz-2026-very-secure",
-)
-DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "t")
+# Fail closed: a deployment that forgets DEBUG runs as production, never as a debug server.
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
+
+# The fallback key is only for local development; production must provide its own.
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("SECRET_KEY must be set when DEBUG is False.")
+    SECRET_KEY = "django-insecure-marketlink-local-development-only"
+
 ALLOWED_HOSTS = [
-    h.strip() for h in os.environ.get("ALLOWED_HOSTS", "*").split(",") if h.strip()
+    h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()
 ]
+
+# Number of reverse proxies in front of the app (Render: 1). Only the X-Forwarded-For entry
+# appended by those proxies is trusted, so a client cannot pick its own IP for throttling or
+# the audit log. 0 = no proxy: REMOTE_ADDR is the client.
+NUM_PROXIES = int(os.environ.get("NUM_PROXIES", "0"))
 
 INSTALLED_APPS = [
     "daphne",
@@ -135,11 +146,14 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
+    "NUM_PROXIES": NUM_PROXIES,
     "DEFAULT_THROTTLE_RATES": {
         "anon": "120/min",
         "user": "300/min",
         "login": "5/min",
         "admin_login": "5/min",
+        # Failed sign-ins per email, across every IP and both portals (brute force from many IPs).
+        "login_email": "20/hour",
         "register": "10/hour",
         "orders": "10/hour",
         "chat": "20/min",
@@ -183,6 +197,16 @@ CORS_EXPOSE_HEADERS = [
 
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+if not DEBUG:
+    # HTTPS is terminated by the proxy (Render), which reports the original scheme in this header.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True").lower() in ("true", "1", "t")
+    # Uptime probes may call the health check over plain HTTP.
+    SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "3600"))
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")
 USE_REDIS = os.environ.get("USE_REDIS", "False").lower() in ("true", "1", "t")

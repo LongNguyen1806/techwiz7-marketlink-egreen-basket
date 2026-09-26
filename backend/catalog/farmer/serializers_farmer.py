@@ -113,9 +113,8 @@ class FarmerProductCreateSerializer(serializers.Serializer):
         return value
 
     def validate_image(self, value: Any) -> Any:
-        if value:
-            validate_image_upload(value)
-        return value
+        # The re-encoded copy is stored, never the uploaded bytes.
+        return validate_image_upload(value) if value else value
 
 
 class FarmerProductUpdateSerializer(serializers.Serializer):
@@ -141,9 +140,8 @@ class FarmerProductUpdateSerializer(serializers.Serializer):
         return value
 
     def validate_image(self, value: Any) -> Any:
-        if value:
-            validate_image_upload(value)
-        return value
+        # The re-encoded copy is stored, never the uploaded bytes.
+        return validate_image_upload(value) if value else value
 
 
 class WeeklyTemplateRowSerializer(serializers.Serializer):

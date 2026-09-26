@@ -67,10 +67,10 @@ class FarmerProfileUpdateSerializer(serializers.Serializer):
 
     def validate_image(self, value: Any) -> Any:
         try:
-            validate_image_upload(value)
+            # The re-encoded copy is stored, never the uploaded bytes.
+            return validate_image_upload(value)
         except BusinessValidationError as exc:
             raise serializers.ValidationError(exc.errors.get("image", [str(exc.detail)])) from None
-        return value
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         has_lat, has_lng = "latitude" in attrs, "longitude" in attrs
