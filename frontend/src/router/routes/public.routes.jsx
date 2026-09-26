@@ -1,9 +1,7 @@
-import { lazy } from 'react';
-import { Suspend } from '../Suspend';
 import { PublicLayout } from '../../layouts/PublicLayout';
 import { customerRoutes } from './customer.routes';
 
-const HomePage = lazy(() => import('../../pages/guest/HomePage'));
+const page = (load) => async () => ({ Component: (await load()).default });
 
 /**
  * The storefront shell. Signed-in customer screens nest inside it too, so the header, the cart
@@ -18,11 +16,7 @@ export const publicRoutes = [
     children: [
       {
         path: '/',
-        element: (
-          <Suspend>
-            <HomePage />
-          </Suspend>
-        ),
+        lazy: page(() => import('../../pages/guest/HomePage')),
       },
       ...customerRoutes,
     ],

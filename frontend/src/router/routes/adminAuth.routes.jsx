@@ -1,9 +1,7 @@
-import { lazy } from 'react';
-import { Suspend } from '../Suspend';
-import { GuestOnly } from '../guards';
 import { AdminAuthLayout } from '../../layouts/AdminAuthLayout';
+import { GuestOnly } from '../guards';
 
-const AdminLoginPage = lazy(() => import('../../pages/admin/AdminLoginPage'));
+const page = (load) => async () => ({ Component: (await load()).default });
 
 /**
  * A-00. Its own portal (D-027): AU-09 accepts admins only, and AU-03 rejects them, so the two
@@ -18,11 +16,7 @@ export const adminAuthRoutes = [
         children: [
           {
             path: '/admin/login',
-            element: (
-              <Suspend>
-                <AdminLoginPage />
-              </Suspend>
-            ),
+            lazy: page(() => import('../../pages/admin/AdminLoginPage')),
           },
         ],
       },

@@ -1,106 +1,36 @@
-import { lazy } from 'react';
-import { Suspend } from '../Suspend';
-import { RequireAuth, RequireRole } from '../guards';
+import { ROLES } from '../../constants/roles';
 import { CustomerLayout } from '../../layouts/CustomerLayout';
-const CustomerDashboard = lazy(() => import('../../pages/customer/CustomerDashboard'));
-const CartPage = lazy(() => import('../../pages/customer/CartPage'));
-const CheckoutPage = lazy(() => import('../../pages/customer/CheckoutPage'));
-const CheckoutSuccessPage = lazy(() => import('../../pages/customer/CheckoutSuccessPage'));
-const OrdersPage = lazy(() => import('../../pages/customer/OrdersPage'));
-const OrderDetailPage = lazy(() => import('../../pages/customer/OrderDetailPage'));
-const EditOrderPage = lazy(() => import('../../pages/customer/EditOrderPage'));
-const ReviewOrderPage = lazy(() => import('../../pages/customer/ReviewOrderPage'));
-const FavoritesPage = lazy(() => import('../../pages/customer/FavoritesPage'));
-const ProfilePage = lazy(() => import('../../pages/customer/ProfilePage'));
-const NotificationsPage = lazy(() => import('../../pages/customer/NotificationsPage'));
-const ChangePasswordPage = lazy(() => import('../../pages/customer/ChangePasswordPage'));
+import { RequireAuth, RequireRole } from '../guards';
+
+const page = (load) => async () => ({ Component: (await load()).default });
+
 /** Nested under PublicLayout (see public.routes). */
 export const customerRoutes = [
-    {
-        element: <RequireAuth />,
+  {
+    element: <RequireAuth />,
+    children: [
+      {
+        element: <RequireRole allow={[ROLES.CUSTOMER]} />,
         children: [
-            {
-                element: <RequireRole allow={['CUSTOMER']}/>,
-                children: [
-                    {
-                        element: <CustomerLayout />,
-                        children: [
-                            {
-                                path: '/customer',
-                                element: (<Suspend>
-                    <CustomerDashboard />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/cart',
-                                element: (<Suspend>
-                    <CartPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/checkout',
-                                element: (<Suspend>
-                    <CheckoutPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/checkout/success',
-                                element: (<Suspend>
-                    <CheckoutSuccessPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/orders',
-                                element: (<Suspend>
-                    <OrdersPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/orders/:id',
-                                element: (<Suspend>
-                    <OrderDetailPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/orders/:id/edit',
-                                element: (<Suspend>
-                    <EditOrderPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/orders/:id/review',
-                                element: (<Suspend>
-                    <ReviewOrderPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/favorites',
-                                element: (<Suspend>
-                    <FavoritesPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/profile',
-                                element: (<Suspend>
-                    <ProfilePage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/notifications',
-                                element: (<Suspend>
-                    <NotificationsPage />
-                  </Suspend>),
-                            },
-                            {
-                                path: '/customer/password',
-                                element: (<Suspend>
-                    <ChangePasswordPage />
-                  </Suspend>),
-                            },
-                        ],
-                    },
-                ],
-            },
+          {
+            element: <CustomerLayout />,
+            children: [
+              { path: '/customer', lazy: page(() => import('../../pages/customer/CustomerDashboard')) },
+              { path: '/customer/cart', lazy: page(() => import('../../pages/customer/CartPage')) },
+              { path: '/customer/checkout', lazy: page(() => import('../../pages/customer/CheckoutPage')) },
+              { path: '/customer/checkout/success', lazy: page(() => import('../../pages/customer/CheckoutSuccessPage')) },
+              { path: '/customer/orders', lazy: page(() => import('../../pages/customer/OrdersPage')) },
+              { path: '/customer/orders/:id', lazy: page(() => import('../../pages/customer/OrderDetailPage')) },
+              { path: '/customer/orders/:id/edit', lazy: page(() => import('../../pages/customer/EditOrderPage')) },
+              { path: '/customer/orders/:id/review', lazy: page(() => import('../../pages/customer/ReviewOrderPage')) },
+              { path: '/customer/favorites', lazy: page(() => import('../../pages/customer/FavoritesPage')) },
+              { path: '/customer/profile', lazy: page(() => import('../../pages/customer/ProfilePage')) },
+              { path: '/customer/notifications', lazy: page(() => import('../../pages/customer/NotificationsPage')) },
+              { path: '/customer/password', lazy: page(() => import('../../pages/customer/ChangePasswordPage')) },
+            ],
+          },
         ],
-    },
+      },
+    ],
+  },
 ];

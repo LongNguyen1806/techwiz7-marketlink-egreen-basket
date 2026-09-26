@@ -13,6 +13,7 @@ export const authRoutes = [
         element: <AuthLayout />,
         children: [
           { path: ROUTES.LOGIN, lazy: page(() => import('../../pages/auth/LoginPage')) },
+          { path: ROUTES.REGISTER_CUSTOMER, lazy: page(() => import('../../pages/guest/RegisterCustomerPage')) },
           { path: ROUTES.REGISTER_FARMER, lazy: page(() => import('../../pages/auth/RegisterFarmerPage')) },
         ],
       },

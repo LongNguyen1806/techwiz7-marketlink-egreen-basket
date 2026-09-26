@@ -1,113 +1,31 @@
-import { lazy } from 'react';
-import { Suspend } from '../Suspend';
-import { RequireRole } from '../guards';
+import { ROLES } from '../../constants/roles';
 import { AdminLayout } from '../../layouts/AdminLayout';
+import { RequireAuth, RequireRole } from '../guards';
 
-const AdminFarmersPage = lazy(() => import('../../pages/admin/AdminFarmersPage'));
-const AdminFarmerDetailPage = lazy(() => import('../../pages/admin/AdminFarmerDetailPage'));
-const AdminCustomerDetailPage = lazy(() => import('../../pages/admin/AdminCustomerDetailPage'));
-const AdminMarketsPage = lazy(() => import('../../pages/admin/AdminMarketsPage'));
-const AdminMarketFormPage = lazy(() => import('../../pages/admin/AdminMarketFormPage'));
-const AdminCategoriesPage = lazy(() => import('../../pages/admin/AdminCategoriesPage'));
-const AdminAnnouncementsPage = lazy(() => import('../../pages/admin/AdminAnnouncementsPage'));
-const AdminAuditLogsPage = lazy(() => import('../../pages/admin/AdminAuditLogsPage'));
-const ChangePasswordPage = lazy(() => import('../../pages/customer/ChangePasswordPage'));
+const page = (load) => async () => ({ Component: (await load()).default });
 
-/** Nested under a shared RequireAuth parent in AppRouter. */
 export const adminRoutes = [
   {
-    element: <RequireRole allow={['ADMIN']} />,
+    element: <RequireAuth />,
     children: [
       {
-        element: <AdminLayout />,
+        element: <RequireRole allow={[ROLES.ADMIN]} />,
         children: [
           {
-            path: '/admin',
-            element: (
-              <Suspend>
-                <AdminFarmersPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/farmers',
-            element: (
-              <Suspend>
-                <AdminFarmersPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/farmers/:id',
-            element: (
-              <Suspend>
-                <AdminFarmerDetailPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/customers/:id',
-            element: (
-              <Suspend>
-                <AdminCustomerDetailPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/markets',
-            element: (
-              <Suspend>
-                <AdminMarketsPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/markets/new',
-            element: (
-              <Suspend>
-                <AdminMarketFormPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/markets/:id/edit',
-            element: (
-              <Suspend>
-                <AdminMarketFormPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/categories',
-            element: (
-              <Suspend>
-                <AdminCategoriesPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/announcements',
-            element: (
-              <Suspend>
-                <AdminAnnouncementsPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/audit-logs',
-            element: (
-              <Suspend>
-                <AdminAuditLogsPage />
-              </Suspend>
-            ),
-          },
-          {
-            path: '/admin/settings',
-            element: (
-              <Suspend>
-                <ChangePasswordPage />
-              </Suspend>
-            ),
+            element: <AdminLayout />,
+            children: [
+              { path: '/admin', lazy: page(() => import('../../pages/admin/AdminFarmersPage')) },
+              { path: '/admin/farmers', lazy: page(() => import('../../pages/admin/AdminFarmersPage')) },
+              { path: '/admin/farmers/:id', lazy: page(() => import('../../pages/admin/AdminFarmerDetailPage')) },
+              { path: '/admin/customers/:id', lazy: page(() => import('../../pages/admin/AdminCustomerDetailPage')) },
+              { path: '/admin/markets', lazy: page(() => import('../../pages/admin/AdminMarketsPage')) },
+              { path: '/admin/markets/new', lazy: page(() => import('../../pages/admin/AdminMarketFormPage')) },
+              { path: '/admin/markets/:id/edit', lazy: page(() => import('../../pages/admin/AdminMarketFormPage')) },
+              { path: '/admin/categories', lazy: page(() => import('../../pages/admin/AdminCategoriesPage')) },
+              { path: '/admin/announcements', lazy: page(() => import('../../pages/admin/AdminAnnouncementsPage')) },
+              { path: '/admin/audit-logs', lazy: page(() => import('../../pages/admin/AdminAuditLogsPage')) },
+              { path: '/admin/settings', lazy: page(() => import('../../pages/customer/ChangePasswordPage')) },
+            ],
           },
         ],
       },
