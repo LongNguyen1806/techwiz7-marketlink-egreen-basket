@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/Tabs';
 import { useNotificationFeed } from '../../hooks/queries/common/useNotificationFeed';
 import { formatDateTime, formatRelative } from '../../utils/formatters';
 import { cn } from '../../lib/cn';
-import './NotificationsPage.css';
+import '../../styles/customer/NotificationsPage.css';
 
 /** C-09 (NO-01 → NO-04, FR-24 / FR-28). The same list serves F-10 from the farmer's own route. */
 export default function NotificationsPage() {

@@ -9,7 +9,7 @@ import { PageSkeleton } from '../../components/feedback/PageSkeleton';
 import { Button } from '../../components/ui/Button';
 import { useCustomerProfile, useUpdateCustomerProfile } from '../../hooks/queries/customer/useCustomerProfile';
 import { profileSchema } from '../../services/customer/profile.schemas';
-import './ProfilePage.css';
+import '../../styles/customer/ProfilePage.css';
 
 const FIELDS = ['full_name', 'phone', 'address'];
 

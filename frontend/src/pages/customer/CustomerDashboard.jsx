@@ -13,7 +13,7 @@ import { useCustomerDashboard } from '../../hooks/queries/customer/useCustomerDa
 import { useReorder } from '../../hooks/queries/customer/useReorder';
 import { formatDate, formatRelative, formatTime } from '../../utils/formatters';
 import { cn } from '../../lib/cn';
-import './CustomerDashboard.css';
+import '../../styles/customer/CustomerDashboard.css';
 
 /**
  * The four numbers of C-00. CU-05 filters by `tab` and `status` only, so "To review" points at the

@@ -16,7 +16,7 @@ import { MAX_QUANTITY } from '../../stores/cart.store';
 import { formatDate, formatMoney } from '../../utils/formatters';
 import { moneyToNumber } from '../../utils/helpers/domain';
 import { cn } from '../../lib/cn';
-import './EditOrderPage.css';
+import '../../styles/customer/EditOrderPage.css';
 
 /** CU-07 reports a bad line as `items.<i>.<field>`, which points back at one row of this form. */
 function readItemErrors(fieldErrors, items) {

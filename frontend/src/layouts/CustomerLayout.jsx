@@ -4,7 +4,7 @@ import { AnnouncementBanner } from '../components/common/announcements/Announcem
 import { useAuth } from '../hooks/authentication/useAuth';
 import { cartCount, useCartStore } from '../stores/cart.store';
 import { cn } from '../lib/cn';
-import './CustomerLayout.css';
+import '../styles/customer/CustomerLayout.css';
 // Pass 3 route table: the customer branch is mounted at /customer, not /app.
 const tabs = [
     { to: '/customer', label: 'Home', icon: Home, end: true },

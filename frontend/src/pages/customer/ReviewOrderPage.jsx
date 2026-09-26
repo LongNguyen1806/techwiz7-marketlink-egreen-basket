@@ -10,7 +10,7 @@ import { Textarea } from '../../components/ui/Textarea';
 import { useCustomerOrder } from '../../hooks/queries/customer/useCustomerOrder';
 import { useReviewFarmer, useReviewItem } from '../../hooks/queries/customer/useReviews';
 import { ApiError } from '../../lib/ApiError';
-import './ReviewOrderPage.css';
+import '../../styles/customer/ReviewOrderPage.css';
 
 /**
  * One review form: the stall (CU-10) or one line of the order (CU-11). A rating is required, the

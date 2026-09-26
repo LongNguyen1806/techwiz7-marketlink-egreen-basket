@@ -8,7 +8,7 @@ import { FarmerCard } from '../../components/common/cards/FarmerCard';
 import { MarketCard } from '../../components/common/cards/MarketCard';
 import { ProductCard } from '../../components/common/cards/ProductCard';
 import { useFavoriteList } from '../../hooks/queries/customer/useFavorites';
-import './FavoritesPage.css';
+import '../../styles/customer/FavoritesPage.css';
 
 /**
  * C-08 (D-019). Each tab is its own request and only the open one is mounted, so opening the page

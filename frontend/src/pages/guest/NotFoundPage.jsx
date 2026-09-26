@@ -1,4 +1,4 @@
-import './NotFoundPage.css';
+import '../../styles/guest/NotFoundPage.css';
 
 /** G-12 — not built yet; the route and the layout around it are. */
 export default function NotFoundPage() {

@@ -3,7 +3,7 @@ import { CircleCheck } from 'lucide-react';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Button } from '../../components/ui/Button';
 import { formatDate, formatMoney, formatTime } from '../../utils/formatters';
-import './CheckoutSuccessPage.css';
+import '../../styles/customer/CheckoutSuccessPage.css';
 
 /**
  * C-03. The orders come through the navigation state, which a reload loses — the orders themselves are

@@ -1,6 +1,6 @@
 import { ChangePasswordForm } from '../../components/common/forms/ChangePasswordForm';
 import { PageHeader } from '../../components/common/PageHeader';
-import './ChangePasswordPage.css';
+import '../../styles/customer/ChangePasswordPage.css';
 
 /** C-11 (AU-07). The same form serves F-11 and A-12 from their own routes. */
 export default function ChangePasswordPage() {

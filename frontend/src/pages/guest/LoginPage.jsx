@@ -1,5 +1,5 @@
 import { LoginForm } from '../../components/common/forms/LoginForm';
-import './LoginPage.css';
+import '../../styles/guest/LoginPage.css';
 
 /** G-09. AuthLayout supplies the shell around it. */
 export default function LoginPage() {

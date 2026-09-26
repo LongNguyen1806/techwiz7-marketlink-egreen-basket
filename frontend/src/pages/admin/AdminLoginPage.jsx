@@ -6,7 +6,7 @@ import { FormField } from '../../components/common/forms/FormField';
 import { useServerErrors } from '../../components/common/forms/useServerErrors';
 import { useAuth } from '../../hooks/authentication/useAuth';
 import { loginSchema } from '../../services/common/auth.schemas';
-import './AdminLoginPage.css';
+import '../../styles/admin/AdminLoginPage.css';
 
 const FIELDS = ['email', 'password'];
 

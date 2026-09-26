@@ -1,5 +1,5 @@
 import { RegisterFarmerForm } from '../../components/common/forms/RegisterFarmerForm';
-import './RegisterFarmerPage.css';
+import '../../styles/guest/RegisterFarmerPage.css';
 
 /** G-11. */
 export default function RegisterFarmerPage() {

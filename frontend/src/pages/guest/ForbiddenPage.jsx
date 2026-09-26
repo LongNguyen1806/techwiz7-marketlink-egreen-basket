@@ -1,4 +1,4 @@
-import './ForbiddenPage.css';
+import '../../styles/guest/ForbiddenPage.css';
 
 /** G-12 — not built yet; the route and the layout around it are. */
 export default function ForbiddenPage() {

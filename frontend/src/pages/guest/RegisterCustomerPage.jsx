@@ -1,5 +1,5 @@
 import { RegisterCustomerForm } from '../../components/common/forms/RegisterCustomerForm';
-import './RegisterCustomerPage.css';
+import '../../styles/guest/RegisterCustomerPage.css';
 
 /** G-10. */
 export default function RegisterCustomerPage() {

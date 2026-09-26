@@ -1,4 +1,4 @@
-import './HomePage.css';
+import '../../styles/guest/HomePage.css';
 
 /** G-01 — not built yet; the route and the layout around it are. */
 export default function HomePage() {

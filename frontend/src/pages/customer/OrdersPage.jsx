@@ -9,7 +9,7 @@ import { OrderActions } from '../../components/customer/orders/OrderActions';
 import { useCustomerOrders } from '../../hooks/queries/customer/useCustomerOrders';
 import { useReorder } from '../../hooks/queries/customer/useReorder';
 import { formatDate, formatMoney, formatTime } from '../../utils/formatters';
-import './OrdersPage.css';
+import '../../styles/customer/OrdersPage.css';
 
 /**
  * The two tabs of C-04 are the server's own grouping: `tab=open` is PLACED, ACCEPTED and

@@ -18,7 +18,7 @@ import { cartGroups, isOrderable, useCartStore } from '../../stores/cart.store';
 import { formatDate, formatDateTime, formatMoney } from '../../utils/formatters';
 import { moneyToNumber } from '../../utils/helpers/domain';
 import { cn } from '../../lib/cn';
-import './CheckoutPage.css';
+import '../../styles/customer/CheckoutPage.css';
 
 /** CU-04 reports a bad item as `groups.<i>.items.<j>.<field>`, which points back at one cart line. */
 function readItemErrors(fieldErrors, bodyGroups) {

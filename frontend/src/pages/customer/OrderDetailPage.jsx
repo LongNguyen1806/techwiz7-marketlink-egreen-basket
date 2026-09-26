@@ -19,7 +19,7 @@ import { useCustomerOrder } from '../../hooks/queries/customer/useCustomerOrder'
 import { useReorder } from '../../hooks/queries/customer/useReorder';
 import { ApiError } from '../../lib/ApiError';
 import { formatDate, formatDateTime, formatTime } from '../../utils/formatters';
-import './OrderDetailPage.css';
+import '../../styles/customer/OrderDetailPage.css';
 
 /** C-05 (CU-06, CU-08, CU-09). */
 export default function OrderDetailPage() {

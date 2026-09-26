@@ -10,7 +10,7 @@ import { usePrefetchRoutes } from '../hooks/usePrefetchRoutes';
 import { DASHBOARD_PATH } from '../constants';
 import { useAuthStore } from '../stores/auth.store';
 import { cn } from '../lib/cn';
-import './PublicLayout.css';
+import '../styles/guest/PublicLayout.css';
 const footerLinkClass = 'public-layout__footer-link';
 export function PublicLayout() {
     const location = useLocation();

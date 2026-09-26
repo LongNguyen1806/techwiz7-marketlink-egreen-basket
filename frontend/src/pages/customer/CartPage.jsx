@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { useCartRefresh } from '../../hooks/queries/customer/useCartRefresh';
 import { cartGroups, cartTotal, isOrderable, useCartStore, MAX_FARMERS_PER_CHECKOUT } from '../../stores/cart.store';
 import { formatMoney } from '../../utils/formatters';
-import './CartPage.css';
+import '../../styles/customer/CartPage.css';
 
 /**
  * C-01 (D-004). The cart is client-side only; opening this page is what brings it back in line with

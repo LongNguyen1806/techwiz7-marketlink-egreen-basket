@@ -27,7 +27,7 @@ import { UserMenu } from '../components/common/layout/UserMenu';
 import { useUiStore } from '../stores/ui.store';
 import { cn } from '../lib/cn';
 
-import './AdminLayout.css';
+import '../styles/admin/AdminLayout.css';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },

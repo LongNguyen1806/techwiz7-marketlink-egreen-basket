@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { ThemeToggle } from '../components/layout/ThemeToggle';
-import './AdminAuthLayout.css';
+import '../styles/admin/AdminAuthLayout.css';
 
 /**
  * A-00, the admin sign-in shell (D-027). Deliberately bare: no public header, no sign-up link and
