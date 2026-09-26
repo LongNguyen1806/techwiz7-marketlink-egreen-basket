@@ -1,0 +1,33 @@
+.map-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.map-picker__leaflet {
+  height: 20rem;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.map-picker__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 2rem;
+}
+
+.map-picker__value {
+  font-size: var(--text-sm);
+  color: var(--color-foreground);
+}
+
+.map-picker__value--empty {
+  color: var(--color-muted-foreground);
+}
+
+.map-picker__coord {
+  font-variant-numeric: tabular-nums;
+}

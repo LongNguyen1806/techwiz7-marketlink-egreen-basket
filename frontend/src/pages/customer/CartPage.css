@@ -1,0 +1,101 @@
+.cart-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  grid-template-areas:
+    'header header'
+    'groups summary';
+  gap: var(--space-6);
+  padding: var(--space-6) 0;
+  align-items: start;
+}
+
+.cart-page > :first-child {
+  grid-area: header;
+}
+
+.cart-page__groups {
+  grid-area: groups;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cart-page__summary {
+  grid-area: summary;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-soft);
+}
+
+.cart-page__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-weight: var(--weight-semibold);
+}
+
+.cart-page__total-value {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-page__note {
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.cart-page__warning {
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+}
+
+.cart-page__cta-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cart-page__empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+
+.cart-page__empty-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-muted-foreground);
+}
+
+.cart-page__empty-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 64rem) {
+  .cart-page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'groups'
+      'summary';
+  }
+
+  .cart-page__summary {
+    position: static;
+  }
+}

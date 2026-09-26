@@ -1,0 +1,10 @@
+.directions-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.directions-button__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

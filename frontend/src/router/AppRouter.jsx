@@ -1,11 +1,13 @@
-import { Navigate, Outlet, ScrollRestoration, createBrowserRouter, useRouteError } from 'react-router-dom';
+import { Outlet, ScrollRestoration, createBrowserRouter, useRouteError } from 'react-router-dom';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { PageSkeleton } from '../components/feedback/PageSkeleton';
-import { ROUTES, homePathForRole } from '../constants/routes';
-import { useAuth } from '../hooks/authentication/useAuth';
+import { ROUTES } from '../constants/routes';
 import NotFoundPage from '../pages/errors/NotFoundPage';
+import { publicRoutes } from './routes/public.routes';
 import { authRoutes } from './routes/auth.routes';
+import { adminAuthRoutes } from './routes/adminAuth.routes';
 import { farmerRoutes } from './routes/farmer.routes';
+import { adminRoutes } from './routes/admin.routes';
 
 const page = (load) => async () => ({ Component: (await load()).default });
 
@@ -32,25 +34,17 @@ function RouteErrorPage() {
   );
 }
 
-// "/" is the public home, which arrives with the guest branch. Until then guests go to
-// sign in and signed-in users to their own area.
-function HomeRoute() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace />;
-  if (isLoading || !user) return <PageSkeleton />;
-  const home = homePathForRole(user.role);
-  return home === ROUTES.HOME ? <NotFoundPage /> : <Navigate to={home} replace />;
-}
-
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
     errorElement: <RouteErrorPage />,
     hydrateFallbackElement: <PageSkeleton />,
     children: [
-      { index: true, element: <HomeRoute /> },
+      ...publicRoutes,
       ...authRoutes,
+      ...adminAuthRoutes,
       ...farmerRoutes,
+      ...adminRoutes,
       { path: ROUTES.FORBIDDEN, lazy: page(() => import('../pages/errors/ForbiddenPage')) },
       { path: '*', element: <NotFoundPage /> },
     ],

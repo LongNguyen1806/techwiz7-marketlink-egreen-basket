@@ -31,3 +31,19 @@ export function mapServerErrorsToForm(serverErrors, setError, { fields } = {}) {
   }
   return mapped;
 }
+
+/**
+ * The sentence to show on the form itself for a failure that belongs to no single box.
+ */
+export const formErrorMessage = (apiError) => {
+  if (!apiError) return 'An unexpected error occurred.';
+  if (apiError.code === 'ACCOUNT_LOCKED') {
+    const reason = apiError.fieldErrors?.reason?.[0];
+    return reason
+      ? `Your account has been locked. Reason: ${reason}. Please contact the administrator.`
+      : 'Your account has been locked. Please contact the administrator.';
+  }
+
+  return apiError.friendlyMessage || apiError.message || 'An error occurred. Please try again.';
+};
+

@@ -1,0 +1,22 @@
+.favorite-button {
+  border-radius: var(--radius-full);
+}
+
+.favorite-button__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.favorite-button__icon.is-active {
+  fill: #ef4444;
+  color: #ef4444;
+}
+
+.favorite-button__icon.is-idle {
+  color: var(--color-muted-foreground);
+}
+
+.favorite-button--overlay {
+  background-color: color-mix(in srgb, var(--color-card) 90%, transparent);
+  backdrop-filter: blur(4px);
+}

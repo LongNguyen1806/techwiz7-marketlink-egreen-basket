@@ -1,0 +1,78 @@
+.operating-days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 0;
+  padding: 0;
+}
+
+.operating-days__legend {
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.operating-days__hint {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.operating-days__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.operating-days__option {
+  position: relative;
+  display: inline-flex;
+}
+
+/* The tick itself is invisible but still focusable, so the chip reacts to the keyboard. */
+.operating-days__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.operating-days__day {
+  display: inline-flex;
+  min-width: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition:
+    border-color var(--duration-normal),
+    background-color var(--duration-normal),
+    color var(--duration-normal);
+  transition-timing-function: var(--ease-out);
+}
+
+.operating-days__input:hover + .operating-days__day {
+  border-color: var(--color-primary-300);
+}
+
+.operating-days__input:checked + .operating-days__day {
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-600);
+  color: var(--color-cream);
+}
+
+.operating-days__input:focus-visible + .operating-days__day {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.operating-days__error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}

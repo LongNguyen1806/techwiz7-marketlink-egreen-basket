@@ -1,0 +1,50 @@
+.cart-group {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-soft);
+}
+
+.cart-group__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.cart-group__icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-muted-foreground);
+}
+
+.cart-group__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.cart-group__lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-group__subtotal {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.cart-group__subtotal-label {
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.cart-group__subtotal-value {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
