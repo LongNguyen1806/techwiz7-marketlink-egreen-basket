@@ -241,6 +241,10 @@ if USE_REDIS:
                     {
                         "address": REDIS_URL,
                         "socket_connect_timeout": 5,
+                        # redis-py 8 defaults socket_timeout to 5 s, the same as channels_redis's
+                        # blocking BZPOPMIN (brpop_timeout = 5), so every idle receive timed out and
+                        # closed the socket with 1011. The read timeout must stay above that wait.
+                        "socket_timeout": 10,
                         "socket_keepalive": True,
                         "health_check_interval": 30,
                     }
