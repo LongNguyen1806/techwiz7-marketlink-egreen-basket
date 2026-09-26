@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// reviews/farmer/serializers_farmer.py ReplyReviewFarmerSerializer (REPLY_MAX_LENGTH = 500).
+
 export const REPLY_MAX_LENGTH = 500;
 
 export const replySchema = z.object({

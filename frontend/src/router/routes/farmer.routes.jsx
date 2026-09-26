@@ -5,7 +5,7 @@ import { RequireAuth, RequireRole } from '../guards';
 
 const page = (load) => async () => ({ Component: (await load()).default });
 
-// Farmer pages join here slice by slice as their logic is rewritten.
+
 export const farmerRoutes = [
   {
     element: <RequireAuth />,

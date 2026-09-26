@@ -5,7 +5,7 @@
   color: var(--color-foreground);
 }
 
-/* shadcn peer pattern: control.peer + sibling .label */
+
 .peer:disabled ~ .label,
 .peer[data-disabled] ~ .label {
   cursor: not-allowed;

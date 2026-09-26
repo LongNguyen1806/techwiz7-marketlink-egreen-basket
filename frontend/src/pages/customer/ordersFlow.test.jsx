@@ -21,7 +21,7 @@ const paged = (results) => ok({
   count: results.length, page: 1, page_size: 20, total_pages: 1, next: null, previous: null, results,
 });
 
-/** OrderSummary, as OrderSummaryReadSerializer builds it. */
+
 const SUMMARY = {
   id: 31, status: 'ACCEPTED', is_overdue: false, is_expiring_soon: false, has_pending_change: false, version: 3,
   customer: { id: 4, full_name: 'Alice Nguyen', phone: '0912345678' },
@@ -35,7 +35,7 @@ const SUMMARY = {
   item_count: 2, total_amount: '25.00', created_at: '2026-09-26T08:00:00+07:00',
 };
 
-/** OrderDetail adds the lines, the trail, the change request, and what may be done now. */
+
 const DETAIL = {
   ...SUMMARY,
   pickup_slot_id: 40,
@@ -131,7 +131,7 @@ describe('OrdersPage (C-04)', () => {
     renderAt('/customer/orders');
 
     await waitFor(() => expect(mock.history.get).toHaveLength(1));
-    // CU-05 groups the three open statuses behind `tab=open`; the screen does not list them itself.
+    
     expect(lastGet().params).toMatchObject({ tab: 'open' });
     expect(await screen.findByRole('link', { name: /#31/ })).toBeInTheDocument();
     expect(screen.getByText('Green Stall')).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe('OrdersPage (C-04)', () => {
 
     await userEvent.click(screen.getByRole('checkbox', { name: /accepted/i }));
 
-    // §CU-05: `status` is a comma-separated list of OrderStatus values.
+    
     await waitFor(() => expect(lastGet().params).toMatchObject({ tab: 'open', status: 'ACCEPTED' }));
   });
 
@@ -203,7 +203,7 @@ describe('OrderDetailPage (C-05)', () => {
 
     expect(await screen.findByRole('link', { name: /request a change/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel order/i })).toBeInTheDocument();
-    // An ACCEPTED order offers neither of these, and the page must not guess otherwise.
+    
     expect(screen.queryByRole('button', { name: /reorder/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /review/i })).not.toBeInTheDocument();
   });
@@ -334,7 +334,7 @@ describe('EditOrderPage (C-06)', () => {
 
     await waitFor(() => expect(mock.history.patch).toHaveLength(1));
     const body = JSON.parse(mock.history.patch[0].data);
-    // The serializer rejects one without the other.
+    
     expect(body.pickup_slot_id).toBe(41);
     expect(body.pickup_date).toBe('2026-10-03');
   });

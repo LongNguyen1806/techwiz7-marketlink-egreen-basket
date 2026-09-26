@@ -12,17 +12,12 @@ function readDismissed() {
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
-    // Private mode, blocked storage, or a value someone else wrote: treat it as nothing dismissed.
+    
     return [];
   }
 }
 
-/**
- * N-04 (PU-13, FR-57): what the administrators want everyone — or one role — to know.
- *
- * Dismissal is remembered per notice id in this browser only, so a new notice still gets through and
- * nothing needs to be stored server-side for it.
- */
+
 export function AnnouncementBanner() {
   const { data } = useAnnouncements();
   const [dismissed, setDismissed] = useState(readDismissed);
@@ -36,7 +31,7 @@ export function AnnouncementBanner() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
-      // Storage unavailable: it stays dismissed for this visit only.
+      
     }
   }
 

@@ -5,22 +5,15 @@ import { toast } from 'sonner';
 import { Button } from '../../ui/Button';
 import { useFavorites } from '../../../hooks/queries/customer/useFavorites';
 import { ROLES } from '../../../constants';
-import { useAuthStore } from '../../../stores/auth.store';
+import { useAuth } from '../../../hooks/authentication/useAuth';
 import { cn } from '../../../lib/cn';
 import './FavoriteButton.css';
 
 const LABEL = { farmers: 'farmer', products: 'product', markets: 'market' };
 
-/**
- * The heart on every card (G-02 → G-06, C-08). It reads CU-12 through `useFavorites`, so the state
- * is shared: unhearting a stall on the favourites page also empties its heart in the catalogue.
- *
- * `isFavorite` is the value the list endpoint sent, used until CU-12 has loaded. A guest is invited
- * to sign in instead of firing a request that would come back 403; the screen that owns the modal
- * passes `onRequireSignIn` (G-02 onwards).
- */
+
 export function FavoriteButton({ kind, id, isFavorite, onRequireSignIn, className }) {
-  const role = useAuthStore((state) => state.role);
+  const { role } = useAuth();
   const isCustomer = role === ROLES.CUSTOMER;
   const { isFavorite: isInFavorites, isLoadingIds, toggle } = useFavorites();
   const active = isCustomer && !isLoadingIds ? isInFavorites(kind, id) : Boolean(isFavorite);
@@ -34,7 +27,7 @@ export function FavoriteButton({ kind, id, isFavorite, onRequireSignIn, classNam
       aria-label={active ? `Remove this ${LABEL[kind]} from favorites` : `Save this ${LABEL[kind]} to favorites`}
       className={cn('favorite-button', className)}
       onClick={(event) => {
-        // Cards wrap their body in a link; hearting one must not navigate.
+        
         event.preventDefault();
         event.stopPropagation();
         if (!isCustomer) {

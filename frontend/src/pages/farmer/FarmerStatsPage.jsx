@@ -16,7 +16,7 @@ export default function FarmerStatsPage() {
   }
 
   const data = query.data;
-  // Best sellers come ranked by quantity; this chart compares them by revenue.
+  
   const byRevenue = [...data.top_products].sort((a, b) => b.revenue - a.revenue);
   const period = `${formatDate(data.range.from)} – ${formatDate(data.range.to)}`;
 

@@ -11,13 +11,13 @@ const flattenPages = (data) => ({
   total: data.pages[0]?.count ?? 0,
 });
 
-// Same rule as FarmerProductSerializer.get_availability.
+
 export function availabilityOf({ is_available: isAvailable, stock_quantity: stock }) {
   if (!isAvailable) return 'UNAVAILABLE';
   return stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK';
 }
 
-/** filters: { q, state }. Loaded page by page; old results stay on screen while new ones load. */
+
 export function useFarmerProductList(filters) {
   return useInfiniteQuery({
     queryKey: farmerKeys.products.list(filters),
@@ -31,7 +31,7 @@ export function useFarmerProductList(filters) {
   });
 }
 
-// The edit form must open on the latest data, but a refocus must not wipe what is typed.
+
 export function useFarmerProduct(id, { enabled = true } = {}) {
   const productId = Number(id);
   return useQuery({
@@ -47,14 +47,14 @@ export function useWeeklyTemplatePreview() {
   return useQuery({
     queryKey: farmerKeys.products.weeklyTemplate(),
     queryFn: ({ signal }) => farmerApi.getWeeklyTemplatePreview({ signal }),
-    // "Held" must be current right before the farmer applies the template.
+    
     staleTime: STALE.LIVE,
   });
 }
 
-// ---- Cache helpers -----------------------------------------------------------------------
 
-// Lists hold raw infinite data ({ pages: [{ results }] }); `select` only shapes what components see.
+
+
 function mapListProducts(data, mapProduct) {
   if (!data?.pages) return data;
   return {
@@ -86,7 +86,7 @@ function patchProduct(queryClient, id, patch) {
 
 function useInvalidateProducts() {
   const queryClient = useQueryClient();
-  // Stock drives the weekly template preview and the dashboard as well as the lists.
+  
   return () => {
     void queryClient.invalidateQueries({ queryKey: farmerKeys.products.all() });
     void queryClient.invalidateQueries({ queryKey: farmerKeys.dashboard.all() });
@@ -99,9 +99,9 @@ function notifyRestock(count) {
   }
 }
 
-// ---- Mutations ---------------------------------------------------------------------------
 
-/** Create, or with a productId update. The payload holds only what should be sent. */
+
+
 export function useSaveFarmerProduct(productId) {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateProducts();
@@ -118,7 +118,7 @@ export function useSaveFarmerProduct(productId) {
   });
 }
 
-/** Inline stock edit from the list: shown at once, rolled back if the server refuses. */
+
 export function useUpdateProductStock() {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateProducts();
@@ -161,7 +161,7 @@ export function useArchiveProduct() {
     mutationFn: (id) => farmerApi.archiveProduct(id),
     onMutate: async (id) => {
       const snapshot = await snapshotProducts(queryClient);
-      // Drop it from every list except the "Archived" filter; the refetch adds it there.
+      
       queryClient
         .getQueriesData({ queryKey: farmerKeys.products.lists() })
         .forEach(([key]) => {

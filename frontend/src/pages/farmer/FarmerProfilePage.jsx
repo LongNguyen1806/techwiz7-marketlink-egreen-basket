@@ -39,7 +39,7 @@ function FieldError({ error }) {
 
 FieldError.propTypes = { error: PropTypes.shape({ message: PropTypes.string }) };
 
-// Only changed fields are sent; a new photo only when one was picked.
+
 function changedFields(values, dirtyFields) {
   const payload = {};
   Object.keys(dirtyFields).forEach((key) => {
@@ -80,13 +80,13 @@ export default function FarmerProfilePage() {
 
   const onSubmit = handleSubmit((values) =>
     update.mutate(changedFields(values, dirtyFields), {
-      // The saved profile becomes the new clean state of the form.
+      
       onSuccess: (saved) => reset(profileToFormValues(saved)),
       onError: (error) => {
         const apiError = ApiError.fromUnknown(error);
         const orderIds = apiError.fieldErrors.order_ids;
         if (apiError.is('RESOURCE_IN_USE') && Array.isArray(orderIds)) {
-          // Removing a weekday that open orders still use (D-031).
+          
           setError('operating_days', {
             type: 'server',
             message: `Open orders ${orderIds.map((id) => `#${id}`).join(', ')} are picked up on the days you removed. Handle them first.`,
@@ -129,7 +129,7 @@ export default function FarmerProfilePage() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Every farmer status may edit the profile (backend v1.8), so Save is not write-locked. */}
+          
           <form className="farmer-profile-page__form" onSubmit={onSubmit} noValidate>
             <div className="page-primitive__form-field">
               <Input id="stall_name" label="Stall name" autoComplete="organization" {...register('stall_name')} />

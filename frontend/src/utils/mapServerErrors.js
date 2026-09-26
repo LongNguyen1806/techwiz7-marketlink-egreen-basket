@@ -1,13 +1,6 @@
 const NON_FIELD_KEYS = new Set(['non_field_errors', 'detail']);
 
-/**
- * Puts backend field errors ({ field: [messages] }) onto React Hook Form fields.
- * Dotted paths from the backend ("items.0.quantity") match RHF paths as they are.
- *
- * `fields` limits mapping to fields the form actually renders; anything else, and
- * non-field errors, go to `root.server` so the form can still show them.
- * Returns true when at least one message was placed.
- */
+
 export function mapServerErrorsToForm(serverErrors, setError, { fields } = {}) {
   if (!serverErrors || !setError) return false;
   const known = fields ? new Set(fields) : null;
@@ -32,9 +25,7 @@ export function mapServerErrorsToForm(serverErrors, setError, { fields } = {}) {
   return mapped;
 }
 
-/**
- * The sentence to show on the form itself for a failure that belongs to no single box.
- */
+
 export const formErrorMessage = (apiError) => {
   if (!apiError) return 'An unexpected error occurred.';
   if (apiError.code === 'ACCOUNT_LOCKED') {

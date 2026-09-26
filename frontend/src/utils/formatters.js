@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 
-// D-020: money is USD, times are shown in GMT+7 whatever the viewer's own time zone is.
+
 export const APP_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 const EMPTY = '—';
@@ -40,16 +40,16 @@ export function moneyToNumber(amount) {
   return Number.isFinite(value) ? value : 0;
 }
 
-/** "$12.50". The API sends money as decimal strings such as "12.50". */
+
 export function formatMoney(amount) {
   if (amount === null || amount === undefined || amount === '') return EMPTY;
   return moneyFormatter.format(moneyToNumber(amount));
 }
 
-/** @deprecated USD is the only currency (D-020). Use formatMoney. */
+
 export const formatVnd = formatMoney;
 
-/** "26/09/2026". A "YYYY-MM-DD" date is formatted as-is, never shifted by a time zone. */
+
 export function formatDate(value) {
   if (!value) return EMPTY;
   if (typeof value === 'string' && DATE_ONLY.test(value)) {
@@ -62,7 +62,7 @@ export function formatDate(value) {
   return `${p.day}/${p.month}/${p.year}`;
 }
 
-/** "14:30". Also accepts a bare "14:30" / "14:30:00" time from the API. */
+
 export function formatTime(value) {
   if (!value) return EMPTY;
   if (typeof value === 'string' && TIME_ONLY.test(value)) return value.slice(0, 5);
@@ -72,19 +72,19 @@ export function formatTime(value) {
   return `${p.hour}:${p.minute}`;
 }
 
-/** "26/09/2026 14:30" */
+
 export function formatDateTime(value) {
   const date = toDate(value);
   if (!date) return EMPTY;
   return `${formatDate(date)} ${formatTime(date)}`;
 }
 
-/** "08:00–10:00" */
+
 export function formatTimeRange(start, end) {
   return `${formatTime(start)}–${formatTime(end)}`;
 }
 
-/** "26/09/2026 08:00–10:00", or both full date-times when the window spans two days. */
+
 export function formatPickupWindow(start, end) {
   if (!start || !end) return EMPTY;
   if (formatDate(start) === formatDate(end)) {
@@ -93,14 +93,14 @@ export function formatPickupWindow(start, end) {
   return `${formatDateTime(start)} – ${formatDateTime(end)}`;
 }
 
-/** "3 minutes ago" */
+
 export function formatRelative(value) {
   const date = toDate(value);
   if (!date) return EMPTY;
   return formatDistanceToNow(date, { addSuffix: true, locale: enUS });
 }
 
-/** "YYYY-MM-DD" in GMT+7, for date query parameters such as pickup_date. */
+
 export function toApiDate(value = new Date()) {
   const date = toDate(value);
   if (!date) return '';

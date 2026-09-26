@@ -46,7 +46,7 @@ describe('useFavorites', () => {
     mock.onGet('/customer/favorite-ids/').reply(200, ok(IDS));
     renderHook(() => useFavorites(), { wrapper });
 
-    // A guest calling CU-12 would only collect a 403.
+    
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(mock.history.get).toHaveLength(0);
   });
@@ -77,9 +77,9 @@ describe('useFavorites', () => {
   });
 
   it('puts the heart back when the request fails', async () => {
-    // Only the first read lands; the refetch that follows the failure is left hanging, so the cache
-    // shows exactly what the rollback left. The assertion is on the cache rather than on the hook's
-    // getter, because the getter lags a render behind and would pass even with no rollback at all.
+    
+    
+    
     let reads = 0;
     mock.onGet('/customer/favorite-ids/').reply(() => {
       reads += 1;
@@ -99,7 +99,7 @@ describe('useFavorites', () => {
   });
 
   it('drops a favourite through the id in the path', async () => {
-    // The GET reads live server state, so the refetch that follows the toggle tells the truth.
+    
     let stored = { ...IDS };
     mock.onGet('/customer/favorite-ids/').reply(() => [200, ok(stored)]);
     mock.onDelete('/customer/favorite-markets/11/').reply(() => {

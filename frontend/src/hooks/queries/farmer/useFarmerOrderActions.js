@@ -16,11 +16,7 @@ export const ORDER_ACTIONS = Object.freeze({
 
 const A = ORDER_ACTIONS;
 
-/**
- * Actions the farmer may take now. The detail endpoint sends `allowed_actions`; list rows
- * do not, so the same rules as the backend (FarmerOrderDetailSerializer.get_allowed_actions)
- * are applied to the summary fields. The server still has the final say.
- */
+
 export function allowedOrderActions(order, now = Date.now()) {
   if (Array.isArray(order.allowed_actions)) return order.allowed_actions;
 
@@ -73,17 +69,13 @@ function runAction({ action, order, reason, soldOutProductIds }) {
   }
 }
 
-// Wording when the order moved on before the action reached the server.
+
 const STALE_ORDER = {
   title: 'This order was just updated',
   description: "We've loaded its latest details. Check them and try again.",
 };
 
-/**
- * Status actions on one order. Not optimistic: every action can be refused by time rules
- * or a newer version, so the UI waits for the server and then shows its answer.
- * mutate({ action, order, reason?, soldOutProductIds? })
- */
+
 export function useFarmerOrderAction() {
   const queryClient = useQueryClient();
 
@@ -96,7 +88,7 @@ export function useFarmerOrderAction() {
       },
     },
     onSuccess: (updatedOrder, { action }) => {
-      // The response is the full order detail: show it without another request.
+      
       queryClient.setQueryData(farmerKeys.orders.detail(updatedOrder.id), updatedOrder);
       notify.success(SUCCESS_MESSAGES[action] ?? 'Order updated');
     },
@@ -104,8 +96,8 @@ export function useFarmerOrderAction() {
       void queryClient.invalidateQueries({ queryKey: farmerKeys.orders.detail(order.id) });
     },
     onSettled: () => {
-      // A status change moves the order between tabs and changes counts, the prep list,
-      // held stock and the dashboard figures.
+      
+      
       [
         farmerKeys.orders.lists(),
         farmerKeys.orders.tabCounts(),

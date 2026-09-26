@@ -2,7 +2,7 @@
 import PropTypes from 'prop-types';
 import { Button } from '../ui/Button';
 import '../../styles/common/ErrorBoundary.css';
-/** Catches render errors in the React tree and shows a recovery UI. */
+
 export class ErrorBoundary extends Component {
     state = { hasError: false };
     static getDerivedStateFromError() {

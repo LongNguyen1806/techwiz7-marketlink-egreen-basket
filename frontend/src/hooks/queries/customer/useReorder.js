@@ -5,11 +5,7 @@ import { ordersApi } from '../../../services/customer/ordersApi';
 import { ApiError } from '../../../lib/ApiError';
 import { useCartStore } from '../../../stores/cart.store';
 
-/**
- * CU-09 (C-04, C-05). The preview writes nothing: it returns what can be bought again at today's
- * prices, plus what it had to leave out. Those leftovers are named out loud — a silent reorder that
- * quietly drops half the lines is worse than no reorder.
- */
+
 export function useReorder() {
   const navigate = useNavigate();
   const addItem = useCartStore((state) => state.addItem);

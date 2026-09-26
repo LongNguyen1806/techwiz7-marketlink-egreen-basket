@@ -137,7 +137,7 @@
   color: var(--color-primary-300);
 }
 
-/* G-11 only: the notice a new stall lands on while it waits for an admin (D-015). */
+
 .register-form__success {
   display: flex;
   flex-direction: column;

@@ -10,7 +10,7 @@ import './ChangePasswordForm.css';
 
 const FIELDS = ['current_password', 'new_password', 'confirm_password'];
 
-/** C-11 / F-11 / A-12 (AU-07). This device stays signed in; every other one is signed out (D-021). */
+
 export function ChangePasswordForm() {
   const { changePassword, changePasswordPending } = useAuth();
   const { formError, report, clear } = useServerErrors(FIELDS);

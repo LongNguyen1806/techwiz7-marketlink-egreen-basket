@@ -11,16 +11,10 @@ import { Button } from '../../ui/Button';
 import { cn } from '../../../lib/cn';
 import './ProductCard.css';
 
-/**
- * One product, as the catalogue and the favourites page show it (G-04, G-05, C-08).
- *
- * The card never touches the cart itself: `onAddToCart` receives the whole product so the caller
- * decides the quantity and where the line is stored (C-01 keeps it in Zustand). Without a handler
- * the card is a display card, which is what a guest screen needs.
- */
+
 export function ProductCard({ product, onAddToCart, onRequireSignIn, className }) {
   const canAdd = product.availability === 'IN_STOCK' && product.stock_quantity > 0;
-  // D-025: only a sell-out can be followed by a restock alert, and the heart is what subscribes.
+  
   const canWatchRestock = product.availability === 'OUT_OF_STOCK';
 
   return (

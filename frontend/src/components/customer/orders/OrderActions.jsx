@@ -3,13 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '../../ui/Button';
 import './OrderActions.css';
 
-/**
- * The buttons of §8.1, taken from the server's `allowed_actions` rather than worked out here.
- *
- * The rules behind it — before the cut-off, the current status, whether anything is left to review —
- * live in `customer_allowed_actions`, and a second copy in the browser would drift from the FSM the
- * moment either changes (D-006).
- */
+
 export function OrderActions({ order, onCancel, onReorder, reorderPending = false, size = 'sm' }) {
   const allowed = order.allowed_actions ?? [];
   const base = `/customer/orders/${order.id}`;

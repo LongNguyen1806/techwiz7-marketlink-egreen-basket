@@ -1,5 +1,5 @@
 :root {
-  /* Typography */
+  
   --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-sans: Inter, system-ui, sans-serif;
 
@@ -23,7 +23,7 @@
   --weight-bold: 700;
   --weight-extrabold: 800;
 
-  /* Spacing (4px base) */
+  
   --space-0: 0;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -38,7 +38,7 @@
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Layout */
+  
   --container-sm: 40rem;
   --container-md: 48rem;
   --container-lg: 64rem;
@@ -47,7 +47,7 @@
   --header-height: 4rem;
   --sidebar-width: 16rem;
 
-  /* Brand / palette */
+  
   --color-cream: #fafaf5;
 
   --color-primary-50: #f0fdf4;
@@ -87,7 +87,7 @@
   --color-order-expired: #94a3b8;
   --color-order-noshow: #ea580c;
 
-  /* Semantic surfaces */
+  
   --color-background: #fafaf5;
   --color-foreground: #0f172a;
   --color-card: #ffffff;
@@ -100,7 +100,7 @@
   --color-secondary: #e8f5e9;
   --color-secondary-foreground: #14532d;
 
-  /* Radius */
+  
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -108,11 +108,11 @@
   --radius-2xl: 1.5rem;
   --radius-full: 9999px;
 
-  /* Shadows */
+  
   --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
   --shadow-soft-lg: 0 2px 4px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(15, 23, 42, 0.08);
 
-  /* Motion */
+  
   --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-fast: 150ms;
   --duration-normal: 250ms;
@@ -120,7 +120,7 @@
   --animate-fade-up: fade-up 0.85s cubic-bezier(0.32, 0.72, 0, 1) both;
   --animate-gentle-zoom: gentle-zoom 22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 
-  /* Breakpoints (reference for media queries in component CSS) */
+  
   --bp-sm: 640px;
   --bp-md: 768px;
   --bp-lg: 1024px;

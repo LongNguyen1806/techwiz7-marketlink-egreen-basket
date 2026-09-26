@@ -4,13 +4,7 @@ import { Badge } from '../../ui/Badge';
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../../../utils/formatters';
 import './ChangeRequestPanel.css';
 
-/**
- * The change request waiting on an ACCEPTED order (D-030).
- *
- * The order still holds its old contents — the farmer has to accept before anything moves — so this
- * panel shows both sides. Every number here comes from `pending_change`, including `current_quantity`
- * and the estimated total, so the two sides cannot disagree with the server.
- */
+
 export function ChangeRequestPanel({ change }) {
   return (
     <section className="change-request" aria-labelledby="change-request-title">

@@ -12,10 +12,7 @@ import { useReviewFarmer, useReviewItem } from '../../hooks/queries/customer/use
 import { ApiError } from '../../lib/ApiError';
 import '../../styles/customer/ReviewOrderPage.css';
 
-/**
- * One review form: the stall (CU-10) or one line of the order (CU-11). A rating is required, the
- * comment is not — an empty comment is sent as null, which is what the serializer stores.
- */
+
 function ReviewForm({ subject, name, onSubmit, onError }) {
   const [rating, setRating] = useState(null);
   const [comment, setComment] = useState('');
@@ -64,12 +61,7 @@ ReviewForm.propTypes = {
   onError: PropTypes.func.isRequired,
 };
 
-/**
- * C-07 (CU-10, CU-11, FR-26). Only a COMPLETED order gets here, and `review_state` from the server
- * says exactly what is left: the stall, and the ids of the lines with no review yet. Each subject can
- * be reviewed once — a second attempt is 422 REVIEW_NOT_ALLOWED — so the forms disappear as they are
- * used rather than being guessed at locally.
- */
+
 export default function ReviewOrderPage() {
   const { orderId } = useParams();
   const { data: order, isLoading } = useCustomerOrder(orderId);

@@ -10,11 +10,7 @@ import { ProductCard } from '../../components/common/cards/ProductCard';
 import { useFavoriteList } from '../../hooks/queries/customer/useFavorites';
 import '../../styles/customer/FavoritesPage.css';
 
-/**
- * C-08 (D-019). Each tab is its own request and only the open one is mounted, so opening the page
- * costs one call. A row that stops being publicly on sale drops out of the list by itself (§6.2),
- * while a sold-out product stays: hearting it is what subscribes to its restock alert (D-025).
- */
+
 function FavoriteList({ kind, render }) {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useFavoriteList(kind, page);

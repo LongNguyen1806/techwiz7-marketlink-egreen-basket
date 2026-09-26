@@ -6,7 +6,7 @@ import {
   registerFarmerSchema,
 } from './auth.schemas';
 
-/** The client rules must not be looser than the serializers, or the form sends a request that 400s. */
+
 const CUSTOMER = {
   email: 'Alice@Example.com',
   full_name: 'Alice Nguyen',
@@ -80,7 +80,7 @@ describe('registerFarmerSchema (AU-02)', () => {
   });
 
   it('requires at least one operating day (D-031)', () => {
-    // The serializer rejects an empty list, so the form has to ask for it.
+    
     expect(errorFor(registerFarmerSchema, { ...FARMER, operating_days: [] }, 'operating_days')).not.toBeNull();
     expect(errorFor(registerFarmerSchema, { ...FARMER, operating_days: undefined }, 'operating_days')).not.toBeNull();
   });

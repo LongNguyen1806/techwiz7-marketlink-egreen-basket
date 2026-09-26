@@ -6,7 +6,7 @@ import { STALE } from '../../../constants/staleTimes';
 
 export const ORDERS_PAGE_SIZE = 20;
 
-// Stable select functions, so React Query only recomputes when the data changes.
+
 const flattenPages = (data) => ({
   orders: data.pages.flatMap((page) => page.results),
   total: data.pages[0]?.count ?? 0,
@@ -14,11 +14,7 @@ const flattenPages = (data) => ({
 
 const byPickupEnd = (a, b) => new Date(a.pickup_end_at) - new Date(b.pickup_end_at);
 
-/**
- * One order tab, loaded page by page ("Load more").
- * filters: { tab, q, pickup_from, pickup_to, overdue }. A new filter set keeps showing the
- * previous results until the new ones arrive, and the older request is cancelled.
- */
+
 export function useFarmerOrderList(filters, { enabled = true } = {}) {
   return useInfiniteQuery({
     queryKey: farmerKeys.orders.list(filters),
@@ -33,10 +29,7 @@ export function useFarmerOrderList(filters, { enabled = true } = {}) {
   });
 }
 
-/**
- * Overdue = accepted or ready orders past the end of their pickup window. The backend
- * filters overdue inside one tab, so this view merges the two tabs.
- */
+
 export function useFarmerOverdueOrders(filters, { enabled = true } = {}) {
   const accepted = useFarmerOrderList({ ...filters, tab: 'accepted', overdue: true }, { enabled });
   const ready = useFarmerOrderList({ ...filters, tab: 'ready', overdue: true }, { enabled });
@@ -68,7 +61,7 @@ export function useFarmerOrderTabCounts() {
   });
 }
 
-// Actions send this order's version as If-Match, so it must be fresh.
+
 export function useFarmerOrder(id, { enabled = true } = {}) {
   const orderId = Number(id);
   return useQuery({

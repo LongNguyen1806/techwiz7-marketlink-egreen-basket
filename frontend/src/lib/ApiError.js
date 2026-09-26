@@ -7,10 +7,10 @@ export class ApiError extends Error {
     this.status = status;
     this.code = code ?? (status === 0 ? CLIENT_ERROR_CODES.NETWORK_ERROR : CLIENT_ERROR_CODES.UNKNOWN);
     this.fieldErrors = fieldErrors ?? {};
-    // The backend's own sentence. Shown only where errorMap allows it, never the code.
+    
     this.apiMessage = message;
     this.data = data;
-    // Backend request_id, quoted to support on server errors.
+    
     this.requestId = requestId ?? null;
   }
 
@@ -30,7 +30,7 @@ export class ApiError extends Error {
     return Object.keys(this.fieldErrors).length > 0;
   }
 
-  /** { title, description } in plain English. */
+  
   get friendly() {
     return describeError(this);
   }

@@ -31,7 +31,7 @@
   box-shadow: var(--shadow-soft-lg);
 }
 
-/* Something waiting at a stall is the one number worth interrupting the page for. */
+
 .customer-dashboard__stat.is-highlighted {
   border-color: var(--color-order-ready);
   background-color: color-mix(in srgb, var(--color-order-ready) 10%, var(--color-card));

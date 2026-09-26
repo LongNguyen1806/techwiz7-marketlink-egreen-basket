@@ -24,7 +24,7 @@ export default function FarmerStockTemplatePage() {
   }
 
   const { rows, overdue_orders: overdueOrders } = previewQuery.data;
-  // Products without a weekly default keep their stock, so only these are reset.
+  
   const templated = rows.filter((row) => row.weekly_default_quantity !== null);
 
   return (

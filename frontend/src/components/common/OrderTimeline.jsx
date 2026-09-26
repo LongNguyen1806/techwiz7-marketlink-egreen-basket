@@ -17,8 +17,8 @@ const ENDINGS = {
   NO_SHOW: { label: 'No-show', modifier: 'order-timeline__branch--warning' },
 };
 
-// Steps the order actually passed through. With the status history, an order declined
-// after acceptance still shows Placed and Accepted as done.
+
+
 function reachedSteps(status, history) {
   const reached = new Set(['PLACED']);
   history.forEach((entry) => reached.add(entry.to_status));

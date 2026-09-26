@@ -73,7 +73,7 @@ function ReviewItem({ review }) {
       </div>
     );
   } else if (review.is_hidden_by_admin) {
-    // The backend refuses replies to hidden reviews.
+    
     footer = <p className="page-primitive__muted-xs page-primitive__mt-3">Hidden by an administrator, so it can&apos;t be answered.</p>;
   } else {
     footer = <ReplyForm review={review} />;

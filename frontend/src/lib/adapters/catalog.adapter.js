@@ -50,7 +50,7 @@ function availabilityOf(raw, stock) {
         return 'OUT_OF_STOCK';
     return 'IN_STOCK';
 }
-/** DRF ModelSerializer returns category/farmer as PK. UI reads nested name fields. */
+
 export function adaptProduct(raw) {
     if (!isRecord(raw) || typeof raw.id !== 'number' || typeof raw.name !== 'string') {
         return null;

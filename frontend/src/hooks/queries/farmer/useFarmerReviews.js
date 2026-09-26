@@ -6,7 +6,7 @@ import { notify } from '../../../lib/toast';
 
 export const REVIEWS_PAGE_SIZE = 20;
 
-// Stall and product reviews come from two tables, so an id alone is not unique.
+
 export const reviewKey = (review) => `${review.type}-${review.id}`;
 
 const flattenPages = (data) => ({
@@ -14,7 +14,7 @@ const flattenPages = (data) => ({
   total: data.pages[0]?.count ?? 0,
 });
 
-/** filters: { type, rating, replied }. New reviews arrive slowly, so a minute is fresh enough. */
+
 export function useFarmerReviews(filters) {
   return useInfiniteQuery({
     queryKey: farmerKeys.reviews.list(filters),
@@ -33,7 +33,7 @@ export function useReplyToReview() {
   return useMutation({
     mutationFn: farmerApi.replyToReview,
     onSuccess: (review) => {
-      // Show the reply in place at once; the refetch then moves it between filters.
+      
       const key = reviewKey(review);
       queryClient.setQueriesData({ queryKey: farmerKeys.reviews.all() }, (data) =>
         data?.pages

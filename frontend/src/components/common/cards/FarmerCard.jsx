@@ -8,10 +8,7 @@ import { DAY_OF_WEEK_LABELS } from '../../../utils/helpers/geo';
 import { cn } from '../../../lib/cn';
 import './FarmerCard.css';
 
-/**
- * One stall (G-03, G-06, G-13, C-08). The operating days are shown because a pickup can only be
- * booked on a day the stall is open (D-031), so they decide whether ordering here is worth a click.
- */
+
 export function FarmerCard({ farmer, onRequireSignIn, className }) {
   return (
     <article className={cn('farmer-card', className)}>

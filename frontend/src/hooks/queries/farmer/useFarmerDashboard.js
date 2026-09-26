@@ -9,13 +9,13 @@ export const MAX_RANGE_DAYS = 366;
 export const DASHBOARD_DEFAULT_DAYS = 7;
 export const STATS_RANGE_DAYS = 30;
 
-/** The last `days` days up to today, as YYYY-MM-DD in GMT+7. */
+
 export function lastDaysRange(days) {
   const now = Date.now();
   return { from: toApiDate(new Date(now - (days - 1) * DAY_MS)), to: toApiDate(new Date(now)) };
 }
 
-/** Same rules as orders/services/dashboard.py resolve_date_range. Returns a message or null. */
+
 export function dateRangeError({ from, to }) {
   if (!from || !to) return 'Choose both dates';
   if (from > to) return 'The start date must be on or before the end date';
@@ -24,7 +24,7 @@ export function dateRangeError({ from, to }) {
   return null;
 }
 
-// Charts need numbers; the API sends money as decimal strings.
+
 const toChartData = (data) => ({
   ...data,
   revenue_by_day: data.revenue_by_day.map((day) => ({ ...day, revenue: moneyToNumber(day.revenue) })),
@@ -42,12 +42,12 @@ function useDashboardQuery(range, { staleTime, enabled = true }) {
   });
 }
 
-// Order events refresh it through the notification socket; 30 s covers the rest.
+
 export function useFarmerDashboard(range) {
   return useDashboardQuery(range, { staleTime: STALE.SHORT, enabled: !dateRangeError(range) });
 }
 
-// The stats page reads the same endpoint over a fixed 30-day window.
+
 export function useFarmerStats() {
   return useDashboardQuery(lastDaysRange(STATS_RANGE_DAYS), { staleTime: STALE.MINUTE });
 }

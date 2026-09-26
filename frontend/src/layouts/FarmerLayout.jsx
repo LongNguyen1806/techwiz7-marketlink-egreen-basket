@@ -73,10 +73,10 @@ export function FarmerLayout() {
   const mobileNavOpen = useUiStore((state) => state.mobileNavOpen);
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
 
-  // One realtime connection for the whole farmer workspace.
+  
   useNotificationSocket();
 
-  // Close the mobile menu once a link has been followed.
+  
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname, setMobileNavOpen]);

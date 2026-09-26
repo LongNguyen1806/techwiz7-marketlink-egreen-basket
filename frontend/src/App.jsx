@@ -8,7 +8,7 @@ import { useAuthSessionSync } from './hooks/authentication/useAuth';
 import { queryClient } from './lib/queryClient';
 import { router } from './router/AppRouter';
 
-// Loading keeps sonner's own animated spinner.
+
 const TOAST_ICONS = {
   success: <CircleCheck size={18} />,
   error: <CircleX size={18} />,

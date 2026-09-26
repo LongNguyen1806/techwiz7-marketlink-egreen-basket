@@ -10,7 +10,7 @@ import { formatDateTime, formatRelative } from '../../utils/formatters';
 import { cn } from '../../lib/cn';
 import '../../styles/customer/NotificationsPage.css';
 
-/** C-09 (NO-01 → NO-04, FR-24 / FR-28). The same list serves F-10 from the farmer's own route. */
+
 export default function NotificationsPage() {
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
                     to={note.target_url}
                     className="notifications-page__item-title"
                     onClick={() => {
-                      // Opening it is reading it; NO-03 is idempotent, so a repeat is harmless.
+                      
                       if (!note.is_read) markOne.mutate(note.id);
                     }}
                   >

@@ -9,7 +9,7 @@ import { DAY_OF_WEEK_LABELS } from '../../../utils/helpers/geo';
 import { cn } from '../../../lib/cn';
 import './MarketCard.css';
 
-/** One market (G-01 → G-03, C-00, C-08): when it opens, how many stalls, and how to get there. */
+
 export function MarketCard({ market, highlighted = false, onHover, onRequireSignIn, className }) {
   return (
     <article

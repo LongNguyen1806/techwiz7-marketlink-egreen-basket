@@ -28,7 +28,7 @@ const MANGO = {
   name: 'Mango', unit: 'kg', price: '8.00', image: null,
 };
 
-/** What PU-10 sends back for those two ids. */
+
 const CATALOGUE = [
   {
     id: 4, name: 'Da Lat lettuce', price: '12.50', unit: 'kg', image: null, stock_quantity: 20,
@@ -121,7 +121,7 @@ describe('CartPage (C-01)', () => {
     const green = await screen.findByRole('region', { name: /green stall/i });
     expect(within(green).getByText('Da Lat lettuce')).toBeInTheDocument();
     expect(within(green).queryByText('Mango')).not.toBeInTheDocument();
-    // The line amount and the stall subtotal are the same number here, so ask for the subtotal itself.
+    
     expect(screen.getByTestId('cart-subtotal-9')).toHaveTextContent('$25.00');
     expect(screen.getByTestId('cart-subtotal-11')).toHaveTextContent('$24.00');
     expect(screen.getByTestId('cart-total')).toHaveTextContent('$49.00');
@@ -138,7 +138,7 @@ describe('CartPage (C-01)', () => {
     useCartStore.getState().addItem({ ...LETTUCE, price: '9.00' }, 2);
     renderAt('/customer/cart');
 
-    // The cart was saved at $9.00; the catalogue now says $12.50, and CU-04 will charge $12.50.
+    
     await waitFor(() => expect(screen.getByTestId('cart-total')).toHaveTextContent('$25.00'));
   });
 
@@ -210,7 +210,7 @@ describe('CheckoutPage (C-02)', () => {
     fillCart();
     renderAt('/customer/checkout');
 
-    // PU-08 filters these out; this is the window that expires while the page is open.
+    
     const slot = await screen.findByRole('radio', { name: /06:00\u201309:00/ });
     expect(slot).toBeDisabled();
     expect(screen.getByTitle(/pre-order cutoff has passed/i)).toBeInTheDocument();
@@ -271,7 +271,7 @@ describe('CheckoutPage (C-02)', () => {
 
     const lettuce = await screen.findByRole('listitem', { name: /da lat lettuce/i });
     expect(within(lettuce).getByText('Only 1 kg left')).toBeInTheDocument();
-    // All or nothing: nothing was created, so the cart still holds both lines.
+    
     expect(useCartStore.getState().lines).toHaveLength(2);
   });
 
@@ -291,7 +291,7 @@ describe('CheckoutPage (C-02)', () => {
     expect(screen.getByRole('link', { name: /my orders/i })).toHaveAttribute('href', '/customer/orders');
   });
 
-  // That a *failed* checkout leaves the cart alone is asserted in the shortage test above.
+  
   it('empties the cart once the orders exist', async () => {
     mock.onPost('/customer/orders/').reply(201, ok({ orders: [PLACED_ORDER] }));
     fillCart();
@@ -316,7 +316,7 @@ describe('CheckoutSuccessPage (C-03)', () => {
   });
 
   it('falls back to the order list when the page is opened on its own', () => {
-    // A reload loses the navigation state; the orders themselves are safe on the server.
+    
     renderAt('/customer/checkout/success');
 
     expect(screen.getByRole('link', { name: /view my orders/i })).toBeInTheDocument();

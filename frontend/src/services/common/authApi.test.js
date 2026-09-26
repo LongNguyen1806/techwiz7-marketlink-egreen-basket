@@ -4,7 +4,7 @@ import axiosClient from '../../lib/axiosClient';
 import { authApi } from './authApi';
 import { DASHBOARD_PATH } from '../../constants';
 
-/** Pass 4B §4.1: the auth endpoints, exactly as the backend accepts them. */
+
 const ME = {
   success: true, message: 'OK', errors: {},
   data: { id: 4, email: 'alice@example.com', role: 'CUSTOMER', display_name: 'Alice Nguyen', farmer_status: null },
@@ -44,7 +44,7 @@ describe('endpoints match the API contract', () => {
   });
 
   it('AU-05 logs out with the refresh token, not the access token', async () => {
-    // The backend revokes the session by its refresh token; sending `access` is a 400.
+    
     mock.onPost('/auth/logout/').reply(204);
 
     await authApi.logout({ refresh: 'refresh-1' });
@@ -62,7 +62,7 @@ describe('endpoints match the API contract', () => {
   });
 
   it('AU-06 takes farmer_status straight from /auth/me/ without a second request', async () => {
-    // Me already carries farmer_status (§3.1); there is no /farmer-profiles/me/ endpoint.
+    
     mock.onGet('/auth/me/').reply(200, {
       ...ME,
       data: { ...ME.data, role: 'FARMER', display_name: 'Green Stall', farmer_status: 'PENDING' },
@@ -75,7 +75,7 @@ describe('endpoints match the API contract', () => {
   });
 
   it('never reaches for an endpoint the backend does not have', async () => {
-    // A farmer row with no status must not trigger a second call: /farmer-profiles/me/ does not exist.
+    
     mock.onGet('/auth/me/').reply(200, {
       ...ME,
       data: { ...ME.data, role: 'FARMER', display_name: 'Green Stall', farmer_status: null },
@@ -88,7 +88,7 @@ describe('endpoints match the API contract', () => {
   });
 
   it('AU-07 sends confirm_password, which the serializer requires', async () => {
-    // ChangePasswordWriteSerializer declares confirm_password and checks it matches; dropping it is a 400.
+    
     mock.onPost('/auth/change-password/').reply(200, { success: true, message: 'OK', data: {}, errors: {} });
     const body = {
       current_password: 'Mango2026x', new_password: 'Papaya2027z', confirm_password: 'Papaya2027z',
@@ -108,7 +108,7 @@ describe('endpoints match the API contract', () => {
 
     expect(customer.user.role).toBe('CUSTOMER');
     expect(farmer.user.farmer_status).toBe('PENDING');
-    // Both serializers require confirm_password too.
+    
     expect(JSON.parse(mock.history.post[0].data).confirm_password).toBe('x');
     expect(JSON.parse(mock.history.post[1].data).confirm_password).toBe('x');
     expect(mock.history.post.map((call) => call.url)).toEqual([
@@ -129,7 +129,7 @@ describe('endpoints match the API contract', () => {
 
 describe('where each role lands after signing in', () => {
   it('points every role at the dashboard route of Pass 3', () => {
-    // Pass 3 route table: C-00 /customer, F-01 /farmer, A-01 /admin.
+    
     expect(DASHBOARD_PATH).toEqual({ CUSTOMER: '/customer', FARMER: '/farmer', ADMIN: '/admin' });
   });
 });

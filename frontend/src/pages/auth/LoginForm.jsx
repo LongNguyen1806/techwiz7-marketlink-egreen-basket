@@ -11,8 +11,8 @@ import { loginSchema } from '../../schemas/common/auth.schema';
 import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
 import '../../styles/auth/LoginForm.css';
 
-// Accounts created by `python manage.py seed_minimal` with its local-only default password.
-// Shown in development builds only. Admins sign in through their own portal.
+
+
 const DEMO_ACCOUNTS = import.meta.env.DEV
   ? [
       { email: 'customer@marketlink.local', label: 'Customer', password: 'Demo@12345', icon: UserRound },

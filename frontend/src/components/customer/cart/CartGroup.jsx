@@ -5,10 +5,7 @@ import { CartLine } from './CartLine';
 import { formatMoney } from '../../../utils/formatters';
 import './CartGroup.css';
 
-/**
- * One stall's block in the cart (C-01). The grouping is not cosmetic: checkout turns each block into
- * its own order with its own pickup window, which is why the totals are shown per stall too.
- */
+
 export function CartGroup({ group, onQuantityChange, onRemove }) {
   const headingId = `cart-group-${group.farmer_id}`;
 

@@ -22,7 +22,7 @@ import { formatMoney, formatPickupWindow, toApiDate } from '../../utils/formatte
 import { unitLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerOrdersPage.css';
 
-// UI tabs and the backend tab each maps to. "Overdue" is a filter over accepted + ready.
+
 const TABS = [
   { id: 'pending', label: 'Pending', apiTab: 'placed', countKey: 'placed' },
   { id: 'accepted', label: 'Accepted', apiTab: 'accepted', countKey: 'accepted' },
@@ -182,7 +182,7 @@ export default function FarmerOrdersPage() {
   const showOrders = filters.view !== 'picking';
   const isOverdue = activeTab.id === 'overdue';
 
-  // One pickup date filters on a single day: pickup_from = pickup_to.
+  
   const listFilters = {
     q: search.term || undefined,
     pickup_from: filters.date || undefined,

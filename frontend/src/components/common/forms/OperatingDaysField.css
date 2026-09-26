@@ -28,7 +28,7 @@
   display: inline-flex;
 }
 
-/* The tick itself is invisible but still focusable, so the chip reacts to the keyboard. */
+
 .operating-days__input {
   position: absolute;
   inset: 0;

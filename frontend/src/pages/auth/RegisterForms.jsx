@@ -199,7 +199,7 @@ export function RegisterFarmerForm() {
       onError: (error) => {
         const { fieldErrors } = ApiError.fromUnknown(error);
         mapServerErrorsToForm(fieldErrors, setError, { fields: Object.keys(FARMER_DEFAULTS) });
-        // A problem with an account detail (e.g. email already used) lives on step 1.
+        
         if (REGISTER_FARMER_STEP_1.some((field) => fieldErrors[field])) setStep(1);
       },
     }),

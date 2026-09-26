@@ -20,15 +20,7 @@ const FIELDS = [
 ];
 const STEP_ONE_FIELDS = ['email', 'phone', 'password', 'confirm_password'];
 
-/**
- * G-11 (AU-02). Two steps: the account, then the stall. No coordinates are asked for — the backend
- * geocodes the address it is given (D-032).
- *
- * The stall is PENDING until an admin approves it (D-015), so a successful submission stays on an
- * approval notice rather than jumping to the Farmer workspace. The tokens AU-02 returns are held
- * until "Go to dashboard" is pressed: starting the session any earlier would make GuestOnlyRoute
- * redirect the page away before the notice could be read.
- */
+
 export function RegisterFarmerForm() {
   const navigate = useNavigate();
   const { registerFarmer, registerFarmerPending, startSession } = useAuth();

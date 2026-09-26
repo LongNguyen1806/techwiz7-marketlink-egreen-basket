@@ -12,17 +12,10 @@ function coerce(raw, fallback) {
   return raw;
 }
 
-/**
- * Filters kept in the URL query string, so refresh, Back and shared links keep them.
- * `defaults` lists every filter with its default; a filter at its default is left out of
- * the URL. Changing any filter other than the page goes back to page 1.
- *
- *   const { filters, setFilters } = useUrlFilters({ tab: 'placed', page: 1 });
- *   setFilters({ tab: 'accepted' });
- */
+
 export function useUrlFilters(defaults) {
   const [searchParams, setSearchParams] = useSearchParams();
-  // Callers pass an object literal; compare by content, not identity.
+  
   const defaultsKey = JSON.stringify(defaults);
 
   const filters = useMemo(() => {

@@ -55,7 +55,8 @@ export function NotificationBell({ listPath }) {
           className="notification-bell__trigger"
         >
           <Bell className="notification-bell__icon" />
-          {unread > 0 ? <span className="notification-bell__badge">{unread > 9 ? '9+' : unread}</span> : null}
+          
+          {unread > 0 ? <span className="notification-bell__badge" aria-hidden /> : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="notification-bell__content">

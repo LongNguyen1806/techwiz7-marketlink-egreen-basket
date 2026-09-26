@@ -20,7 +20,7 @@ import { moneyToNumber } from '../../utils/helpers/domain';
 import { cn } from '../../lib/cn';
 import '../../styles/customer/CheckoutPage.css';
 
-/** CU-04 reports a bad item as `groups.<i>.items.<j>.<field>`, which points back at one cart line. */
+
 function readItemErrors(fieldErrors, bodyGroups) {
   const byProduct = {};
   Object.entries(fieldErrors ?? {}).forEach(([key, messages]) => {
@@ -32,7 +32,7 @@ function readItemErrors(fieldErrors, bodyGroups) {
   return byProduct;
 }
 
-/** Anything else attached to a group — a window that was taken, a cut-off that passed. */
+
 function readGroupErrors(fieldErrors, bodyGroups) {
   const byFarmer = {};
   Object.entries(fieldErrors ?? {}).forEach(([key, messages]) => {
@@ -57,8 +57,8 @@ function PickupPicker({ group, selection, onChange, error }) {
     );
   }
 
-  // Nothing is preselected in the body: the market and day shown are only the first ones offered,
-  // and the body is filled from the window the customer actually picks.
+  
+  
   const market = options.find((option) => option.market_id === selection.market_id) ?? options[0];
   const day = market.dates.find((entry) => entry.date === selection.date) ?? market.dates[0];
 
@@ -113,8 +113,8 @@ function PickupPicker({ group, selection, onChange, error }) {
         <legend className="checkout-page__legend">Pickup window</legend>
         <div className="checkout-page__chips">
           {day.slots.map((slot) => {
-            // PU-08 never returns a window whose cut-off has passed; this catches the one that
-            // passes while the page is open (D-007).
+            
+            
             const passed = new Date(slot.cutoff_at).getTime() <= now;
             return (
               <label key={slot.pickup_slot_id} className={cn('checkout-page__chip', passed && 'is-disabled')}>
@@ -177,7 +177,7 @@ PickupPicker.propTypes = {
   error: PropTypes.string,
 };
 
-/** C-02 (CU-04, D-004). One request, N independent orders, all or nothing. */
+
 export default function CheckoutPage() {
   const lines = useCartStore((state) => state.lines);
   const checkout = useCheckout();

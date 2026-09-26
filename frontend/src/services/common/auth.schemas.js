@@ -15,8 +15,8 @@ const passwordSchema = z
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Za-z]/, 'Password must include a letter')
     .regex(/\d/, 'Password must include a number');
-// D-031: ISO weekdays, Monday = 1. `normalize_operating_days` sorts them and rejects
-// an empty list or a duplicate, so the form has to ask for at least one day.
+
+
 const operatingDaysSchema = z
     .array(z.number().int().min(1, 'Invalid operating day').max(7, 'Invalid operating day'), {
     error: 'Select at least one operating day',

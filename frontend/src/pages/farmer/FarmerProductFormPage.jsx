@@ -35,8 +35,8 @@ const FORM_FIELDS = Object.keys(PRODUCT_DEFAULTS);
 const toNumberOrNaN = (value) => (value === '' || value === null ? Number.NaN : Number(value));
 const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
 
-// Create sends every field; edit sends only what changed so a stale form never overwrites
-// stock that orders moved while the farmer was typing. A new photo is sent only if picked.
+
+
 function buildPayload(values, { isEdit, dirtyFields }) {
   const keys = isEdit ? Object.keys(dirtyFields) : FORM_FIELDS;
   const payload = {};
@@ -70,7 +70,7 @@ export default function FarmerProductFormPage() {
   const product = productQuery.data;
   const save = useSaveFarmerProduct(productId);
 
-  // Server values fill the form once loaded; fields the farmer already changed are kept.
+  
   const serverValues = useMemo(() => (product ? productToFormValues(product) : undefined), [product]);
   const form = useForm({
     resolver: zodResolver(schema),
@@ -92,7 +92,7 @@ export default function FarmerProductFormPage() {
   const previewUrl = useObjectUrl(watch('image'));
   const shownImage = previewUrl ?? product?.image ?? null;
 
-  // An inactive category is missing from the public list; keep the product's own option.
+  
   const categoryOptions = useMemo(() => {
     const list = categoriesQuery.data ?? [];
     const current = product?.category;
@@ -124,7 +124,7 @@ export default function FarmerProductFormPage() {
     );
   }
 
-  // The backend refuses changes to archived or admin-hidden products.
+  
   const locked = Boolean(product?.is_archived || product?.is_hidden_by_admin);
 
   return (

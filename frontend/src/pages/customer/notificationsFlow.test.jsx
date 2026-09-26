@@ -28,7 +28,7 @@ const READ = {
   is_read: true, read_at: '2026-09-26T08:30:00+07:00', created_at: '2026-09-25T07:00:00+07:00',
 };
 
-/** PU-13 is not paginated: the endpoint returns the notices in force right now. */
+
 const ANNOUNCEMENT = {
   id: 2, title: 'Tet holiday closures', content: 'Several markets are closed from 28/01 to 04/02.',
   audience: 'ALL', starts_at: '2026-09-20T00:00:00+07:00', ends_at: '2026-10-30T00:00:00+07:00',
@@ -70,7 +70,7 @@ describe('NotificationsPage (C-09)', () => {
     expect(rows).toHaveLength(2);
     expect(within(rows[0]).getByText('Order accepted')).toBeInTheDocument();
     expect(within(rows[0]).getByText(/accepted order #31/)).toBeInTheDocument();
-    // The one that was already read offers no button to read it again.
+    
     expect(within(rows[0]).getByRole('button', { name: /mark as read/i })).toBeInTheDocument();
     expect(within(rows[1]).queryByRole('button', { name: /mark as read/i })).not.toBeInTheDocument();
   });
@@ -90,8 +90,8 @@ describe('NotificationsPage (C-09)', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: /unread/i }));
 
-    // NO-01 takes `is_read=false`; there is no client-side sieve to drift from it. axios serialises
-    // the boolean as the string the view parses.
+    
+    
     await waitFor(() => expect(listRequests().at(-1).params).toMatchObject({ is_read: false, page: 1 }));
   });
 
@@ -160,9 +160,9 @@ describe('AnnouncementBanner (N-04)', () => {
     unmount();
     renderPage(<AnnouncementBanner />);
 
-    // Wait for the second fetch to land before asserting absence — otherwise the assertion passes
-    // simply because nothing has arrived yet. Dismissal is remembered per notice id, so a new notice
-    // would still come through.
+    
+    
+    
     await waitFor(() => expect(
       mock.history.get.filter((request) => request.url === '/public/announcements/'),
     ).toHaveLength(2));

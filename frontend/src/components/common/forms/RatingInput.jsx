@@ -5,10 +5,7 @@ import './RatingInput.css';
 
 const SCORES = [1, 2, 3, 4, 5];
 
-/**
- * Pick a rating from 1 to 5 (C-07). Native radios, so a keyboard moves through them and a screen
- * reader announces "3 stars" rather than the shape of an icon.
- */
+
 export function RatingInput({ name, value, onChange, disabled = false }) {
   return (
     <fieldset className="rating-input" disabled={disabled}>

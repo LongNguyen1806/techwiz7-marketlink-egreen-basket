@@ -2,7 +2,7 @@
 import PropTypes from 'prop-types';
 import { cn } from '../../lib/cn';
 import '../../styles/common/LazyImage.css';
-/** Lazy-loaded image with blur-up placeholder for polish / perf. */
+
 export function LazyImage({ src, alt, className }) {
     const [loaded, setLoaded] = useState(false);
     if (src === null || src === '') {

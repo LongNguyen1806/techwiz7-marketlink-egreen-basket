@@ -1,4 +1,4 @@
-// Backend enums shown as English labels. Raw enum values never reach the UI.
+
 
 const ORDER_STATUS = {
   PLACED: 'Placed',
@@ -31,7 +31,7 @@ const AUDIENCE = {
   FARMER: 'Farmers',
 };
 
-// catalog/models.py Unit
+
 const UNIT = {
   KG: 'kg',
   BUNCH: 'bunch',
@@ -44,7 +44,7 @@ const REVIEW_TYPE = {
   PRODUCT: 'Product review',
 };
 
-// markets/models.py DayOfWeek: ISO weekdays, Monday = 1 ... Sunday = 7.
+
 export const DAYS_OF_WEEK = Object.freeze([
   { value: 1, short: 'Mon', long: 'Monday' },
   { value: 2, short: 'Tue', long: 'Tuesday' },

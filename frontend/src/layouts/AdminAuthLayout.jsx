@@ -3,10 +3,7 @@ import { ShieldCheck } from 'lucide-react';
 import { ThemeToggle } from '../components/layout/ThemeToggle';
 import '../styles/admin/AdminAuthLayout.css';
 
-/**
- * A-00, the admin sign-in shell (D-027). Deliberately bare: no public header, no sign-up link and
- * no link back to the storefront, so the page never hints that an admin account exists.
- */
+
 export function AdminAuthLayout() {
   return (
     <div className="admin-auth-layout">

@@ -4,8 +4,8 @@ import { authKeys, farmerKeys } from '../../../constants/queryKeys';
 import { STALE } from '../../../constants/staleTimes';
 import { notify } from '../../../lib/toast';
 
-// Edited only by the farmer; approval or suspension arrives as ACCOUNT_STATUS_CHANGED,
-// which refreshes this query (constants/notificationEvents.js).
+
+
 export function useFarmerProfile() {
   return useQuery({
     queryKey: farmerKeys.profile(),
@@ -14,7 +14,7 @@ export function useFarmerProfile() {
   });
 }
 
-/** payload holds only the changed fields. */
+
 export function useUpdateFarmerProfile() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -29,7 +29,7 @@ export function useUpdateFarmerProfile() {
       }
     },
     onSettled: () => {
-      // Stall name is the display name; operating days switch slots off; markets show both.
+      
       void queryClient.invalidateQueries({ queryKey: authKeys.me() });
       void queryClient.invalidateQueries({ queryKey: farmerKeys.markets() });
     },

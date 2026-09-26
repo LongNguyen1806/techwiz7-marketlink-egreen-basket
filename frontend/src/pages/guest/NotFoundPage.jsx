@@ -1,6 +1,6 @@
 import '../../styles/guest/NotFoundPage.css';
 
-/** G-12 — not built yet; the route and the layout around it are. */
+
 export default function NotFoundPage() {
   return (
     <section className="not-found-page">

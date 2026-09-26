@@ -1,7 +1,7 @@
 import axiosClient from '../../lib/axiosClient';
 
-// Login and register answer with { access, refresh, user }; `user` is the /auth/me/ shape
-// { id, email, role, display_name, farmer_status }.
+
+
 export const authApi = {
   login: async (credentials) => {
     const { data } = await axiosClient.post('/auth/login/', credentials);
@@ -31,7 +31,7 @@ export const authApi = {
     await axiosClient.post('/auth/change-password/', payload);
   },
 
-  // Single-use ticket for the notification WebSocket (valid for about 30 seconds).
+  
   wsTicket: async () => {
     const { data } = await axiosClient.post('/auth/ws-ticket/');
     return data;

@@ -8,10 +8,7 @@ import { cartGroups, cartTotal, isOrderable, useCartStore, MAX_FARMERS_PER_CHECK
 import { formatMoney } from '../../utils/formatters';
 import '../../styles/customer/CartPage.css';
 
-/**
- * C-01 (D-004). The cart is client-side only; opening this page is what brings it back in line with
- * the catalogue (PU-10), so a price change or a sell-out is seen here rather than at checkout.
- */
+
 export default function CartPage() {
   const lines = useCartStore((state) => state.lines);
   const setQuantity = useCartStore((state) => state.setQuantity);

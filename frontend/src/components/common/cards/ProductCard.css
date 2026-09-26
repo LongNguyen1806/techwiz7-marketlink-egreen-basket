@@ -120,7 +120,7 @@
   color: inherit;
 }
 
-/* D-025: hearting a sold-out product is what subscribes to its restock alert. */
+
 .product-card__restock {
   margin-top: var(--space-2);
   font-size: var(--text-xs);

@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCartStore, cartGroups, cartTotal } from './cart.store';
 
-/**
- * D-004: the cart has no API. It lives in localStorage and is grouped by farmer, because checkout
- * turns each group into its own order. Prices held here are for display only — CU-04 reads the
- * price from the database, so a stale line can never change what is charged.
- */
+
 const LETTUCE = {
   product_id: 4, farmer_id: 9, farmer_stall_name: 'Green Stall',
   name: 'Da Lat lettuce', unit: 'kg', price: '12.50', image: null,
@@ -39,7 +35,7 @@ describe('adding', () => {
     addItem(LETTUCE, 998);
     addItem(LETTUCE, 5);
 
-    // The serializer caps quantity at 999, so the cart refuses to build a body that would 400.
+    
     expect(useCartStore.getState().lines[0].quantity).toBe(999);
   });
 
@@ -91,7 +87,7 @@ describe('changing a line', () => {
     expect(line.price).toBe('13.00');
     expect(line.farmer_stall_name).toBe('Green Stall II');
     expect(line.quantity).toBe(4);
-    // PU-08 is what decides a pickup; the cart only needs to know how much is left to warn about.
+    
     expect(line.stock_quantity).toBe(3);
     expect(line.availability).toBe('IN_STOCK');
   });
@@ -99,7 +95,7 @@ describe('changing a line', () => {
   it('marks a line the catalogue no longer returns as unavailable', () => {
     useCartStore.getState().addItem(LETTUCE, 4);
 
-    // PU-10 with ids omits archived and removed products entirely.
+    
     useCartStore.getState().refreshLines([]);
 
     expect(useCartStore.getState().lines[0].availability).toBe('UNAVAILABLE');
@@ -123,8 +119,8 @@ describe('grouping for checkout', () => {
 
   it('sums each group and the whole cart from the decimal strings', () => {
     const { addItem } = useCartStore.getState();
-    addItem(LETTUCE, 2); // 25.00
-    addItem(MANGO, 4); // 33.00
+    addItem(LETTUCE, 2); 
+    addItem(MANGO, 4); 
 
     const groups = cartGroups(useCartStore.getState().lines);
 
@@ -144,7 +140,7 @@ describe('grouping for checkout', () => {
       },
     ]);
 
-    // Lettuce vanished from the catalogue, mango sold out: neither can be ordered right now.
+    
     expect(cartTotal(useCartStore.getState().lines)).toBe(0);
   });
 });

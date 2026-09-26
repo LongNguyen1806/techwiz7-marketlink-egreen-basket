@@ -6,7 +6,7 @@ import { useUiStore } from '../../../stores/ui.store';
 
 export const BELL_LIMIT = 5;
 
-// The WebSocket pushes new notifications; polling only runs while it is disconnected.
+
 function usePollInterval() {
   const connected = useUiStore((state) => state.realtimeConnected);
   return connected ? false : NOTIFICATION_POLL_INTERVAL;
@@ -37,7 +37,7 @@ const flattenPages = (data) => ({
   total: data.pages[0]?.count ?? 0,
 });
 
-/** Full list, loaded page by page. isRead: undefined = all, false = unread only. */
+
 export function useNotificationList({ isRead } = {}) {
   const refetchInterval = usePollInterval();
   return useInfiniteQuery({
@@ -52,8 +52,8 @@ export function useNotificationList({ isRead } = {}) {
   });
 }
 
-// Notification caches hold an array (bell), infinite pages { pages: [{ results }] } (full
-// list) or a number (unread count, passed through untouched).
+
+
 function patchItems(data, patch) {
   if (Array.isArray(data)) return data.map(patch);
   if (data && Array.isArray(data.pages)) {
@@ -67,8 +67,8 @@ function findItem(data, id) {
   return Array.isArray(items) ? items.find((item) => item.id === id) : undefined;
 }
 
-// Optimistic update shared by "mark one" and "mark all": apply now, roll back on error,
-// then refetch so counts match the server.
+
+
 function useOptimisticRead({ mutationFn, markItem, nextUnread }) {
   const queryClient = useQueryClient();
   const filters = { queryKey: notificationKeys.all() };

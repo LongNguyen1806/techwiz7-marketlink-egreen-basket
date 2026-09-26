@@ -1,7 +1,7 @@
-// Query key factories. Keys are hierarchical so one prefix invalidates a whole family,
-// e.g. invalidating farmerKeys.orders.all() refreshes every order list, detail and count.
-// Filter objects sit last in a key; undefined properties are dropped when React Query
-// hashes the key, so { q: undefined } and {} share one cache entry.
+
+
+
+
 
 export const authKeys = {
   all: () => ['auth'],
@@ -13,6 +13,12 @@ export const publicKeys = {
   config: () => ['public', 'config'],
   categories: () => ['public', 'categories'],
   markets: (params = {}) => ['public', 'markets', params],
+  products: (params = {}) => ['public', 'products', params],
+  
+  productList: (params = {}) => ['public', 'products', 'list', params],
+  product: (id) => ['public', 'products', 'detail', Number(id)],
+  productReviews: (id, params = {}) => ['public', 'products', 'reviews', Number(id), params],
+  farmers: (params = {}) => ['public', 'farmers', params],
 };
 
 export const notificationKeys = {

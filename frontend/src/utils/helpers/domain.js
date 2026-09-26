@@ -1,4 +1,4 @@
-/** Shared domain helpers previously co-located with types. */
+
 
 export const OPEN_ORDER_STATUSES = Object.freeze([
   'PLACED',
@@ -6,7 +6,7 @@ export const OPEN_ORDER_STATUSES = Object.freeze([
   'READY_FOR_PICKUP',
 ]);
 
-/** Parse API decimal money string (or number) for display/math. */
+
 export function moneyToNumber(amount) {
   const value = typeof amount === 'string' ? Number(amount) : amount;
   return Number.isFinite(value) ? value : 0;

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { textField } from '../common/auth.schema';
 
-// catalog/farmer/serializers_farmer.py (FarmerProductCreate/UpdateSerializer) and
-// catalog/services/farmer_product.py validate_image_upload.
+
+
 
 export const PRODUCT_UNITS = ['KG', 'BUNCH', 'PIECE', 'PACK'];
 export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -10,7 +10,7 @@ export const DEFAULT_MAX_UPLOAD_MB = 2;
 
 const PRICE_PATTERN = /^\d{1,8}(\.\d{1,2})?$/;
 
-/** Checks a picked file before it goes into the form. Returns an error message or null. */
+
 export function imageFileError(file, maxUploadMb = DEFAULT_MAX_UPLOAD_MB) {
   if (!IMAGE_TYPES.includes(file.type)) return 'Choose a JPG, PNG or WEBP image';
   if (file.size > maxUploadMb * 1024 * 1024) return `The image must be ${maxUploadMb} MB or smaller`;
@@ -32,7 +32,7 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .number({ error: 'Enter the stock' })
       .int('Stock must be a whole number')
       .min(0, 'Stock cannot be negative'),
-    // Blank = leave this product out of the weekly stock reset.
+    
     weekly_default_quantity: z
       .number({ error: 'Enter a whole number or leave it blank' })
       .int('Weekly default must be a whole number')
@@ -40,7 +40,7 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .nullable(),
     description: z.string().trim().max(1000, 'Description must be 1000 characters or fewer'),
     is_available: z.boolean(),
-    // A newly picked file; null keeps the current photo.
+    
     image: z
       .instanceof(File)
       .nullable()

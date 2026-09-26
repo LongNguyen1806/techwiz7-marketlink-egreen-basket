@@ -9,7 +9,7 @@ import { STALE } from '../../constants/staleTimes';
 import { notify } from '../../lib/toast';
 import { selectIsAuthenticated, useAuthStore } from '../../stores/auth.store';
 
-// Area prefixes a role may be sent back to after signing in.
+
 const ROLE_AREAS = {
   '/farmer': ROLES.FARMER,
   '/customer': ROLES.CUSTOMER,
@@ -39,7 +39,7 @@ export function useCurrentUser() {
   });
 }
 
-/** The signed-in account: { user, role, isAuthenticated, isLoading, isError, refetch }. */
+
 export function useAuth() {
   const isAuthenticated = useIsAuthenticated();
   const meQuery = useCurrentUser();
@@ -54,10 +54,7 @@ export function useAuth() {
   };
 }
 
-/**
- * Empties the query cache whenever the account on this browser changes: sign-out,
- * session expiry, or another tab signing in as someone else. Mounted once in App.
- */
+
 export function useAuthSessionSync() {
   const queryClient = useQueryClient();
   useEffect(
@@ -71,7 +68,7 @@ export function useAuthSessionSync() {
   );
 }
 
-// Shared by sign-in and both sign-up flows: store tokens, seed /auth/me/, go home.
+
 function useStartSession() {
   const queryClient = useQueryClient();
   const setTokens = useAuthStore((state) => state.setTokens);
@@ -127,7 +124,7 @@ export function useLogout() {
       const { refreshToken } = useAuthStore.getState();
       return refreshToken ? authApi.logout(refreshToken) : Promise.resolve();
     },
-    // Signing out on this device happens whatever the server answers.
+    
     meta: { silent: true },
     onSettled: () => {
       useAuthStore.getState().clearSession();
@@ -149,7 +146,7 @@ export function useChangePassword() {
       },
     },
     onSuccess: () => {
-      // The backend keeps this device signed in and ends the other sessions.
+      
       notify.success('Password changed', { description: 'Other devices have been signed out.' });
     },
   });

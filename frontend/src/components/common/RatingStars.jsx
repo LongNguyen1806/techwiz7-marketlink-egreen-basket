@@ -15,7 +15,7 @@ export function RatingStars({ value, count, size = 'sm', className }) {
 }
 
 RatingStars.propTypes = {
-  // The API sends averages as numbers or decimal strings ("4.50"), or null when unrated.
+  
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   count: PropTypes.number,
   size: PropTypes.oneOf(['sm', 'md']),

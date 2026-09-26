@@ -15,11 +15,7 @@ import { formatDate, formatRelative, formatTime } from '../../utils/formatters';
 import { cn } from '../../lib/cn';
 import '../../styles/customer/CustomerDashboard.css';
 
-/**
- * The four numbers of C-00. CU-05 filters by `tab` and `status` only, so "To review" points at the
- * completed orders — the list where the Review button lives — rather than a filter that has no
- * server side.
- */
+
 const STATS = [
   { key: 'open', label: 'Open orders', to: '/customer/orders?tab=open', icon: Package },
   { key: 'ready_for_pickup', label: 'Ready for pickup', to: '/customer/orders?status=READY_FOR_PICKUP', icon: ShoppingBasket },
@@ -47,7 +43,7 @@ function PickupCard({ order }) {
       </p>
 
       <div className="customer-dashboard__pickup-foot">
-        {/* D-007: the screen shows the moment orders stop being changeable, never the hour count. */}
+        
         <Countdown targetIso={order.cutoff_at} label="Cut-off" />
         <DirectionsButton latitude={order.market.latitude} longitude={order.market.longitude} />
       </div>
@@ -57,7 +53,7 @@ function PickupCard({ order }) {
 
 PickupCard.propTypes = { order: PropTypes.object.isRequired };
 
-/** C-00 (CU-01, FR-03 / FR-32). */
+
 export default function CustomerDashboard() {
   const { data, isLoading } = useCustomerDashboard();
   const reorder = useReorder();
@@ -116,7 +112,7 @@ export default function CustomerDashboard() {
 
       {lastOrderId ? (
         <div className="customer-dashboard__shortcut">
-          {/* CU-09 is read-only: it fills the cart at today's prices and names anything it skipped. */}
+          
           <Button
             type="button"
             variant="outline"

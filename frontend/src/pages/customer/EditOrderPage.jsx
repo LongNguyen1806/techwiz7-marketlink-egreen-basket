@@ -18,7 +18,7 @@ import { moneyToNumber } from '../../utils/helpers/domain';
 import { cn } from '../../lib/cn';
 import '../../styles/customer/EditOrderPage.css';
 
-/** CU-07 reports a bad line as `items.<i>.<field>`, which points back at one row of this form. */
+
 function readItemErrors(fieldErrors, items) {
   const byProduct = {};
   Object.entries(fieldErrors ?? {}).forEach(([key, messages]) => {
@@ -30,16 +30,7 @@ function readItemErrors(fieldErrors, items) {
   return byProduct;
 }
 
-/**
- * C-06 (CU-07, D-007, D-030).
- *
- * A PLACED order changes the moment this is saved. An ACCEPTED one does not: the request is recorded
- * as `pending_change` and the order keeps its current contents until the farmer accepts, which is why
- * the button and the warning say something different in that case.
- *
- * `items` is sent as the complete list after editing, because that is what CU-07 declares — and
- * emptying it is refused here rather than at the server, since cancelling is a different endpoint.
- */
+
 export default function EditOrderPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -84,7 +75,7 @@ export default function EditOrderPage() {
     const body = {
       items,
       note: noteValue,
-      // A reschedule needs both fields or neither; sending one alone is a 400.
+      
       ...(slot ? { pickup_slot_id: slot.pickup_slot_id, pickup_date: slot.date } : {}),
     };
 

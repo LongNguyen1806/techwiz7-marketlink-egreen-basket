@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// orders/farmer/serializers_farmer.py DeclineOrderSerializer
+
 export const declineOrderSchema = z.object({
   reason: z
     .string()

@@ -2,13 +2,7 @@ import PropTypes from 'prop-types';
 import { formatMoney } from '../../../utils/formatters';
 import './OrderItemsTable.css';
 
-/**
- * The lines of an order (C-05). Prices are the snapshot taken when the order was placed, which is why
- * they can differ from the catalogue: what was agreed is what will be paid.
- *
- * The total sits outside the table on purpose — it is the order's `total_amount` from the server, not
- * a sum this screen computed.
- */
+
 export function OrderItemsTable({ items, totalAmount }) {
   return (
     <div className="order-items">

@@ -3,10 +3,7 @@ import { GuestOnly } from '../guards';
 
 const page = (load) => async () => ({ Component: (await load()).default });
 
-/**
- * A-00. Its own portal (D-027): AU-09 accepts admins only, and AU-03 rejects them, so the two
- * sign-in pages never share a form.
- */
+
 export const adminAuthRoutes = [
   {
     element: <GuestOnly />,

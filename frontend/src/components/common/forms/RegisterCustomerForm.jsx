@@ -12,7 +12,7 @@ import './RegisterForms.css';
 
 const FIELDS = ['email', 'full_name', 'phone', 'address', 'password', 'confirm_password'];
 
-/** G-10 (AU-01). A successful registration signs the customer straight in. */
+
 export function RegisterCustomerForm() {
   const { registerCustomer, registerCustomerPending } = useAuth();
   const { formError, report, clear } = useServerErrors(FIELDS);

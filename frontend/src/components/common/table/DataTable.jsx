@@ -2,12 +2,7 @@ import PropTypes from 'prop-types';
 import { cn } from '../../../lib/cn';
 import './DataTable.css';
 
-/**
- * The shared table behind every list screen (C-04, F-02, A-02 → A-11). It renders records only;
- * paging, sorting and filtering stay with the screen, which owns the query.
- *
- * A row is only focusable when `onRowClick` is given, so a read-only table keeps a clean tab order.
- */
+
 export function DataTable({
   columns,
   rows,

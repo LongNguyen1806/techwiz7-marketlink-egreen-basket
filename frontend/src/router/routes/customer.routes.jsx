@@ -4,7 +4,7 @@ import { RequireAuth, RequireRole } from '../guards';
 
 const page = (load) => async () => ({ Component: (await load()).default });
 
-/** Nested under PublicLayout (see public.routes). */
+
 export const customerRoutes = [
   {
     element: <RequireAuth />,

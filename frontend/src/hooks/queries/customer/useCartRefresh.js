@@ -4,11 +4,7 @@ import { catalogApi, MAX_IDS } from '../../../services/guest/catalogApi';
 import { QUERY_KEYS } from '../../../constants';
 import { useCartStore } from '../../../stores/cart.store';
 
-/**
- * C-01 opens with prices and stock that may be days old, so every line is read back from PU-10 and
- * written into the store. Stale money is the reason: the cart shows a price, CU-04 charges the one in
- * the database, and the customer should see the difference before confirming, not after.
- */
+
 export function useCartRefresh() {
   const lines = useCartStore((state) => state.lines);
   const refreshLines = useCartStore((state) => state.refreshLines);

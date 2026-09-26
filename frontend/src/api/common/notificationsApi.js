@@ -1,7 +1,7 @@
 import axiosClient from '../../lib/axiosClient';
 import { adaptPaginated } from '../../lib/adapters/pagination.adapter';
 
-// Items: { id, type, title, message, target_url, is_read, read_at, created_at }.
+
 export const notificationsApi = {
   list: async ({ page, isRead } = {}, { signal } = {}) => {
     const { data } = await axiosClient.get('/notifications/', {
@@ -11,7 +11,7 @@ export const notificationsApi = {
     return adaptPaginated(data);
   },
 
-  // With `limit` (1-10) the backend returns the newest items without pagination.
+  
   latest: async (limit, { signal } = {}) => {
     const { data } = await axiosClient.get('/notifications/', { params: { limit }, signal });
     return Array.isArray(data) ? data : [];

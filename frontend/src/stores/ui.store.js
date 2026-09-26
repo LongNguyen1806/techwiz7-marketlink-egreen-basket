@@ -12,7 +12,7 @@ export const useUiStore = create(
       theme: 'light',
       sidebarCollapsed: false,
       mobileNavOpen: false,
-      // True while the notification WebSocket is open; polling is the fallback otherwise.
+      
       realtimeConnected: false,
 
       setTheme: (theme) => {

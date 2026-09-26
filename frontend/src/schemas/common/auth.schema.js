@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// Rules mirror accounts/auth serializers so most mistakes are caught before the request.
+
 
 const PHONE_PATTERN = /^0(3|5|7|8|9)\d{8}$/;
 
-// accounts/phone.py normalize_phone: "+84 91 234 5678" and "091.234.5678" are one number.
+
 export function normalizePhone(raw) {
   let phone = raw.replace(/[\s.\-()]/g, '');
   if (phone.startsWith('+84')) phone = `0${phone.slice(3)}`;
@@ -27,8 +27,8 @@ export const phoneField = z
   .transform(normalizePhone)
   .pipe(z.string().regex(PHONE_PATTERN, 'Enter a valid Vietnamese mobile number, e.g. 0912 345 678'));
 
-// check_password_strength: 8+ characters with letters and digits. Django's own validators
-// (common or similar-to-email passwords) are only checked by the server.
+
+
 export const newPasswordField = z
   .string()
   .min(8, 'Password must be at least 8 characters')
@@ -41,7 +41,7 @@ export const operatingDaysField = z
   .min(1, 'Select at least one operating day')
   .refine((days) => new Set(days).size === days.length, 'Each day can be selected once');
 
-// textField('Stall name', 'a stall name', 2, 100)
+
 export const textField = (name, prompt, min, max) =>
   z
     .string()
@@ -50,8 +50,8 @@ export const textField = (name, prompt, min, max) =>
     .min(min, `${name} must be at least ${min} characters`)
     .max(max, `${name} must be ${max} characters or fewer`);
 
-// Zod skips object-level refinements while any field is still undefined, so forms using
-// these schemas must give every field a default value (empty string / empty array).
+
+
 const passwordsMatch = (newKey) => (values) => values[newKey] === values.confirm_password;
 const MISMATCH = { message: 'Passwords do not match', path: ['confirm_password'] };
 
@@ -73,7 +73,7 @@ export const registerFarmerSchema = z
   })
   .refine(passwordsMatch('password'), MISMATCH);
 
-// Step 1 of the farmer sign-up checks these fields before moving on.
+
 export const REGISTER_FARMER_STEP_1 = ['email', 'phone', 'password', 'confirm_password'];
 
 export const registerCustomerSchema = z

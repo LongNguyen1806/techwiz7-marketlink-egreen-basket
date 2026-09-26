@@ -12,11 +12,7 @@ import './LoginForm.css';
 
 const FIELDS = ['email', 'password'];
 
-/**
- * G-09, the public sign-in form. Customers and Farmers only: an admin account is refused here with
- * the same "Incorrect email or password" as any wrong password, and signs in at /admin/login
- * instead (D-027). Nothing on this page reveals that the admin portal exists.
- */
+
 export function LoginForm() {
   const { login, loginPending } = useAuth();
   const { formError, report, clear } = useServerErrors(FIELDS);

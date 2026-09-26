@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useBlocker } from 'react-router-dom';
 
-/**
- * Warns before leaving a form with unsaved changes: in-app navigation is held by the
- * returned blocker (render a confirm dialog while blocker.state === 'blocked'), and
- * closing or reloading the tab gets the browser's own prompt.
- * Call allowNavigation() right before navigating away after a successful save.
- */
+
 export function useUnsavedChangesGuard(isDirty) {
   const allowed = useRef(false);
 

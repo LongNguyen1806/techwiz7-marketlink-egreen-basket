@@ -30,7 +30,7 @@
   opacity: 0.5;
 }
 
-/* Sizes */
+
 .btn--md {
   height: 2.75rem;
   padding: var(--space-2) var(--space-5);
@@ -56,7 +56,7 @@
   padding: 0;
 }
 
-/* Variants */
+
 .btn--default {
   background-color: var(--color-primary-600);
   color: #fff;

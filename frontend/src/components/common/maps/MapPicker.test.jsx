@@ -2,11 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-/**
- * Leaflet needs a real layout box, which jsdom has none of, so the map itself is stubbed and the
- * tests cover what the component is responsible for: the coordinate it reports and the numbers it
- * shows. A click on the fake map stands for a click on the map surface.
- */
+
 const clickHandlers = [];
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children, ...rest }) => (
@@ -64,7 +60,7 @@ describe('MapPicker', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /clear/i }));
 
-    // D-032: a farmer with no coordinates falls back to the market position, so null is valid.
+    
     expect(onChange).toHaveBeenCalledWith({ latitude: null, longitude: null });
   });
 

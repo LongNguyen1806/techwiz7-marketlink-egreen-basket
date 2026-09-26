@@ -39,7 +39,7 @@ const AVAILABILITY = {
   UNAVAILABLE: { label: 'Paused', variant: 'secondary' },
 };
 
-// Clicks on the stepper are gathered and saved once the farmer pauses.
+
 const STOCK_SAVE_DELAY_MS = 600;
 const MAX_STOCK = 99999;
 
@@ -55,7 +55,7 @@ function StockCell({ product, locked }) {
   const debounced = useDebouncedValue(value, STOCK_SAVE_DELAY_MS);
   const lastSaved = useRef(product.stock_quantity);
 
-  // The server's number changed (an order, another tab, a rollback): show it.
+  
   useEffect(() => {
     lastSaved.current = product.stock_quantity;
     setValue(product.stock_quantity);
@@ -65,8 +65,8 @@ function StockCell({ product, locked }) {
     if (debounced === lastSaved.current) return;
     lastSaved.current = debounced;
     updateStock.mutate({ id: product.id, stockQuantity: debounced });
-    // Only a settled new value should trigger a save.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    
   }, [debounced]);
 
   return (
@@ -88,7 +88,7 @@ StockCell.propTypes = {
 
 function ProductRow({ product, onArchive }) {
   const markSoldOut = useMarkProductSoldOut();
-  // The backend refuses edits to archived or admin-hidden products.
+  
   const locked = product.is_archived || product.is_hidden_by_admin;
   const status = statusOf(product);
 

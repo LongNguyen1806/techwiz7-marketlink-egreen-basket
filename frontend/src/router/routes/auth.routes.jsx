@@ -2,7 +2,7 @@ import { AuthLayout } from '../../layouts/AuthLayout';
 import { ROUTES } from '../../constants/routes';
 import { GuestOnly } from '../guards';
 
-// Route-level code splitting: the page module loads before the route renders.
+
 const page = (load) => async () => ({ Component: (await load()).default });
 
 export const authRoutes = [

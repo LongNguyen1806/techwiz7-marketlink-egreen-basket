@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { favoritesApi, IDS_FIELD } from '../../../services/customer/favoritesApi';
 import { ApiError } from '../../../lib/ApiError';
 import { QUERY_KEYS, ROLES } from '../../../constants';
-import { useAuthStore } from '../../../stores/auth.store';
+import { useAuth } from '../../authentication/useAuth';
 
 const EMPTY_IDS = { farmer_ids: [], product_ids: [], market_ids: [] };
 
@@ -16,16 +16,10 @@ function withToggled(ids, kind, id, next) {
   };
 }
 
-/**
- * The heart, wherever it appears (G-02 → G-06, C-08). CU-12 is read once and shared, so a stall
- * hearted on the catalogue is already hearted on the favourites page.
- *
- * The toggle is optimistic — waiting for a round trip on a heart feels broken (D-019) — and the
- * previous ids are restored if the request fails, so the screen never claims something it lost.
- */
+
 export function useFavorites() {
   const queryClient = useQueryClient();
-  const role = useAuthStore((state) => state.role);
+  const { role } = useAuth();
   const isCustomer = role === ROLES.CUSTOMER;
 
   const idsQuery = useQuery({
@@ -54,7 +48,7 @@ export function useFavorites() {
 
     onSettled: (_data, _error, { kind }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.FAVORITE_IDS });
-      // C-08 lists the hearted rows themselves, so the affected tab has to be refetched too.
+      
       queryClient.invalidateQueries({ queryKey: ['customer-favorites', kind] });
     },
   });
@@ -70,7 +64,7 @@ export function useFavorites() {
   };
 }
 
-/** One tab of C-08. Paginated, and a row that stops being publicly on sale simply drops out. */
+
 export function useFavoriteList(kind, page = 1) {
   return useQuery({
     queryKey: QUERY_KEYS.CUSTOMER_FAVORITES(kind, page),

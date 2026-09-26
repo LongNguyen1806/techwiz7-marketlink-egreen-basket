@@ -2,19 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Link } from 'react-router-dom';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import L from 'leaflet';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet/dist/leaflet.css';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { MARKER_ICON } from '../../components/common/maps/markerIcon';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Switch } from '../../components/ui/Switch';
+import { ROUTES } from '../../constants/routes';
 import {
   useCreatePickupSlot,
   useFarmerMarkets,
@@ -32,10 +31,10 @@ import { DAYS_OF_WEEK, dayOfWeekLabel } from '../../utils/labels';
 import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
 import '../../styles/farmer/FarmerMarketsPage.css';
 
-// Bundlers break Leaflet's default marker paths; point them at the packaged images.
-L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, shadowUrl: markerShadow });
 
-// OpenStreetMap tile usage policy: the subdomain-free URL and the full attribution.
+
+
+
 const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
@@ -102,7 +101,7 @@ function JoinMarketPanel({ joinedMarketIds, onJoined }) {
       <Input label="Stall label (e.g. Aisle A · Stall 12)" maxLength={100} {...register('stall_label')} />
       <FieldError error={errors.stall_label} />
       <FieldError error={errors.root?.server} />
-      <Button type="submit" data-write className="page-primitive__btn-full" loading={join.isPending}>
+      <Button type="submit" className="page-primitive__btn-full" loading={join.isPending}>
         Add market
       </Button>
     </form>
@@ -140,7 +139,7 @@ function StallLabelForm({ farmerMarket }) {
     <form className="page-primitive__form-field" onSubmit={onSubmit} noValidate>
       <div className="page-primitive__inline-row">
         <Input label="Stall label" maxLength={100} {...register('stall_label')} />
-        <Button type="submit" data-write loading={update.isPending} disabled={!isDirty}>
+        <Button type="submit" loading={update.isPending} disabled={!isDirty}>
           Save
         </Button>
       </div>
@@ -231,12 +230,14 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
   const { market } = farmerMarket;
   const hasCoordinates = typeof market.latitude === 'number' && typeof market.longitude === 'number';
 
-  // A slot can only be booked on a day the market opens and the farmer works (D-031).
+  
   const dayState = (day) => {
     if (!market.operating_days.includes(day)) return { enabled: false, reason: 'The market is closed on this day' };
     if (farmerDays && !farmerDays.includes(day)) return { enabled: false, reason: 'Not one of your operating days' };
     return { enabled: true, reason: undefined };
   };
+  
+  const bookableDays = DAYS_OF_WEEK.filter((day) => dayState(day.value).enabled).map((day) => day.short);
 
   return (
     <>
@@ -250,7 +251,7 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
 
       {hasCoordinates ? (
         <div className="page-primitive__map-h-64">
-          {/* Keyed by market: Leaflet only reads `center` when the map is created. */}
+          
           <MapContainer
             key={farmerMarket.id}
             center={[market.latitude, market.longitude]}
@@ -258,7 +259,7 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
             className="page-primitive__map-fill"
           >
             <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
-            <Marker position={[market.latitude, market.longitude]} />
+            <Marker position={[market.latitude, market.longitude]} icon={MARKER_ICON} />
           </MapContainer>
         </div>
       ) : null}
@@ -275,7 +276,6 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
                 key={day.value}
                 size="sm"
                 variant="outline"
-                data-write
                 disabled={!enabled || !farmerMarket.is_market_active}
                 title={reason}
                 aria-label={`Add a ${day.long} slot`}
@@ -286,6 +286,18 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
             );
           })}
         </div>
+        {farmerMarket.is_market_active ? (
+          <p className="page-primitive__muted-xs">
+            {bookableDays.length > 0
+              ? `You can add slots on ${bookableDays.join(', ')}: the days this market opens and you work. `
+              : "This market doesn't open on any of your working days. "}
+            Change your working days in{' '}
+            <Link to={ROUTES.FARMER.PROFILE} className="page-primitive__link-underline">
+              Stall profile
+            </Link>
+            .
+          </p>
+        ) : null}
         <div className="page-primitive__stack-2">
           {farmerMarket.slots.length === 0 ? (
             <p className="page-primitive__muted-sm">No pickup slots yet.</p>
@@ -316,7 +328,6 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
       ) : null}
       <Button
         variant="destructive"
-        data-write
         disabled={farmerMarket.open_order_count > 0}
         onClick={() => setConfirmLeave(true)}
       >
@@ -360,7 +371,7 @@ export default function FarmerMarketsPage() {
 
   const markets = useMemo(() => marketsQuery.data ?? [], [marketsQuery.data]);
   const joinedMarketIds = useMemo(() => new Set(markets.map((item) => item.market.id)), [markets]);
-  // Falls back to the first market so the page never opens on an empty panel.
+  
   const selected = markets.find((item) => item.id === selectedId) ?? markets[0] ?? null;
 
   if (marketsQuery.isPending) return <PageSkeleton />;

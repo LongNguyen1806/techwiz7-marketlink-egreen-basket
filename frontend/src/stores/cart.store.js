@@ -2,18 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { moneyToNumber } from '../utils/helpers/domain';
 
-/** CU-04 caps a line at 999 and a checkout at 5 farmers, so the cart never builds a body that 400s. */
+
 export const MAX_QUANTITY = 999;
 export const MAX_FARMERS_PER_CHECKOUT = 5;
 
-/**
- * The cart (D-004). No API, no server copy: it lives in `localStorage` and is grouped by farmer,
- * because checkout turns each group into its own independent order.
- *
- * Prices kept here are for display only. CU-04 reads the price from the database, so a line that has
- * gone stale can show the wrong subtotal but can never change what the customer is charged — C-01
- * refreshes every line against PU-10 when the page opens.
- */
+
 function clamp(quantity) {
   return Math.min(Math.max(quantity, 0), MAX_QUANTITY);
 }
@@ -52,10 +45,7 @@ export const useCartStore = create(
       removeItem: (productId) =>
         set((state) => ({ lines: state.lines.filter((line) => line.product_id !== productId) })),
 
-      /**
-       * Bring every line up to date with PU-10 (`?ids=`). A product the catalogue no longer returns
-       * has been archived or removed, which for the customer is the same as unavailable.
-       */
+      
       refreshLines: (products) =>
         set((state) => {
           const byId = new Map(products.map((product) => [product.id, product]));
@@ -87,12 +77,12 @@ export const useCartStore = create(
   ),
 );
 
-/** A line can be ordered unless the last refresh said otherwise. */
+
 export function isOrderable(line) {
   return line.availability === undefined || line.availability === 'IN_STOCK';
 }
 
-/** One block per farmer, in the order the farmers first appeared in the cart. */
+
 export function cartGroups(lines) {
   const groups = [];
   const byFarmer = new Map();

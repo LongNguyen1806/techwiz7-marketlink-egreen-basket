@@ -21,7 +21,6 @@ import { ApiError } from '../../lib/ApiError';
 import { formatDate, formatDateTime, formatTime } from '../../utils/formatters';
 import '../../styles/customer/OrderDetailPage.css';
 
-/** C-05 (CU-06, CU-08, CU-09). */
 export default function OrderDetailPage() {
   const { orderId } = useParams();
   const { data: order, isLoading } = useCustomerOrder(orderId);
@@ -42,7 +41,6 @@ export default function OrderDetailPage() {
   async function confirmCancel() {
     setError(null);
     try {
-      // CU-08 takes the version this page was showing: a tab that acted first turns this into 409.
       await cancel.mutateAsync({ version: order.version, reason: reason.trim() || undefined });
       setCancelling(false);
       setReason('');
@@ -94,7 +92,6 @@ export default function OrderDetailPage() {
 
           <div className="order-detail__contact">
             <span className="order-detail__stall">{order.farmer.stall_name}</span>
-            {/* D-026: the stall's phone number is there to be dialled, not just read. */}
             <Button asChild variant="outline" size="sm">
               <a href={`tel:${order.farmer.phone}`}>
                 <Phone className="order-detail__icon" aria-hidden />

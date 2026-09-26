@@ -13,7 +13,7 @@ import '../../styles/customer/ProfilePage.css';
 
 const FIELDS = ['full_name', 'phone', 'address'];
 
-/** C-10 (CU-02 / CU-03). Email is shown but never sent: the serializer would ignore it anyway. */
+
 export default function ProfilePage() {
   const { data: profile, isLoading } = useCustomerProfile();
   const update = useUpdateCustomerProfile();
@@ -35,7 +35,7 @@ export default function ProfilePage() {
 
   const onSubmit = handleSubmit(async (values) => {
     clear();
-    // PATCH: send what was edited, so an untouched field can never be overwritten by a stale copy.
+    
     const changed = Object.fromEntries(
       Object.keys(values).filter((field) => dirtyFields[field]).map((field) => [field, values[field]]),
     );

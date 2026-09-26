@@ -13,7 +13,7 @@ import { FavoriteButton } from '../favorites/FavoriteButton';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), message: vi.fn() } }));
 
-/** Shapes copied from the public serializers: money is a string, `rating_avg` can be null. */
+
 const FARMER = {
   id: 9,
   stall_name: 'Green Stall',
@@ -65,7 +65,7 @@ let stored;
 
 beforeEach(() => {
   mock = new MockAdapter(axiosClient);
-  // CU-12 reads live server state, so a heart that was just dropped does not come back on refetch.
+  
   stored = { farmer_ids: [9], product_ids: [], market_ids: [2] };
   mock.onGet('/customer/favorite-ids/').reply(() => [200, ok(stored)]);
   useAuthStore.getState().setTokens({ access: 'a', refresh: 'r', role: 'CUSTOMER' });

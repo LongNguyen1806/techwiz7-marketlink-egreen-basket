@@ -1,24 +1,14 @@
 import PropTypes from 'prop-types';
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { Button } from '../../ui/Button';
 import { cn } from '../../../lib/cn';
+import { MARKER_ICON } from './markerIcon';
 import './MapPicker.css';
 
-// Vite hashes the bundled images, so Leaflet's own relative icon paths would 404 without this.
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
-/** Coordinates are DECIMAL(9,6) / DECIMAL(10,6) in the database, so six places is the full precision. */
 const PRECISION = 6;
-const DEFAULT_CENTER = [10.762622, 106.660172]; // Ho Chi Minh City, used only before a point exists
+const DEFAULT_CENTER = [10.762622, 106.660172]; 
 
 function round(value) {
   return Number(value.toFixed(PRECISION));
@@ -39,11 +29,7 @@ ClickToPick.propTypes = {
   readOnly: PropTypes.bool,
 };
 
-/**
- * Pick a point on the map (A-06 for a market, F-08 for a stall). Both coordinates move together:
- * the database requires them to be both set or both NULL, and a farmer with none falls back to the
- * market position (D-032).
- */
+
 export function MapPicker({ latitude, longitude, onChange, readOnly = false, className }) {
   const hasPoint = latitude !== null && latitude !== undefined && longitude !== null && longitude !== undefined;
   const center = hasPoint ? [latitude, longitude] : DEFAULT_CENTER;
@@ -56,7 +42,7 @@ export function MapPicker({ latitude, longitude, onChange, readOnly = false, cla
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ClickToPick onPick={onChange} readOnly={readOnly} />
-        {hasPoint ? <Marker position={[latitude, longitude]} /> : null}
+        {hasPoint ? <Marker position={[latitude, longitude]} icon={MARKER_ICON} /> : null}
       </MapContainer>
 
       <div className="map-picker__bar">

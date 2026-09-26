@@ -7,19 +7,23 @@ import { MiniCartDrawer } from '../components/common/drawer/MiniCartDrawer';
 import { AnnouncementBanner } from '../components/common/announcements/AnnouncementBanner';
 import { NotificationBell } from '../components/common/layout/NotificationBell';
 import { usePrefetchRoutes } from '../hooks/usePrefetchRoutes';
-import { DASHBOARD_PATH } from '../constants';
-import { useAuthStore } from '../stores/auth.store';
+import { DASHBOARD_PATH, ROLES } from '../constants';
+import { useAuth } from '../hooks/authentication/useAuth';
 import { cn } from '../lib/cn';
 import '../styles/guest/PublicLayout.css';
 const footerLinkClass = 'public-layout__footer-link';
+
+const CUSTOMER_AREA = '/customer';
 export function PublicLayout() {
     const location = useLocation();
-    const accessToken = useAuthStore((s) => s.accessToken);
-    const role = useAuthStore((s) => s.role);
+    
+    const { user, isAuthenticated } = useAuth();
+    const role = user?.role ?? null;
     const prefetch = usePrefetchRoutes();
-    const isCustomerApp = location.pathname.startsWith(DASHBOARD_PATH.CUSTOMER);
-    const isCustomer = Boolean(accessToken) && role === 'CUSTOMER';
-    const appHome = DASHBOARD_PATH[role] ?? '/';
+    const isCustomerApp = location.pathname.startsWith(CUSTOMER_AREA);
+    const isCustomer = isAuthenticated && role === ROLES.CUSTOMER;
+    
+    const appHome = role === ROLES.CUSTOMER ? CUSTOMER_AREA : (DASHBOARD_PATH[role] ?? '/');
     const navLinkClass = ({ isActive }) => cn('public-layout__nav-link', isActive && 'is-active');
     return (<div className="public-layout">
       <a href="#main-content" className="public-layout__skip-link">
@@ -55,7 +59,7 @@ export function PublicLayout() {
                 <NotificationBell role="CUSTOMER" listPath="/customer/notifications"/>
                 <MiniCartDrawer />
                 <UserMenu />
-              </>) : accessToken ? (<UserMenu />) : (<>
+              </>) : isAuthenticated ? (<UserMenu />) : (<>
                 <Button asChild variant="ghost" size="sm" className="public-layout__login-btn">
                   <Link to="/login">Sign in</Link>
                 </Button>
@@ -126,7 +130,7 @@ export function PublicLayout() {
               <div>
                 <p className="public-layout__footer-heading">Account</p>
                 <ul className="public-layout__footer-links">
-                  {accessToken ? (<li>
+                  {isAuthenticated ? (<li>
                       <Link to={appHome} className={footerLinkClass}>
                         Go to dashboard
                       </Link>

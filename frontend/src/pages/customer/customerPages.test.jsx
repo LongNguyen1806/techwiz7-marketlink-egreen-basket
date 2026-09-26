@@ -142,7 +142,7 @@ describe('CustomerDashboard (C-00)', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /reorder last order/i }));
 
-    // `last_order_id` is the only thing CU-01 gives for this; the preview is what fills the cart.
+    
     await waitFor(() => expect(useCartStore.getState().lines).toHaveLength(1));
     expect(useCartStore.getState().lines[0].price).toBe('13.00');
   });
@@ -173,7 +173,7 @@ describe('ProfilePage (C-10)', () => {
     await waitFor(() => expect(screen.getByLabelText('Full name')).toHaveValue('Alice Nguyen'));
     expect(screen.getByLabelText('Phone number')).toHaveValue('0912345678');
     expect(screen.getByLabelText('Address')).toHaveValue('12 Market Street, District 1');
-    // CU-03 ignores an email it is sent, so the form must not pretend it can be changed.
+    
     expect(screen.getByLabelText('Email')).toBeDisabled();
   });
 

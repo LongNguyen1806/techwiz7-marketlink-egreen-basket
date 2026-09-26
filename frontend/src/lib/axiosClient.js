@@ -5,26 +5,21 @@ import { CLIENT_ERROR_CODES } from '../utils/errorMap';
 import { ApiError } from './ApiError';
 import { notifyError } from './toast';
 
-/*
- * Per-request options on top of axios:
- *   signal      pass React Query's AbortSignal so a superseded request is cancelled
- *   ifMatch     order/resource version, sent as If-Match (optimistic locking, 409 on mismatch)
- *   idempotent  adds an Idempotency-Key that stays the same if the request is replayed
- */
+
 const axiosClient = axios.create({
   baseURL: env.API_BASE_URL,
   headers: { Accept: 'application/json' },
 });
 
-// A 401 from these means wrong credentials or a dead refresh token, not an expired access token.
+
 const NO_REFRESH_PATHS = ['/auth/login/', '/auth/admin/login/', '/auth/refresh/'];
 
 function isNoRefreshPath(url = '') {
   return NO_REFRESH_PATHS.some((path) => url.endsWith(path));
 }
 
-// crypto.randomUUID only exists in secure contexts; the dev server is also opened over
-// plain http on the LAN, so fall back to getRandomValues.
+
+
 function uuidV4() {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -38,7 +33,7 @@ function isEnvelope(body) {
   return body !== null && typeof body === 'object' && !(body instanceof Blob) && 'success' in body && 'data' in body;
 }
 
-// Used when the response has no envelope (e.g. the dev proxy cannot reach Django).
+
 function codeForBareStatus(status) {
   if (status === 401) return 'NOT_AUTHENTICATED';
   if (status === 403) return 'PERMISSION_DENIED';
@@ -55,7 +50,7 @@ async function toApiError(error) {
     return new ApiError({ status: 0, code: CLIENT_ERROR_CODES.NETWORK_ERROR, message: error.message });
   }
   let body = response.data;
-  // A failed blob download still carries the JSON error envelope.
+  
   if (body instanceof Blob) {
     try {
       body = JSON.parse(await body.text());
@@ -74,15 +69,14 @@ async function toApiError(error) {
   });
 }
 
-// Ends a session the server no longer accepts. Clearing the store sends guarded pages to
-// /login and empties the query cache (see useAuthSessionSync).
+
+
 function expireSession() {
   if (!selectIsAuthenticated(useAuthStore.getState())) return;
   useAuthStore.getState().clearSession();
   notifyError(new ApiError({ status: 401, code: CLIENT_ERROR_CODES.SESSION_EXPIRED }));
 }
 
-// Refresh tokens rotate, so concurrent 401s must share one refresh call.
 let refreshPromise = null;
 
 function refreshAccessToken() {
@@ -118,7 +112,6 @@ axiosClient.interceptors.request.use((config) => {
 
 axiosClient.interceptors.response.use(
   (response) => {
-    // Unwrap { success, message, data, errors }: callers read response.data as the payload.
     if (isEnvelope(response.data)) {
       response.envelope = response.data;
       response.data = response.data.data;
@@ -126,7 +119,6 @@ axiosClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // Let React Query see its own cancellations untouched.
     if (axios.isCancel(error)) throw error;
 
     const { config, response } = error;
@@ -150,7 +142,6 @@ axiosClient.interceptors.response.use(
     }
 
     const apiError = await toApiError(error);
-    // Still refused after a refresh, or the account was locked while signed in.
     if ((apiError.status === 401 && !isNoRefreshPath(config?.url)) || apiError.is('ACCOUNT_LOCKED')) {
       expireSession();
     }

@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { Button } from '../ui/Button';
 import { DAYS_OF_WEEK } from '../../utils/labels';
 
-/** Toggle buttons for ISO weekdays (Mon = 1 ... Sun = 7). `value` stays sorted. */
+
 export function OperatingDaysPicker({ value, onChange, onBlur, disabled = false }) {
   const toggle = (day) => {
     const next = value.includes(day) ? value.filter((d) => d !== day) : [...value, day];

@@ -4,10 +4,7 @@ import { Button } from '../../ui/Button';
 import { googleMapsDirectionsUrl } from '../../../utils/helpers/geo';
 import './DirectionsButton.css';
 
-/**
- * Hand the pickup point over to the phone's map app. D-012 keeps Leaflet for everything drawn
- * in-app and uses Google Maps only for this outward link.
- */
+
 export function DirectionsButton({ latitude, longitude, size = 'sm', className }) {
   if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) {
     return null;

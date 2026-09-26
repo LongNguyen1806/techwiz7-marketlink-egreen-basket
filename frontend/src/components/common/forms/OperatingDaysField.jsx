@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import './OperatingDaysField.css';
 
-/** ISO weekdays, the same numbering `normalize_operating_days` expects: Monday = 1 … Sunday = 7. */
+
 const WEEKDAYS = [
   { value: 1, name: 'Monday', short: 'Mon' },
   { value: 2, name: 'Tuesday', short: 'Tue' },
@@ -12,11 +12,7 @@ const WEEKDAYS = [
   { value: 7, name: 'Sunday', short: 'Sun' },
 ];
 
-/**
- * The days a stall is open (D-031). A pickup slot can only fall on a day that is both a market day
- * and one of these, so the stall has to pick at least one — the serializer refuses an empty list.
- * Sorted on the way out, matching what the backend stores.
- */
+
 export function OperatingDaysField({ id = 'operating-days', value = [], onChange, error, hint }) {
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;

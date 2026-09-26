@@ -2,7 +2,7 @@ import { CategoryIcon } from '../common/badges/CategoryIcon';
 import { CATEGORY_ICON_NAMES } from '../../utils/categoryIcon';
 import '../../styles/admin/IconPicker.css';
 
-/** A category stores its icon by lucide name. */
+
 export function IconPicker({ value, onChange }) {
   return (
     <div className="icon-picker">

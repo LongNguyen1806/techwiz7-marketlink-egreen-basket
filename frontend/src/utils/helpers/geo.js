@@ -1,4 +1,4 @@
-/** Haversine distance in km between two WGS84 points. */
+
 export function distanceKm(lat1, lng1, lat2, lng2) {
     const toRad = (d) => (d * Math.PI) / 180;
     const R = 6371;
@@ -14,7 +14,7 @@ export function googleMapsDirectionsUrl(latitude, longitude) {
 export function osmDirectionsUrl(latitude, longitude) {
     return `https://www.openstreetmap.org/directions?to=${latitude}%2C${longitude}`;
 }
-/** Labels for DayOfWeek (1=Mon … 7=Sun). */
+
 export const DAY_OF_WEEK_LABELS = {
     1: 'Mon',
     2: 'Tue',
@@ -24,9 +24,9 @@ export const DAY_OF_WEEK_LABELS = {
     6: 'Sat',
     7: 'Sun',
 };
-/** @deprecated Prefer DAY_OF_WEEK_LABELS */
+
 export const WEEKDAY_LABELS = DAY_OF_WEEK_LABELS;
-/** Convert JS Date.getDay() (0=Sun) to DayOfWeek (1=Mon…7=Sun). */
+
 export function jsDayToDayOfWeek(jsDay) {
     if (jsDay === 0)
         return 7;

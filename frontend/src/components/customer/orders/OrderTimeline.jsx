@@ -3,7 +3,7 @@ import { StatusBadge } from '../../common/StatusBadge';
 import { formatDateTime } from '../../../utils/formatters';
 import './OrderTimeline.css';
 
-/** Who the customer is told did it. Admin and system steps stay anonymous (D-033). */
+
 const ACTOR_LABEL = { CUSTOMER: 'You', FARMER: null, ADMIN: 'System', SYSTEM: 'System' };
 
 function actorText(entry) {
@@ -12,10 +12,7 @@ function actorText(entry) {
   return ACTOR_LABEL[entry.actor_role] ?? 'System';
 }
 
-/**
- * The audit trail of one order (C-05), straight from `order_status_history`. The reason text arrives
- * already translated from its system code, so nothing is interpreted here.
- */
+
 export function OrderTimeline({ entries }) {
   return (
     <ol className="order-timeline" aria-label="Order history">

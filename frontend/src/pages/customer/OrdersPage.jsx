@@ -11,10 +11,7 @@ import { useReorder } from '../../hooks/queries/customer/useReorder';
 import { formatDate, formatMoney, formatTime } from '../../utils/formatters';
 import '../../styles/customer/OrdersPage.css';
 
-/**
- * The two tabs of C-04 are the server's own grouping: `tab=open` is PLACED, ACCEPTED and
- * READY_FOR_PICKUP, `tab=history` the five finished states. The status boxes narrow within that.
- */
+
 const STATUSES = {
   open: [
     { value: 'PLACED', label: 'Placed' },
@@ -30,7 +27,7 @@ const STATUSES = {
   ],
 };
 
-/** C-04 (CU-05, FR-20 / FR-23). */
+
 export default function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const reorder = useReorder();
@@ -40,13 +37,13 @@ export default function OrdersPage() {
   const params = {
     tab,
     ...(selected.length ? { status: selected.join(',') } : {}),
-    // Open orders matter by pickup time; finished ones by when they were placed.
+    
     ordering: tab === 'open' ? 'pickup_start_at' : '-created_at',
   };
   const { data, isLoading } = useCustomerOrders(params);
 
   function switchTab(next) {
-    // Statuses belong to one tab only, so they are dropped when the tab changes.
+    
     setSearchParams(next === 'open' ? {} : { tab: next });
   }
 
@@ -103,7 +100,7 @@ export default function OrdersPage() {
       key: 'cutoff',
       header: 'Deadline',
       render: (order) => (
-        // D-007: only an order that can still be changed has a deadline worth counting down.
+        
         (order.allowed_actions ?? ['MODIFY']).length > 0 || tab === 'open'
           ? <Countdown targetIso={order.cutoff_at} label="Edit/cancel until" />
           : null

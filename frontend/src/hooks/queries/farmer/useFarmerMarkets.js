@@ -5,8 +5,8 @@ import { STALE } from '../../../constants/staleTimes';
 import { ApiError } from '../../../lib/ApiError';
 import { notify, notifyError } from '../../../lib/toast';
 
-// Only the farmer edits these; an admin closing a market or changing its schedule arrives
-// as MARKET_CLOSED / MARKET_SCHEDULE_CHANGED and refreshes the list.
+
+
 export function useFarmerMarkets() {
   return useQuery({
     queryKey: farmerKeys.markets(),
@@ -49,7 +49,7 @@ export function useUpdateStallLabel() {
   });
 }
 
-// Not optimistic: the server refuses while open orders remain at the market.
+
 export function useLeaveMarket() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -77,11 +77,7 @@ export function useCreatePickupSlot() {
   });
 }
 
-/**
- * Switches a slot on or off at once, rolled back if refused. Turning a slot back on
- * re-checks the market schedule, so the server's reason is shown instead of the generic
- * "check the highlighted fields" (there is no form here to highlight).
- */
+
 export function useTogglePickupSlot() {
   const queryClient = useQueryClient();
   return useMutation({

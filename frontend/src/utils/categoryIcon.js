@@ -51,5 +51,5 @@ export function resolveCategoryIcon(icon) {
   return ICONS[(icon ?? '').trim().toLowerCase()] ?? Leaf;
 }
 
-/** The names an admin may type into the Icon field, for the help text under it. */
+
 export const CATEGORY_ICON_NAMES = Object.keys(ICONS);

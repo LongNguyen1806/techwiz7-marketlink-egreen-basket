@@ -5,10 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { formatDate, formatMoney, formatTime } from '../../utils/formatters';
 import '../../styles/customer/CheckoutSuccessPage.css';
 
-/**
- * C-03. The orders come through the navigation state, which a reload loses — the orders themselves are
- * safe on the server, so the page then simply points at C-04 instead of inventing a summary.
- */
+
 export default function CheckoutSuccessPage() {
   const location = useLocation();
   const orders = location.state?.orders ?? [];

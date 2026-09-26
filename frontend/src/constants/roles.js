@@ -11,7 +11,7 @@ export const FARMER_STATUS = Object.freeze({
   REJECTED: 'REJECTED',
 });
 
-// The backend refuses writes (FARMER_NOT_APPROVED / FARMER_SUSPENDED) for these statuses.
+
 export const FARMER_WRITE_LOCKED_STATUSES = Object.freeze([
   FARMER_STATUS.PENDING,
   FARMER_STATUS.REJECTED,

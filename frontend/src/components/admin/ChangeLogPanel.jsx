@@ -21,7 +21,7 @@ function shown(value) {
   return String(value);
 }
 
-/** The audit trail: how this one record changed over time. */
+
 export function ChangeLogPanel({ model, id }) {
   const query = useAdminChangeLog(model, id);
 

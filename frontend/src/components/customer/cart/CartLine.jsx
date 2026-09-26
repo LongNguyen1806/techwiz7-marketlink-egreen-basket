@@ -12,11 +12,7 @@ import { moneyToNumber } from '../../../utils/helpers/domain';
 import { cn } from '../../../lib/cn';
 import './CartLine.css';
 
-/**
- * One line of C-01. Price, stock and availability were read back from PU-10 when the page opened, so
- * what is shown here is what CU-04 will use — except that CU-04 reads the price again, which is why a
- * line is never trusted for money beyond display.
- */
+
 export function CartLine({ line, onQuantityChange, onRemove }) {
   const orderable = isOrderable(line);
   const stock = line.stock_quantity;

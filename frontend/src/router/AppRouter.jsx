@@ -20,7 +20,7 @@ function AppShell() {
   );
 }
 
-// Render errors and failed page downloads (e.g. an old tab after a new deploy) land here.
+
 function RouteErrorPage() {
   const error = useRouteError();
   if (import.meta.env.DEV) console.error(error);

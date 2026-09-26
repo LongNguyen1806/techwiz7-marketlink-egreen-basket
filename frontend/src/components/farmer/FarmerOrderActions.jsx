@@ -50,11 +50,11 @@ const CONFIRM_COPY = {
   },
 };
 
-// Codes meaning the order changed under us: close the dialog so the reloaded order shows.
+
 const STALE_CODES = ['RESOURCE_MODIFIED', 'INVALID_STATUS_TRANSITION'];
 
 function DeclineDialog({ order, open, onOpenChange, onSubmit, loading }) {
-  // List rows carry no items; load the full order (and its latest version) when needed.
+  
   const detailQuery = useFarmerOrder(order.id, { enabled: open && !order.items });
   const fullOrder = order.items ? order : detailQuery.data;
   const items = fullOrder?.items ?? [];

@@ -23,14 +23,15 @@ export const ROUTES = Object.freeze({
     CHANGE_PASSWORD: '/farmer/settings',
   }),
 
-  // Paths the backend writes into notification target_url for customers.
+  
   CUSTOMER: Object.freeze({
     HOME: '/',
     ORDERS: '/customer/orders',
     PROFILE: '/customer/profile',
     FAVORITES: '/customer/favorites',
     NOTIFICATIONS: '/customer/notifications',
-    CHANGE_PASSWORD: '/customer/settings',
+    
+    CHANGE_PASSWORD: '/customer/password',
   }),
 
   ADMIN: Object.freeze({

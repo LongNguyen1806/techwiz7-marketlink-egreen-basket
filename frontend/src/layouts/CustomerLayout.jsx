@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/authentication/useAuth';
 import { cartCount, useCartStore } from '../stores/cart.store';
 import { cn } from '../lib/cn';
 import '../styles/customer/CustomerLayout.css';
-// Pass 3 route table: the customer branch is mounted at /customer, not /app.
+
 const tabs = [
     { to: '/customer', label: 'Home', icon: Home, end: true },
     { to: '/markets', label: 'Markets', icon: Store, end: false },

@@ -12,10 +12,7 @@ import { RegisterFarmerForm } from './RegisterFarmerForm';
 import { ChangePasswordForm } from './ChangePasswordForm';
 import AdminLoginPage from '../../../pages/admin/AdminLoginPage';
 
-/**
- * These run the form against the real schema, hook and axios client, so a field the serializer
- * requires but the form never sends shows up here rather than as a 400 in the browser.
- */
+
 const navigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -130,7 +127,7 @@ describe('LoginForm (G-09)', () => {
     }));
     renderForm(<LoginForm />);
 
-    // An admin typing their own address here is an ordinary failed sign-in, not a portal switch.
+    
     await fillIn('Email', 'admin@marketlink.vn');
     await fillIn('Password', 'Mango2026x');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -223,7 +220,7 @@ describe('RegisterFarmerForm (G-11)', () => {
     await waitFor(() => expect(mock.history.post).toHaveLength(1));
     const { url, body } = lastPost();
     expect(url).toBe('/auth/register/farmer/');
-    // Monday = 1 … Sunday = 7, the same numbering as normalize_operating_days.
+    
     expect(body.operating_days).toEqual([1, 3, 7]);
     expect(Object.keys(body).sort()).toEqual([
       'address', 'confirm_password', 'contact_person', 'email', 'operating_days',
@@ -242,7 +239,7 @@ describe('RegisterFarmerForm (G-11)', () => {
 
     expect(await screen.findByText(/awaiting administrator approval/i)).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
-    // The session starts only when they leave the notice, or GuestOnly would redirect them away.
+    
     expect(useAuthStore.getState().accessToken).toBeNull();
 
     await userEvent.click(screen.getByRole('button', { name: /go to dashboard/i }));

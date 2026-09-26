@@ -1,8 +1,8 @@
-// Every backend ErrorCode (marketlink_core/exceptions.py) mapped to wording a person
-// understands. Raw codes are never shown in the UI.
-//
-// `serverDetail: true` marks codes whose backend `message` names the specific reason in
-// plain English ("You still have open orders at this market."); it becomes the description.
+
+
+
+
+
 
 export const CLIENT_ERROR_CODES = Object.freeze({
   NETWORK_ERROR: 'NETWORK_ERROR',
@@ -11,7 +11,7 @@ export const CLIENT_ERROR_CODES = Object.freeze({
 });
 
 const ERROR_MESSAGES = {
-  // 400
+  
   VALIDATION_ERROR: {
     title: 'Some details need your attention',
     description: 'Please check the highlighted fields and try again.',
@@ -29,7 +29,7 @@ const ERROR_MESSAGES = {
     description: 'The status has changed in the meantime. Refresh to see the latest state.',
   },
 
-  // 401
+  
   NOT_AUTHENTICATED: {
     title: 'Please sign in to continue',
     description: 'Your session may have ended.',
@@ -43,7 +43,7 @@ const ERROR_MESSAGES = {
     description: 'Please sign in again.',
   },
 
-  // 403
+  
   ACCOUNT_LOCKED: {
     title: 'This account is locked',
     description: 'Contact MarketLink support for help.',
@@ -65,13 +65,13 @@ const ERROR_MESSAGES = {
     description: 'Changes are paused while your stall is suspended. Contact support for details.',
   },
 
-  // 404
+  
   NOT_FOUND: {
     title: "We couldn't find that",
     description: 'It may have been removed, or the link is out of date.',
   },
 
-  // 409
+  
   RESOURCE_MODIFIED: {
     title: 'This was just updated',
     description: 'Someone else changed it a moment ago. Review the latest version and try again.',
@@ -85,7 +85,7 @@ const ERROR_MESSAGES = {
     description: 'Please try again.',
   },
 
-  // 422
+  
   OPEN_ORDER_LIMIT_EXCEEDED: {
     title: "You've reached the limit of open orders",
     description: 'Complete or cancel an open order before placing a new one.',
@@ -137,19 +137,19 @@ const ERROR_MESSAGES = {
     serverDetail: true,
   },
 
-  // 428
+  
   PRECONDITION_REQUIRED: {
     title: "We couldn't confirm the latest version",
     description: 'Refresh the page and try again.',
   },
 
-  // 429
+  
   THROTTLED: {
     title: 'Too many attempts',
     description: 'Please wait a few minutes before trying again.',
   },
 
-  // 500 / 503
+  
   INTERNAL_SERVER_ERROR: {
     title: 'Something went wrong on our side',
     description: 'Please try again in a moment.',
@@ -159,7 +159,7 @@ const ERROR_MESSAGES = {
     description: 'Please try again in a few minutes.',
   },
 
-  // Client-side conditions
+  
   NETWORK_ERROR: {
     title: "Can't reach the server",
     description: 'Check your internet connection and try again.',
@@ -174,10 +174,7 @@ const ERROR_MESSAGES = {
   },
 };
 
-/**
- * Human-readable { title, description } for an error.
- * Accepts an ApiError or any object with { code, message }.
- */
+
 export function describeError(error) {
   const code = error?.code;
   const entry = ERROR_MESSAGES[code] ?? ERROR_MESSAGES.UNKNOWN;
@@ -190,12 +187,12 @@ export function hasErrorMessage(code) {
   return Boolean(code && ERROR_MESSAGES[code]);
 }
 
-/** Title only, for places with room for one line. */
+
 export function getErrorMessage(code) {
   return (ERROR_MESSAGES[code] ?? ERROR_MESSAGES.UNKNOWN).title;
 }
 
-/** Kept for older callers: { title, suggestion }. */
+
 export function mapErrorCode(code) {
   const entry = ERROR_MESSAGES[code] ?? ERROR_MESSAGES.UNKNOWN;
   return { title: entry.title, suggestion: entry.description };

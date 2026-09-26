@@ -2,7 +2,6 @@ import { toast } from 'sonner';
 import { hasErrorMessage } from '../utils/errorMap';
 import { ApiError } from './ApiError';
 
-// Icons are set once on the <Toaster /> in App.jsx; durations follow how much there is to read.
 const DURATION = {
   success: 3000,
   info: 4000,
@@ -18,11 +17,6 @@ export const notify = {
   dismiss: (id) => toast.dismiss(id),
 };
 
-/**
- * Toast for a failed request, worded from errorMap. `override` ({ title, description })
- * lets one action phrase an error for its own context.
- * The toast id is the error code, so a burst of identical failures shows one toast.
- */
 export function notifyError(error, override = {}) {
   const apiError = ApiError.fromUnknown(error);
   const friendly = apiError.friendly;

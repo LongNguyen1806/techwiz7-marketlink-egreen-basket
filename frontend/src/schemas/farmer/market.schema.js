@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// markets/farmer/serializers_farmer.py and markets/services/farmer_schedule.py _validate_slot.
+
 
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -17,11 +17,7 @@ export const joinMarketSchema = z.object({
   stall_label: stallLabelField,
 });
 
-/**
- * Same checks as the backend for an active slot: HH:mm times, end after start, inside the
- * market's opening hours, and no overlap with another slot of this market on that day.
- * The farmer's operating days are enforced by which day buttons are enabled.
- */
+
 export function makePickupSlotSchema({ openTime, closeTime, existingSlots = [] } = {}) {
   return z
     .object({
