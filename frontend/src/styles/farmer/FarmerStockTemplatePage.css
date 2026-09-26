@@ -1,4 +1,4 @@
-@import '../styles/page-primitives.css';
+@import '../common/page-primitives.css';
 
 .farmer-stock-template-page {
   display: flex;

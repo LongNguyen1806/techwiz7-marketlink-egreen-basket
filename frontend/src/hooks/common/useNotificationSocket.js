@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import useWebSocketModule, { ReadyState } from 'react-use-websocket';
 import { authApi } from '../../api/common/authApi';
 import { env } from '../../config/env';
 import { queryKeysForNotification } from '../../constants/notificationEvents';
@@ -9,6 +9,10 @@ import { authKeys } from '../../constants/queryKeys';
 import { notify } from '../../lib/toast';
 import { selectIsAuthenticated, useAuthStore } from '../../stores/auth.store';
 import { useUiStore } from '../../stores/ui.store';
+
+// react-use-websocket is CommonJS with the hook on exports.default: Vite's dev server passes
+// the whole exports object to a default import, the production build passes the function.
+const useWebSocket = typeof useWebSocketModule === 'function' ? useWebSocketModule : useWebSocketModule.default;
 
 // notifications/consumers.py closes with 4401 after logout, account lock or a bad ticket.
 const CLOSE_UNAUTHORIZED = 4401;
@@ -61,6 +65,9 @@ export function useNotificationSocket({ enabled = true } = {}) {
     reconnectAttempts: 20,
     reconnectInterval: (attempt) => Math.min(1000 * 2 ** attempt, MAX_RECONNECT_DELAY_MS),
     retryOnError: true,
+    onReconnectStop: () => {
+      if (import.meta.env.DEV) console.warn('[realtime] WebSocket unavailable; notifications fall back to polling.');
+    },
     onMessage: handleMessage,
     onOpen: () => {
       // Events sent while we were offline are lost; catch up on reconnect.

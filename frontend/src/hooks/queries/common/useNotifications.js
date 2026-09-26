@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../../../api/common/notificationsApi';
 import { notificationKeys } from '../../../constants/queryKeys';
 import { NOTIFICATION_POLL_INTERVAL, STALE } from '../../../constants/staleTimes';
@@ -32,26 +32,38 @@ export function useLatestNotifications(limit = BELL_LIMIT) {
   });
 }
 
-export function useNotificationList({ page = 1, isRead } = {}) {
-  const params = { page, isRead };
-  return useQuery({
-    queryKey: notificationKeys.list(params),
-    queryFn: ({ signal }) => notificationsApi.list(params, { signal }),
-    staleTime: STALE.SHORT,
+const flattenPages = (data) => ({
+  notifications: data.pages.flatMap((page) => page.results),
+  total: data.pages[0]?.count ?? 0,
+});
+
+/** Full list, loaded page by page. isRead: undefined = all, false = unread only. */
+export function useNotificationList({ isRead } = {}) {
+  const refetchInterval = usePollInterval();
+  return useInfiniteQuery({
+    queryKey: notificationKeys.list({ isRead }),
+    queryFn: ({ pageParam, signal }) => notificationsApi.list({ page: pageParam, isRead }, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
+    select: flattenPages,
     placeholderData: keepPreviousData,
+    staleTime: STALE.SHORT,
+    refetchInterval,
   });
 }
 
-// Notification caches hold either an array (bell) or a page { results }; the unread count
-// is a number and passes through untouched.
+// Notification caches hold an array (bell), infinite pages { pages: [{ results }] } (full
+// list) or a number (unread count, passed through untouched).
 function patchItems(data, patch) {
   if (Array.isArray(data)) return data.map(patch);
-  if (data && Array.isArray(data.results)) return { ...data, results: data.results.map(patch) };
+  if (data && Array.isArray(data.pages)) {
+    return { ...data, pages: data.pages.map((page) => ({ ...page, results: page.results.map(patch) })) };
+  }
   return data;
 }
 
 function findItem(data, id) {
-  const items = Array.isArray(data) ? data : data?.results;
+  const items = Array.isArray(data) ? data : data?.pages?.flatMap((page) => page.results);
   return Array.isArray(items) ? items.find((item) => item.id === id) : undefined;
 }
 

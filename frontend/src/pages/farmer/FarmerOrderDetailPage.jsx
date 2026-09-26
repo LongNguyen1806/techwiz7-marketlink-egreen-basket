@@ -1,77 +1,112 @@
-﻿import { Link, useParams } from 'react-router-dom';
-import { useFarmerOrder } from '../../features/farmer/hooks/useFarmerOrders';
+import { Link, useParams } from 'react-router-dom';
 import { Countdown } from '../../components/common/Countdown';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { OrderTimeline } from '../../features/customer/components/OrderTimeline';
+import { OrderTimeline } from '../../components/common/OrderTimeline';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
 import { PriceTag } from '../../components/common/PriceTag';
 import { StatusBadge } from '../../components/common/StatusBadge';
-import { FarmerOrderActions } from '../../features/farmer/components/FarmerOrderActions';
+import { FarmerOrderActions } from '../../components/farmer/FarmerOrderActions';
 import { Button } from '../../components/ui/Button';
-import { formatDateTime, formatVnd } from '../../utils/formatters';
+import { ROUTES } from '../../constants/routes';
+import { useFarmerOrder } from '../../hooks/queries/farmer/useFarmerOrders';
+import { formatMoney, formatPickupWindow } from '../../utils/formatters';
+import { unitLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerOrderDetailPage.css';
+
+const OPEN_STATUSES = ['PLACED', 'ACCEPTED', 'READY_FOR_PICKUP'];
+
+function BackToList() {
+  return (
+    <Button asChild variant="outline">
+      <Link to={ROUTES.FARMER.ORDERS}>← Order list</Link>
+    </Button>
+  );
+}
+
 export default function FarmerOrderDetailPage() {
-    const { id = '' } = useParams();
-    const query = useFarmerOrder(id);
-    if (query.isLoading)
-        return <PageSkeleton />;
-    if (query.isError || !query.data) {
-        return (<EmptyState title="This order could not be found" actionLabel="Try again" onAction={() => query.refetch()}/>);
-    }
-    const order = query.data;
-    return (<div className="page-primitive__stack-6">
-      <PageHeader title={`#${order.id}`} description={`${order.customer.full_name} Â· ${order.customer.phone}`} actions={<StatusBadge status={order.status}/>}/>
+  const { id } = useParams();
+  const query = useFarmerOrder(id);
 
-      <FarmerOrderActions order={order} size="default"/>
+  if (query.isPending && query.fetchStatus !== 'idle') return <PageSkeleton />;
+  if (!query.data) {
+    const notFound = !query.isError || query.error?.status === 404;
+    return (
+      <div className="page-primitive__stack-6">
+        {notFound ? (
+          <EmptyState title="This order could not be found" description="It may belong to another stall, or the link is wrong." />
+        ) : (
+          <EmptyState title="This order couldn't be loaded" actionLabel="Try again" onAction={() => query.refetch()} />
+        )}
+        <BackToList />
+      </div>
+    );
+  }
 
-      <OrderTimeline status={order.status}/>
+  const order = query.data;
+  const isOpen = OPEN_STATUSES.includes(order.status);
+
+  return (
+    <div className="page-primitive__stack-6">
+      <PageHeader
+        title={`#${order.id}`}
+        description={`${order.customer.full_name} · ${order.customer.phone}`}
+        actions={<StatusBadge status={order.status} />}
+      />
+
+      {order.has_pending_change ? (
+        <p className="page-primitive__warn-banner">The shopper has asked to change this order.</p>
+      ) : null}
+      {order.stock_warning ? (
+        <p className="page-primitive__warn-banner">Your current stock cannot cover every item in this order.</p>
+      ) : null}
+
+      <FarmerOrderActions order={order} size="default" />
+
+      <OrderTimeline status={order.status} history={order.status_history} />
 
       <div className="page-primitive__grid-2-md">
         <div className="page-primitive__panel">
-          <h2 className="page-primitive__heading farmer-order-detail__heading">
-            Pickup
-          </h2>
+          <h2 className="page-primitive__heading farmer-order-detail__heading">Pickup</h2>
           <p className="page-primitive__muted-sm">{order.market.name}</p>
-          <p className="page-primitive__muted-sm">{order.stall_label}</p>
+          {order.stall_label ? <p className="page-primitive__muted-sm">{order.stall_label}</p> : null}
           <p className="page-primitive__muted-sm farmer-order-detail__countdown--sm">
-            {formatDateTime(order.pickup_start_at)} â€“{' '}
-            {formatDateTime(order.pickup_end_at)}
+            {formatPickupWindow(order.pickup_start_at, order.pickup_end_at)}
           </p>
-          <Countdown className="farmer-order-detail__countdown" targetIso={order.pickup_start_at} label="Until pickup"/>
-          <Countdown className="farmer-order-detail__countdown--sm" targetIso={order.cutoff_at} label="Cut-off"/>
+          {isOpen ? (
+            <>
+              <Countdown className="farmer-order-detail__countdown" targetIso={order.pickup_start_at} label="Until pickup" />
+              <Countdown className="farmer-order-detail__countdown--sm" targetIso={order.cutoff_at} label="Cut-off" />
+            </>
+          ) : null}
         </div>
         <div className="page-primitive__panel">
-          <h2 className="page-primitive__heading farmer-order-detail__heading">
-            Note
-          </h2>
-          <p className="page-primitive__muted-sm">{order.note || 'No note from customer'}</p>
+          <h2 className="page-primitive__heading farmer-order-detail__heading">Note</h2>
+          <p className="page-primitive__muted-sm">{order.note || 'No note from the shopper'}</p>
         </div>
       </div>
 
       <div className="farmer-order-detail__items">
         <ul>
-          {order.items.map((item) => (<li key={item.product_id} className="farmer-order-detail__item">
+          {order.items.map((item) => (
+            <li key={item.id} className="farmer-order-detail__item">
               <div>
                 <p className="farmer-order-detail__item-name">{item.product_name}</p>
                 <p className="page-primitive__muted-sm">
-                  {item.quantity} Ã— <PriceTag amount={item.unit_price} unit={item.unit}/>
+                  {item.quantity} × <PriceTag amount={item.unit_price} unit={unitLabel(item.unit)} />
                 </p>
               </div>
-              <p className="farmer-order-detail__item-total">
-                {formatVnd(item.line_total)}
-              </p>
-            </li>))}
+              <p className="farmer-order-detail__item-total">{formatMoney(item.line_total)}</p>
+            </li>
+          ))}
         </ul>
         <div className="farmer-order-detail__total">
           <span>Total</span>
-          <span>{formatVnd(order.total_amount)}</span>
+          <span>{formatMoney(order.total_amount)}</span>
         </div>
       </div>
 
-      <Button asChild variant="outline">
-        <Link to="/farmer/orders">â† Order list</Link>
-      </Button>
-    </div>);
+      <BackToList />
+    </div>
+  );
 }
-
