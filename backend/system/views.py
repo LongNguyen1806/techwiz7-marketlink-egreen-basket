@@ -13,15 +13,22 @@ from marketlink_core.constants import (
     MAX_PLACED_ORDERS_PER_CUSTOMER,
     MAX_UPLOAD_MB,
 )
+from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
 from system.dashboard import dashboard_snapshot
 from system.excel import XLSX_CONTENT_TYPE, build_report_workbook, report_filename
 from system.models import AuditAction
 from system.reports import parse_report_range, report_summary
-from system.selectors import AUDIT_LOG_ORDERING, list_audit_logs
+from system.selectors import (
+    AUDIT_LOG_ORDERING,
+    TRACKED_MODELS,
+    build_change_log,
+    list_audit_logs,
+)
 from system.serializers import (
     AuditLogReadSerializer,
+    ChangeLogEntrySerializer,
     DashboardSerializer,
     ReportSummarySerializer,
 )
@@ -161,4 +168,46 @@ class PublicConfigView(APIView):
         }
         return api_response(
             message="OK", request=request, data=PublicConfigSerializer(data).data
+        )
+
+
+# The audit trail (v1.8). The contract has no AD-xx row for it, so it lives at its own path
+# and is read from a record's detail screen, not from the System log tab - that tab shows
+# audit_logs, which is a different thing and has no before/after to show.
+CHANGE_LOG_LIMIT = 50
+
+
+class AdminChangeLogView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "model",
+                str,
+                location=OpenApiParameter.PATH,
+                enum=sorted(TRACKED_MODELS),
+                description="Which tracked record to read the history of.",
+            ),
+            OpenApiParameter("id", int, location=OpenApiParameter.PATH),
+        ],
+        responses={200: ChangeLogEntrySerializer(many=True), 400: None, 404: None},
+        summary="How one record changed over time",
+    )
+    def get(self, request, model: str, id: int) -> Response:
+        tracked = TRACKED_MODELS.get(model)
+        if tracked is None:
+            raise BusinessValidationError(
+                "Unknown record type.",
+                errors={"model": [f"Choose one of: {', '.join(sorted(TRACKED_MODELS))}."]},
+            )
+        if not tracked.objects.filter(pk=id).exists():
+            # Without this an id that never existed would look like a record with no history.
+            raise ResourceNotFoundError("Record not found.")
+
+        # build_change_log returns oldest first because that is how a history reads; the
+        # screen wants the most recent change at the top.
+        entries = list(reversed(build_change_log(tracked, id)))[:CHANGE_LOG_LIMIT]
+        return api_response(
+            message="OK", request=request, data=ChangeLogEntrySerializer(entries, many=True).data
         )

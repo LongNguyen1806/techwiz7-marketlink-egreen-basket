@@ -1,0 +1,34 @@
+.sortable-th {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sortable-th:hover {
+  color: var(--color-foreground);
+}
+
+.sortable-th--active {
+  color: var(--color-primary-700);
+}
+
+.dark .sortable-th--active {
+  color: var(--color-primary-300);
+}
+
+.sortable-th__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  opacity: 0.45;
+}
+
+.sortable-th--active .sortable-th__icon {
+  opacity: 1;
+}

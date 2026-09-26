@@ -5,10 +5,11 @@ from django.db import transaction
 
 from marketlink_core.exceptions import ErrorCode, UnprocessableEntityError
 from marketlink_core.history import save_with_history
-from markets.models import Market, MarketOperatingDay, PickupSlot
+from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from notifications.models import NotificationType
 from notifications.services import notify
-from orders.models import OPEN_STATUSES
+from orders.models import OPEN_STATUSES, ActorRole, ChangeReason, Order, OrderStatus
+from orders.services.fsm import transition_order
 
 SCHEDULE_FIELDS = ("operating_days", "open_time", "close_time")
 
@@ -97,20 +98,97 @@ def update_market(*, market_id: int, validated: dict[str, Any]) -> tuple[Market,
     return market, len(outside)
 
 
-# D-022 blocks this while orders are open; slots stay untouched so activate_market restores them.
+# Closing a market used to be refused while orders were open. It now carries them out instead:
+# every open order at the market is declined (stock goes back), and the stalls' pickup slots
+# there are switched off. The stalls themselves are NOT suspended - a farmer may sell at several
+# markets, and closing one of them is no fault of theirs.
 @transaction.atomic
-def deactivate_market(*, market_id: int) -> Market:
+def deactivate_market(*, market_id: int, reason: str, actor) -> tuple[Market, int]:
     market = Market.objects.select_for_update().get(pk=market_id)
-    open_orders = market.orders.filter(status__in=OPEN_STATUSES).count()
-    if open_orders:
+    if not market.is_active:
         raise UnprocessableEntityError(
-            f"{open_orders} open orders remain at this market.",
-            code=ErrorCode.RESOURCE_IN_USE,
-            errors={"open_order_count": [str(open_orders)]},
+            "This market is already closed.",
+            code=ErrorCode.INVALID_STATUS_TRANSITION,
         )
+
     market.is_active = False
     market.save(update_fields=["is_active", "updated_at"])
-    return market
+
+    # Ordered by id so this cannot deadlock against a farmer or customer touching the same rows.
+    order_ids = list(
+        Order.objects.filter(market_id=market_id, status__in=OPEN_STATUSES)
+        .order_by("id")
+        .values_list("id", flat=True)
+    )
+    # A pending change request dies with the order it belonged to (§5.4 step 4).
+    Order.objects.filter(pk__in=order_ids).exclude(pending_change=None).update(pending_change=None)
+
+    # Counted per recipient before the transitions run, because afterwards none of these
+    # orders is open any more.
+    orders_per_customer: dict[int, int] = {}
+    orders_per_farmer: dict[int, int] = {}
+    for customer_id, farmer_id in Order.objects.filter(pk__in=order_ids).values_list(
+        "customer_id", "farmer_id"
+    ):
+        orders_per_customer[customer_id] = orders_per_customer.get(customer_id, 0) + 1
+        orders_per_farmer[farmer_id] = orders_per_farmer.get(farmer_id, 0) + 1
+
+    for order_id in order_ids:
+        transition_order(
+            order_id=order_id,
+            to_status=OrderStatus.DECLINED,
+            actor=actor,
+            actor_role=ActorRole.ADMIN,
+            # The order history says the market closed, not that the stall was suspended.
+            admin_reason=ChangeReason.MARKET_CLOSED_BY_ADMIN,
+            # Each customer gets one MARKET_CLOSED below instead of an ORDER_DECLINED per order.
+            notify_customer=False,
+        )
+
+    # Row by row, never QuerySet.update(): the audit trail has to record each slot (v1.8).
+    slots = list(
+        PickupSlot.objects.filter(farmer_market__market_id=market_id, is_active=True)
+        .order_by("id")
+        .select_for_update(of=("self",))
+    )
+    for slot in slots:
+        slot.is_active = False
+        save_with_history(
+            slot,
+            update_fields=["is_active", "updated_at"],
+            reason=f"Market #{market_id} closed by Admin (AD-17)",
+        )
+
+    _notify_closure(market=market, reason=reason, per_customer=orders_per_customer,
+                    per_farmer=orders_per_farmer, market_id=market_id)
+    return market, len(order_ids)
+
+
+def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int],
+                    per_farmer: dict[int, int], market_id: int) -> None:
+    """Tell everyone who had something at the market, with the reason the admin typed."""
+    # Farmers with a stall here but no open order still need to know the market has gone.
+    silent_farmers = set(
+        FarmerMarket.objects.filter(market_id=market_id).values_list("farmer_id", flat=True)
+    ) - set(per_farmer)
+    for farmer_id in silent_farmers:
+        per_farmer[farmer_id] = 0
+
+    users = get_user_model().objects.in_bulk(sorted(set(per_customer) | set(per_farmer)))
+    for recipient_id, count in sorted(per_customer.items()):
+        notify(
+            recipient=users[recipient_id],
+            event_type=NotificationType.MARKET_CLOSED,
+            context={"market_name": market.name, "order_count": count, "reason": reason,
+                     "target_url": "/customer/orders"},
+        )
+    for recipient_id, count in sorted(per_farmer.items()):
+        notify(
+            recipient=users[recipient_id],
+            event_type=NotificationType.MARKET_CLOSED,
+            context={"market_name": market.name, "order_count": count, "reason": reason,
+                     "target_url": "/farmer/markets"},
+        )
 
 
 @transaction.atomic

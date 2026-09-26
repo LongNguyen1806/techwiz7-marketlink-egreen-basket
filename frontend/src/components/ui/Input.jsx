@@ -1,10 +1,10 @@
-﻿import * as React from 'react';
+import * as React from 'react';
 import PropTypes from 'prop-types';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import '@/styles/common/Input.css';
 
-export const Input = React.forwardRef(({ className, type, id, label, placeholder, disabled, ...props }, ref) => {
+export const Input = React.forwardRef(({ className, type, id, label, placeholder, disabled, requiredMark, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id ?? generatedId;
     const floatingLabel = label ?? placeholder;
@@ -30,6 +30,11 @@ export const Input = React.forwardRef(({ className, type, id, label, placeholder
         <input id={inputId} type={inputType} className={cn('input', isPassword && 'input--password')} placeholder=" " disabled={disabled} ref={ref} {...props}/>
         <label htmlFor={inputId} className="input-field__label">
           {floatingLabel}
+          {requiredMark ? (
+            <span className="input-field__required" aria-hidden>
+              {' '}*
+            </span>
+          ) : null}
         </label>
         {toggleButton}
       </div>);

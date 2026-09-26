@@ -31,6 +31,8 @@ class AuditAction(models.TextChoices):
     # Admin edits a stall's or a shopper's contact details (AD-03, AD-10 PATCH).
     FARMER_UPDATED = "FARMER_UPDATED", "Update Farmer Profile"
     CUSTOMER_UPDATED = "CUSTOMER_UPDATED", "Update Customer Profile"
+    # Housekeeping: unused sign-ups removed by the purge command.
+    ACCOUNT_PURGED = "ACCOUNT_PURGED", "Purge Stale Accounts"
 
 
 class AuditLog(CreatedAtModel):

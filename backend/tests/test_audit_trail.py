@@ -100,7 +100,8 @@ class AuditTrailTestCase(TestCase):
         log = build_change_log(Product, self.product.pk)
         self.assertEqual([entry["type"] for entry in log], ["CREATED", "UPDATED"])
         self.assertEqual(log[-1]["user"], {"id": self.farmer_user.pk, "email": self.farmer_user.email})
-        self.assertIn({"field": "price", "old": Decimal("2.00"), "new": Decimal("3.50")}, log[-1]["changes"])
+        # build_change_log returns JSON-safe values (AD-34 serves them as-is): Decimal -> string.
+        self.assertIn({"field": "price", "old": "2.00", "new": "3.50"}, log[-1]["changes"])
 
     def test_accepting_an_order_traces_stock_with_the_order(self):
         order = self._order()
@@ -208,7 +209,7 @@ class AuditTrailTestCase(TestCase):
         self.client.delete(f"/api/farmer/pickup-slots/{slot_id}/")
         log = build_change_log(PickupSlot, slot_id)
         self.assertEqual([entry["type"] for entry in log], ["CREATED", "UPDATED", "DELETED"])
-        self.assertEqual(log[1]["changes"], [{"field": "end_time", "old": time(9, 0), "new": time(10, 0)}])
+        self.assertEqual(log[1]["changes"], [{"field": "end_time", "old": "09:00:00", "new": "10:00:00"}])
         self.assertTrue(all(entry["user"]["id"] == self.farmer_user.pk for entry in log))
 
     def test_slots_switched_off_by_operating_day_change(self):

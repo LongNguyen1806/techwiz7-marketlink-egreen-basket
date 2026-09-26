@@ -170,6 +170,7 @@
 .farmer-layout__main {
   flex: 1;
   padding: var(--space-4);
+  padding-bottom: var(--chat-fab-clearance);
 }
 
 @media (min-width: 768px) {

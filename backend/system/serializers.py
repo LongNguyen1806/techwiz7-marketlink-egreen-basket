@@ -78,3 +78,32 @@ class ReportSummarySerializer(serializers.Serializer):
     orders_by_status = OrdersByStatusSerializer(many=True)
     revenue_by_market = RevenueByMarketSerializer(many=True)
     top_farmers = TopFarmerSerializer(many=True)
+
+
+CHANGE_LOG_TYPES = ["CREATED", "UPDATED", "DELETED"]
+
+
+class ChangeSerializer(serializers.Serializer):
+    """One field of one revision: what it was, what it became."""
+
+    field = serializers.CharField()
+    old = serializers.JSONField(allow_null=True)
+    new = serializers.JSONField(allow_null=True)
+
+
+class ChangeLogEntrySerializer(serializers.Serializer):
+    """A revision of a tracked record, read from its django-simple-history table (v1.8).
+
+    This is the audit *trail* - how one record changed over time. The audit *log*
+    (AuditLogReadSerializer above) is the separate security record of admin actions.
+    """
+
+    history_id = serializers.IntegerField()
+    # Exposed as change_type, not type: a bare "type" collides with the other choice fields
+    # of that name when the schema names its enums, and it reads better here anyway.
+    change_type = serializers.ChoiceField(source="type", choices=CHANGE_LOG_TYPES)
+    date = serializers.CharField()
+    user = AuditLogActorSerializer(allow_null=True)
+    reason = serializers.CharField(allow_null=True)
+    request_id = serializers.CharField(allow_null=True)
+    changes = ChangeSerializer(many=True)

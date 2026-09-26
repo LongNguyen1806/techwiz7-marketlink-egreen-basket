@@ -122,6 +122,7 @@ SYSTEM_REASON_TEXT = {
     "SYSTEM_EXPIRED": "The order expired because the farmer did not confirm it before pickup.",
     "FARMER_SUSPENDED_BY_ADMIN": "The farmer's stall is no longer accepting orders.",
     "CUSTOMER_LOCKED_BY_ADMIN": "The order was closed because the account was locked.",
+    "MARKET_CLOSED_BY_ADMIN": "The order was cancelled because the market has closed.",
 }
 
 

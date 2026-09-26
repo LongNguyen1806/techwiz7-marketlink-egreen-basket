@@ -15,7 +15,11 @@ venv.bak/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
+# Uploads stay out of git, but the folder layout that upload_to expects is kept.
+media/*
+!media/*/
+media/*/*
+!media/*/.gitkeep
 staticfiles/
 
 # Environment secrets

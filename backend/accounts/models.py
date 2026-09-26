@@ -114,6 +114,10 @@ class CustomerProfile(BaseModel):
     full_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15, unique=True)
     address = models.CharField(max_length=255)
+    # Plural folder name to match farmers/ , markets/ and products/ already in use.
+    image = models.ImageField(
+        upload_to=UUIDUploadTo("customers"), max_length=255, null=True, blank=True
+    )
     deactivation_reason = models.CharField(max_length=500, null=True, blank=True)
 
     class Meta:

@@ -113,6 +113,16 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         target_url="/farmer",
         required=("status_label",),
     ),
+    NotificationType.MARKET_CLOSED: NotificationSpec(
+        title="{market_name} has closed",
+        message=(
+            "{market_name} is no longer running, so {order_count} of your orders there were "
+            "cancelled. Reason: {reason}"
+        ),
+        # Both sides read this one, so the link goes to the list each role actually has.
+        target_url="{target_url}",
+        required=("market_name", "order_count", "reason", "target_url"),
+    ),
     NotificationType.MARKET_SCHEDULE_CHANGED: NotificationSpec(
         title="{market_name} changed its schedule",
         message=(

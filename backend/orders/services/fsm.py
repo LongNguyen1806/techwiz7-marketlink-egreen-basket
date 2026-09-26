@@ -37,8 +37,14 @@ LOCKED_STOCK_UNCHANGED_NOTE = "The order had not been accepted yet, so your stoc
 SYSTEM_REASON_TEXT = {
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN: "The farmer's stall has been suspended by an administrator.",
     ChangeReason.CUSTOMER_LOCKED_BY_ADMIN: "The customer's account has been locked by an administrator.",
+    ChangeReason.MARKET_CLOSED_BY_ADMIN: "The market has been closed by an administrator.",
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
+
+# Admin never types a reason into an order (D-033): each admin cascade stamps a fixed system
+# code. The first code of each group is the default, so AD-07 / AD-12 need not pass one.
+ADMIN_DECLINE_REASONS = (ChangeReason.FARMER_SUSPENDED_BY_ADMIN, ChangeReason.MARKET_CLOSED_BY_ADMIN)
+ADMIN_CANCEL_REASONS = (ChangeReason.CUSTOMER_LOCKED_BY_ADMIN,)
 
 
 @dataclass(frozen=True)
@@ -92,13 +98,22 @@ def transition_order(
     reason: str | None = None,
     sold_out_product_ids: Iterable[int] | None = None,
     mark_all_sold_out: bool = False,
+    admin_reason: str | None = None,
+    notify_customer: bool = True,
 ) -> Order:
     """Apply one FSM edge under row locks (orders -> products).
 
     sold_out_product_ids / mark_all_sold_out only apply to farmer declines (T3, T4).
     ``None`` means the farmer did not declare sold-out items; an empty list means
     "no item is sold out". T4 by a farmer requires a declaration.
+
+    admin_reason / notify_customer are for admin cascades only. admin_reason picks the
+    system code stamped on the order (ADMIN_DECLINE_REASONS / ADMIN_CANCEL_REASONS; the
+    default is the first of each). notify_customer=False lets a caller that sends its own
+    summary (AD-17 market closure) skip the per-order customer notification.
     """
+    if actor_role != _R.ADMIN and (admin_reason is not None or not notify_customer):
+        raise ValueError("admin_reason and notify_customer are only for admin transitions.")
     reason = (reason or "").strip() or None
     sold_out_ids = None if sold_out_product_ids is None else set(sold_out_product_ids)
 
@@ -122,7 +137,7 @@ def transition_order(
                 )
             _check_role(rule, actor_role)
             _check_version(order, actor_role, expected_version)
-            change_reason = _check_preconditions(order, rule, actor_role, reason)
+            change_reason = _check_preconditions(order, rule, actor_role, reason, admin_reason)
             sold_out_targets = _resolve_sold_out_targets(
                 order, rule, actor_role, sold_out_ids, mark_all_sold_out
             )
@@ -161,7 +176,7 @@ def transition_order(
                 change_reason=change_reason,
                 request_id=get_request_id(),
             )
-            _send_notifications(order, rule, actor_role, change_reason)
+            _send_notifications(order, rule, actor_role, change_reason, notify_customer=notify_customer)
         return order
 
     return run_with_retry_if_top_level(_execute)
@@ -260,8 +275,25 @@ def _resolve_sold_out_targets(
     return targets
 
 
+def _admin_change_reason(code: str, admin_reason: str | None) -> str:
+    allowed = (
+        ADMIN_DECLINE_REASONS
+        if code in (Transition.T3, Transition.T4, Transition.T12)
+        else ADMIN_CANCEL_REASONS
+    )
+    if admin_reason is None:
+        return allowed[0]
+    if admin_reason not in allowed:
+        raise ValueError(f"{admin_reason!r} is not a valid admin reason for {code}.")
+    return admin_reason
+
+
 def _check_preconditions(
-    order: Order, rule: TransitionRule, actor_role: str, reason: str | None
+    order: Order,
+    rule: TransitionRule,
+    actor_role: str,
+    reason: str | None,
+    admin_reason: str | None = None,
 ) -> str | None:
     if reason and len(reason) > REASON_MAX_LENGTH:
         raise BusinessValidationError(
@@ -307,9 +339,7 @@ def _check_preconditions(
 
     if actor_role == _R.ADMIN:
         # Fixed system reason prevents leaking internal administrative notes into end-user emails.
-        if code in (Transition.T3, Transition.T4, Transition.T12):
-            return ChangeReason.FARMER_SUSPENDED_BY_ADMIN
-        return ChangeReason.CUSTOMER_LOCKED_BY_ADMIN
+        return _admin_change_reason(code, admin_reason)
 
     if code == Transition.T8:
         if now < order.pickup_start_at:
@@ -347,13 +377,21 @@ def _mark_products_sold_out(product_ids: set[int], *, reason: str, user: Any) ->
 
 
 def _send_notifications(
-    order: Order, rule: TransitionRule, actor_role: str, change_reason: str | None
+    order: Order,
+    rule: TransitionRule,
+    actor_role: str,
+    change_reason: str | None,
+    *,
+    notify_customer: bool = True,
 ) -> None:
     context = build_order_context(order)
     readable_reason = SYSTEM_REASON_TEXT.get(change_reason, change_reason) or NO_REASON_TEXT
     customer, farmer_user = order.customer, order.farmer.user
     code = rule.code
 
+    if not notify_customer and code in (Transition.T3, Transition.T4, Transition.T12):
+        # The caller tells the customer itself (AD-17 sends one MARKET_CLOSED per customer).
+        return
     if code == Transition.T2:
         notify(recipient=customer, event_type=NotificationType.ORDER_ACCEPTED, context=context)
     elif code in (Transition.T3, Transition.T4, Transition.T12):

@@ -4,6 +4,8 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+# Shared 5-500 character reason, the same one AD-06 and AD-07 use.
+from accounts.admin_portal.serializers_admin import AdminReasonSerializer
 from marketlink_core.exceptions import ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
@@ -148,9 +150,12 @@ class MarketDetailView(RetrieveUpdateAPIView):
 class _MarketStateView(APIView):
     permission_classes = [IsAdmin]
 
-    def _audit(self, request, *, action: str, market_id: int) -> None:
+    def _audit(self, request, *, action: str, market_id: int, extra: dict | None = None) -> None:
         log_request_event(
-            request, action=action, status_code=200, details={"market_id": market_id}
+            request,
+            action=action,
+            status_code=200,
+            details={"market_id": market_id, **(extra or {})},
         )
 
     def _respond(self, request, *, market_id: int, message: str) -> Response:
@@ -163,14 +168,26 @@ class _MarketStateView(APIView):
 
 class MarketDeactivateView(_MarketStateView):
     @extend_schema(
-        request=None,
-        responses={200: MarketAdminReadSerializer, 404: None, 422: None},
-        summary="Deactivate a market",
+        request=AdminReasonSerializer,
+        responses={200: MarketAdminReadSerializer, 400: None, 404: None, 422: None},
+        summary="Close a market",
     )
     def post(self, request, id: int) -> Response:
-        deactivate_market(market_id=_require_market(id))
-        self._audit(request, action=AuditAction.MARKET_DEACTIVATED, market_id=id)
-        return self._respond(request, market_id=id, message="Market deactivated.")
+        _require_market(id)
+        serializer = AdminReasonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data["reason"]
+
+        _, cancelled = deactivate_market(market_id=id, reason=reason, actor=request.user)
+        self._audit(
+            request,
+            action=AuditAction.MARKET_DEACTIVATED,
+            market_id=id,
+            extra={"reason": reason, "cancelled_orders": cancelled},
+        )
+        data = MarketAdminReadSerializer(get_market_for_admin(market_id=id)).data
+        data["cancelled_orders"] = cancelled
+        return api_response(message="Market closed.", request=request, data=data)
 
 
 class MarketActivateView(_MarketStateView):

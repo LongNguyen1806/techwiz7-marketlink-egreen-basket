@@ -54,7 +54,9 @@
   border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border);
   background-color: var(--color-card);
-  padding-inline: var(--space-3);
+  /* The native arrow is drawn at the inner right edge, so with a pill radius it lands in the
+     curve. Extra padding on the right pulls it back inside; the left matches Input's. */
+  padding-inline: var(--space-4) var(--space-5);
   font-size: var(--text-sm);
 }
 

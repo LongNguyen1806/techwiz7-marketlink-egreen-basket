@@ -1,6 +1,7 @@
 from django.urls import path
 
 from system.views import (
+    AdminChangeLogView,
     AuditLogDetailView,
     AuditLogListView,
     DashboardView,
@@ -16,4 +17,9 @@ urlpatterns = [
     path("admin/reports/export/", ReportExportView.as_view(), name="admin-report-export"),
     path("admin/audit-logs/", AuditLogListView.as_view(), name="admin-audit-log-list"),
     path("admin/audit-logs/<int:id>/", AuditLogDetailView.as_view(), name="admin-audit-log-detail"),
+    path(
+        "admin/audit-trail/<str:model>/<int:id>/",
+        AdminChangeLogView.as_view(),
+        name="admin-change-log",
+    ),
 ]

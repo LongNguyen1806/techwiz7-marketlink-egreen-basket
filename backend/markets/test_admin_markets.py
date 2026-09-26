@@ -4,6 +4,7 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.models import FarmerStatus
 from markets.conftest import MONDAY, SATURDAY, WEDNESDAY
 from markets.models import Market, PickupSlot
 from notifications.models import Notification, NotificationType
@@ -241,7 +242,9 @@ def test_already_disabled_slots_are_not_counted_again(admin_client, market, make
 
 @pytest.mark.django_db
 def test_deactivate_and_activate_a_quiet_market(admin_client, market):
-    response = admin_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id]))
+    response = admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": "The market building is being demolished."}, format="json"
+    )
     assert response.status_code == 200
     assert response.data["data"]["is_active"] is False
 
@@ -251,26 +254,42 @@ def test_deactivate_and_activate_a_quiet_market(admin_client, market):
 
 
 @pytest.mark.django_db
-def test_deactivate_is_refused_while_orders_are_open(admin_client, market, make_order):
-    make_order(pickup_date=timezone.localdate() + timedelta(days=1))
+def test_closing_a_market_cancels_the_orders_still_open_there(
+    admin_client, market, make_order, customer_user
+):
+    order = make_order(pickup_date=timezone.localdate() + timedelta(days=1))
 
-    response = admin_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id]))
+    response = admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": "The market building is being demolished."}, format="json"
+    )
 
-    assert response.status_code == 422
-    assert response.data["code"] == "RESOURCE_IN_USE"
-    assert response.data["errors"]["open_order_count"] == ["1"]
+    assert response.status_code == 200
+    assert response.data["data"]["cancelled_orders"] == 1
     market.refresh_from_db()
-    assert market.is_active is True
+    order.refresh_from_db()
+    assert market.is_active is False
+    assert order.status == OrderStatus.DECLINED
+
+    # The shopper is told, and the reason the admin typed is carried through verbatim.
+    notification = Notification.objects.get(
+        recipient=customer_user, type=NotificationType.MARKET_CLOSED
+    )
+    assert "demolished" in notification.message
 
 
 @pytest.mark.django_db
-def test_deactivating_keeps_the_pickup_slots(admin_client, market, make_slot):
+def test_closing_a_market_switches_off_its_pickup_slots(admin_client, market, make_slot):
     slot = make_slot(day_of_week=MONDAY, start=time(7, 0), end=time(9, 0))
 
-    admin_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id]))
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": "The market building is being demolished."}, format="json"
+    )
 
     slot.refresh_from_db()
-    assert slot.is_active is True
+    assert slot.is_active is False
+    # Row by row, so the trail records each one (v1.8).
+    latest = PickupSlot.history.filter(id=slot.id).order_by("history_date", "history_id").last()
+    assert latest.history_change_reason == f"Market #{market.id} closed by Admin (AD-17)"
 
 
 @pytest.mark.django_db
@@ -342,25 +361,29 @@ def test_updating_a_market_audits_the_changed_fields_and_slot_count(
 
 @pytest.mark.django_db
 def test_deactivating_and_reactivating_are_both_audited(admin_client, market):
-    admin_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id]))
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": "The market building is being demolished."}, format="json"
+    )
     admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
 
     assert [entry.action for entry in AuditLog.objects.order_by("id")] == [
         AuditAction.MARKET_DEACTIVATED,
         AuditAction.MARKET_ACTIVATED,
     ]
-    assert AuditLog.objects.filter(action=AuditAction.MARKET_DEACTIVATED).get().details == {
-        "market_id": market.id
-    }
+    closed = AuditLog.objects.get(action=AuditAction.MARKET_DEACTIVATED)
+    assert closed.details["market_id"] == market.id
+    assert closed.details["reason"] == "The market building is being demolished."
+    assert closed.details["cancelled_orders"] == 0
 
 
 @pytest.mark.django_db
-def test_a_blocked_deactivation_writes_no_audit_row(admin_client, market, make_order):
-    make_order(pickup_date=timezone.localdate() + timedelta(days=1), status=OrderStatus.PLACED)
+def test_closing_without_a_reason_is_refused_and_writes_no_audit_row(admin_client, market):
+    response = admin_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id]), {}, format="json")
 
-    response = admin_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id]))
-
-    assert response.status_code == 422
+    assert response.status_code == 400
+    assert "reason" in response.data["errors"]
+    market.refresh_from_db()
+    assert market.is_active is True
     assert not AuditLog.objects.exists()
 
 
@@ -393,3 +416,94 @@ def test_markets_sort_by_name_in_both_directions(admin_client, market):
     assert names("name") == sorted(names("name"))
     assert names("-name") == sorted(names("name"), reverse=True)
     assert admin_client.get(reverse(LIST_URL_NAME), {"ordering": "secret"}).status_code == 400
+
+
+REASON = "The market building is being demolished."
+
+
+@pytest.mark.django_db
+def test_closing_a_market_does_not_suspend_its_stalls(
+    admin_client, market, farmer_market, approved_farmer
+):
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    approved_farmer.refresh_from_db()
+    # A stall may trade at several markets; closing one of them is no fault of the farmer,
+    # and SUSPENDED would cut them off everywhere and stain their profile.
+    assert approved_farmer.status == FarmerStatus.APPROVED
+    assert approved_farmer.status_reason is None
+
+
+@pytest.mark.django_db
+def test_a_stall_with_no_open_orders_is_still_told(
+    admin_client, market, farmer_market, farmer_user
+):
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    notification = Notification.objects.get(
+        recipient=farmer_user, type=NotificationType.MARKET_CLOSED
+    )
+    assert "demolished" in notification.message
+    assert notification.target_url == "/farmer/markets"
+
+
+@pytest.mark.django_db
+def test_stock_goes_back_when_the_orders_are_cancelled(
+    admin_client, market, make_order, make_slot
+):
+    from catalog.models import Category, Product, Unit
+    from orders.models import OrderItem
+
+    order = make_order(pickup_date=timezone.localdate() + timedelta(days=1))
+    order.status = OrderStatus.ACCEPTED
+    order.save(update_fields=["status"])
+    category = Category.objects.create(name="Roots", display_order=1)
+    product = Product.objects.create(
+        farmer=order.farmer, category=category, name="Beetroot",
+        price="3.00", unit=Unit.KG, stock_quantity=4,
+    )
+    OrderItem.objects.create(
+        order=order, product=product, quantity=2, unit_price="3.00",
+        line_total="6.00", product_name="Beetroot",
+    )
+
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    product.refresh_from_db()
+    # An ACCEPTED order had taken the stock (D-029), so closing the market must give it back.
+    assert product.stock_quantity == 6
+
+
+@pytest.mark.django_db
+def test_a_market_that_is_already_closed_cannot_be_closed_again(admin_client, market):
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    response = admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    assert response.status_code == 422
+    assert response.data["code"] == "INVALID_STATUS_TRANSITION"
+
+
+@pytest.mark.django_db
+def test_a_finished_order_is_left_alone(admin_client, market, make_order):
+    done = make_order(
+        pickup_date=timezone.localdate() - timedelta(days=2), status=OrderStatus.COMPLETED
+    )
+
+    response = admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    done.refresh_from_db()
+    assert response.data["data"]["cancelled_orders"] == 0
+    assert done.status == OrderStatus.COMPLETED

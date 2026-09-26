@@ -2,13 +2,22 @@
 # The audit trail below is a different thing: how one record changed over time
 # (who, when, why, old -> new), read from the django-simple-history tables (v1.8).
 
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
+from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
+from django.db.models.fields.files import FieldFile
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
+from rest_framework import serializers
+
+from accounts.models import FarmerProfile
+from catalog.models import Product
 from marketlink_core.ordering import both_directions, resolve_ordering
+from markets.models import FarmerClosure, FarmerMarket, PickupSlot
+from orders.models import Order, OrderItem
 from system.models import AuditLog
 
 
@@ -61,16 +70,6 @@ def list_audit_logs(
     )
 
 
-from typing import Any
-
-from django.db.models import Model
-from rest_framework import serializers
-
-from accounts.models import FarmerProfile
-from catalog.models import Product
-from markets.models import FarmerClosure, FarmerMarket, PickupSlot
-from orders.models import Order, OrderItem
-
 # Key used by the Admin API / UI -> tracked model.
 TRACKED_MODELS: dict[str, type[Model]] = {
     "farmer_profile": FarmerProfile,
@@ -91,6 +90,24 @@ def _user(record: Any) -> dict[str, Any] | None:
     return {"id": user.pk, "email": user.email} if user is not None else None
 
 
+def _json_safe(value: Any) -> Any:
+    """Coerce a model field value into something the JSON renderer accepts.
+
+    Most values pass through untouched. FieldFile is the one that bites: rendering an empty
+    ImageFieldFile raises ValueError("has no file associated with it"), which would turn a
+    changed photo into a 500.
+    """
+    if value is None or isinstance(value, (bool, int, float, str, list, dict)):
+        return value
+    if isinstance(value, FieldFile):
+        return value.name or None
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, (datetime, date, time)):
+        return value.isoformat()
+    return str(value)
+
+
 def build_change_log(model: type[Model], object_id: int) -> list[dict[str, Any]]:
     """Every change of one record, oldest first, with the changed fields (old -> new)."""
     records = list(
@@ -105,7 +122,11 @@ def build_change_log(model: type[Model], object_id: int) -> list[dict[str, Any]]
         if previous is not None and record.history_type == "~":
             delta = record.diff_against(previous)
             changes = [
-                {"field": change.field, "old": change.old, "new": change.new}
+                {
+                    "field": change.field,
+                    "old": _json_safe(change.old),
+                    "new": _json_safe(change.new),
+                }
                 for change in delta.changes
                 if change.field not in IGNORED_FIELDS
             ]

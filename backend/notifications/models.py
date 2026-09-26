@@ -25,6 +25,8 @@ class NotificationType(models.TextChoices):
     )
     ACCOUNT_STATUS_CHANGED = "ACCOUNT_STATUS_CHANGED", "Account Status Changed"
     MARKET_SCHEDULE_CHANGED = "MARKET_SCHEDULE_CHANGED", "Market Schedule Changed"
+    # Sent to both sides when Admin closes a market (AD-17), carrying the reason they gave.
+    MARKET_CLOSED = "MARKET_CLOSED", "Market Closed"
 
 
 
