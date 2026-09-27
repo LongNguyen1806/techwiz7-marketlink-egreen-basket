@@ -47,9 +47,12 @@ export const farmerKeys = {
     lists: () => ['farmer', 'orders', 'list'],
     list: (params = {}) => ['farmer', 'orders', 'list', params],
     detail: (id) => ['farmer', 'orders', 'detail', Number(id)],
-    tabCounts: () => ['farmer', 'orders', 'tab-counts'],
+    tabCounts: (marketId) =>
+      marketId === undefined ? ['farmer', 'orders', 'tab-counts'] : ['farmer', 'orders', 'tab-counts', marketId],
     pickingLists: () => ['farmer', 'orders', 'picking-list'],
-    pickingList: (pickupDate) => ['farmer', 'orders', 'picking-list', pickupDate],
+    pickingList: (pickupDate, marketId = 0) => ['farmer', 'orders', 'picking-list', pickupDate, marketId],
+    byCustomerAll: () => ['farmer', 'orders', 'by-customer'],
+    byCustomer: (pickupDate, marketId = 0) => ['farmer', 'orders', 'by-customer', pickupDate, marketId],
   },
   products: {
     all: () => ['farmer', 'products'],

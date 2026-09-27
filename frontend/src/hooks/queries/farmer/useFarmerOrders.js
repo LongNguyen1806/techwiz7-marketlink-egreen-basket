@@ -53,10 +53,11 @@ export function useFarmerOverdueOrders(filters, { enabled = true } = {}) {
   };
 }
 
-export function useFarmerOrderTabCounts() {
+export function useFarmerOrderTabCounts({ marketId = 0 } = {}) {
   return useQuery({
-    queryKey: farmerKeys.orders.tabCounts(),
-    queryFn: ({ signal }) => farmerApi.getOrderTabCounts({ signal }),
+    queryKey: farmerKeys.orders.tabCounts(marketId),
+    queryFn: ({ signal }) => farmerApi.getOrderTabCounts({ marketId }, { signal }),
+    placeholderData: keepPreviousData,
     staleTime: STALE.LIVE,
   });
 }
@@ -72,12 +73,23 @@ export function useFarmerOrder(id, { enabled = true } = {}) {
   });
 }
 
+/** FA-37: one group per customer for a pickup date, to pack their orders together (D-005). */
+export function useOrdersByCustomer(pickupDate, { marketId = 0, enabled = true } = {}) {
+  return useQuery({
+    queryKey: farmerKeys.orders.byCustomer(pickupDate, marketId),
+    queryFn: ({ signal }) => farmerApi.getOrdersByCustomer({ pickupDate, marketId }, { signal }),
+    staleTime: STALE.SHORT,
+    placeholderData: keepPreviousData,
+    enabled: enabled && Boolean(pickupDate),
+  });
+}
+
 const pickingRows = (data) => data.rows ?? [];
 
-export function usePickingList(pickupDate, { enabled = true } = {}) {
+export function usePickingList(pickupDate, { marketId = 0, enabled = true } = {}) {
   return useQuery({
-    queryKey: farmerKeys.orders.pickingList(pickupDate),
-    queryFn: ({ signal }) => farmerApi.getPickingList(pickupDate, { signal }),
+    queryKey: farmerKeys.orders.pickingList(pickupDate, marketId),
+    queryFn: ({ signal }) => farmerApi.getPickingList({ pickupDate, marketId }, { signal }),
     select: pickingRows,
     staleTime: STALE.SHORT,
     placeholderData: keepPreviousData,

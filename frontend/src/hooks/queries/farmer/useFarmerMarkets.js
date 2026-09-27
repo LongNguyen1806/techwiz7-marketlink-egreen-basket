@@ -78,6 +78,33 @@ export function useCreatePickupSlot() {
 }
 
 
+export function useDeletePickupSlot() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slotId }) => farmerApi.deletePickupSlot(slotId),
+    meta: { silent: true },
+    onSuccess: (_data, { farmerMarketId, slotId }) => {
+      queryClient.setQueryData(farmerKeys.markets(), (markets) =>
+        mapSlots(markets, farmerMarketId, (slots) => slots.filter((slot) => slot.id !== slotId)),
+      );
+      notify.success('Pickup slot deleted');
+    },
+    onError: (error) => {
+      const apiError = ApiError.fromUnknown(error);
+      if (!apiError.is('RESOURCE_IN_USE')) {
+        notifyError(error);
+        return;
+      }
+      const ids = apiError.fieldErrors.order_ids ?? [];
+      notifyError(error, {
+        title: "This slot can't be deleted yet",
+        description: `Open orders still use it${ids.length ? ` (#${ids.join(', #')})` : ''}. Turn the slot off instead, or handle those orders first.`,
+      });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: farmerKeys.markets() }),
+  });
+}
+
 export function useTogglePickupSlot() {
   const queryClient = useQueryClient();
   return useMutation({

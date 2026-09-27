@@ -49,11 +49,12 @@ const SUCCESS_MESSAGES = {
   [A.READY]: 'Marked ready for pickup',
   [A.COMPLETE]: 'Pickup completed',
   [A.NO_SHOW]: 'Marked as no-show',
+  [A.MARK_ITEM_SOLD_OUT]: 'Item removed and marked sold out',
   [A.APPROVE_CHANGE]: 'Changes approved',
   [A.REJECT_CHANGE]: 'Original order kept',
 };
 
-function runAction({ action, order, reason, soldOutProductIds }) {
+function runAction({ action, order, reason, soldOutProductIds, productId }) {
   const { id, version } = order;
   switch (action) {
     case A.ACCEPT:
@@ -66,6 +67,8 @@ function runAction({ action, order, reason, soldOutProductIds }) {
       return farmerApi.completeOrder(id, version);
     case A.NO_SHOW:
       return farmerApi.markOrderNoShow(id, version);
+    case A.MARK_ITEM_SOLD_OUT:
+      return farmerApi.markOrderItemSoldOut(id, version, productId);
     case A.APPROVE_CHANGE:
       return farmerApi.approveChangeRequest(id, version);
     case A.REJECT_CHANGE:
@@ -108,6 +111,7 @@ export function useFarmerOrderAction() {
         farmerKeys.orders.lists(),
         farmerKeys.orders.tabCounts(),
         farmerKeys.orders.pickingLists(),
+        farmerKeys.orders.byCustomerAll(),
         farmerKeys.products.all(),
         farmerKeys.dashboard.all(),
       ].forEach((queryKey) => void queryClient.invalidateQueries({ queryKey }));

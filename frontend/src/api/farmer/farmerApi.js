@@ -27,8 +27,12 @@ export const farmerApi = {
   },
 
   
-  getOrderTabCounts: async ({ signal } = {}) => {
-    const { data } = await axiosClient.get('/farmer/orders/tab-counts/', { signal });
+  // FA-20: per-tab totals plus by_date { 'YYYY-MM-DD': { placed, accepted, ready } } from today on.
+  getOrderTabCounts: async ({ marketId } = {}, { signal } = {}) => {
+    const { data } = await axiosClient.get('/farmer/orders/tab-counts/', {
+      params: { market_id: marketId || undefined },
+      signal,
+    });
     return data;
   },
 
@@ -38,9 +42,9 @@ export const farmerApi = {
   },
 
   
-  getPickingList: async (pickupDate, { signal } = {}) => {
+  getPickingList: async ({ pickupDate, marketId }, { signal } = {}) => {
     const { data } = await axiosClient.get('/farmer/orders/picking-list/', {
-      params: { pickup_date: pickupDate },
+      params: { pickup_date: pickupDate, market_id: marketId || undefined },
       signal,
     });
     return data;
@@ -74,6 +78,25 @@ export const farmerApi = {
   markOrderNoShow: async (id, version) => {
     const { data } = await axiosClient.post(`/farmer/orders/${id}/no-show/`, {}, { ifMatch: version });
     return data;
+  },
+
+  // FA-36: drop one sold-out item from a PLACED order (2+ items) and set its stock to 0 (D-036).
+  markOrderItemSoldOut: async (id, version, productId) => {
+    const { data } = await axiosClient.post(
+      `/farmer/orders/${id}/items/${productId}/mark-sold-out/`,
+      {},
+      { ifMatch: version },
+    );
+    return data;
+  },
+
+  // FA-37: ACCEPTED / READY orders of one pickup date grouped by customer; not paginated.
+  getOrdersByCustomer: async ({ pickupDate, marketId }, { signal } = {}) => {
+    const { data } = await axiosClient.get('/farmer/orders/grouped-by-customer/', {
+      params: { pickup_date: pickupDate, market_id: marketId || undefined },
+      signal,
+    });
+    return Array.isArray(data) ? data : [];
   },
 
   // FA-34: apply the shopper's pending change; stock moves by the difference (D-030).
@@ -224,5 +247,31 @@ export const farmerApi = {
   updatePickupSlot: async (slotId, changes) => {
     const { data } = await axiosClient.patch(`/farmer/pickup-slots/${slotId}/`, changes);
     return data;
+  },
+
+  // FA-10: RESOURCE_IN_USE (errors.order_ids) while open orders use the slot.
+  deletePickupSlot: async (slotId) => {
+    await axiosClient.delete(`/farmer/pickup-slots/${slotId}/`);
+  },
+
+  // FA-31: current and upcoming time off (D-023).
+  getClosures: async ({ signal } = {}) => {
+    const { data } = await axiosClient.get('/farmer/closures/', { signal });
+    return Array.isArray(data) ? data : [];
+  },
+
+  // FA-32: RESOURCE_IN_USE (errors.order_ids) when open orders fall inside the range.
+  createClosure: async ({ startDate, endDate, reason }) => {
+    const { data } = await axiosClient.post('/farmer/closures/', {
+      start_date: startDate,
+      end_date: endDate,
+      reason: reason || null,
+    });
+    return data;
+  },
+
+  // FA-33.
+  deleteClosure: async (closureId) => {
+    await axiosClient.delete(`/farmer/closures/${closureId}/`);
   },
 };

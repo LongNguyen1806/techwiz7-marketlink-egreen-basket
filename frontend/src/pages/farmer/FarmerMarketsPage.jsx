@@ -5,7 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { FarmerTimeOffPanel } from '../../components/farmer/FarmerTimeOffPanel';
 import { MARKER_ICON } from '../../components/common/maps/markerIcon';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -16,6 +18,7 @@ import { Switch } from '../../components/ui/Switch';
 import { ROUTES } from '../../constants/routes';
 import {
   useCreatePickupSlot,
+  useDeletePickupSlot,
   useFarmerMarkets,
   useJoinMarket,
   useLeaveMarket,
@@ -224,8 +227,10 @@ AddSlotDialog.propTypes = {
 
 function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
   const toggleSlot = useTogglePickupSlot();
+  const deleteSlot = useDeletePickupSlot();
   const leave = useLeaveMarket();
   const [slotDay, setSlotDay] = useState(null);
+  const [slotToDelete, setSlotToDelete] = useState(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const { market } = farmerMarket;
   const hasCoordinates = typeof market.latitude === 'number' && typeof market.longitude === 'number';
@@ -307,13 +312,23 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
                 <span>
                   {dayOfWeekLabel(slot.day_of_week, { short: true })} · {formatTimeRange(slot.start_time, slot.end_time)}
                 </span>
-                <Switch
-                  checked={slot.is_active}
-                  aria-label={`${dayOfWeekLabel(slot.day_of_week)} ${formatTimeRange(slot.start_time, slot.end_time)} open for booking`}
-                  onCheckedChange={(checked) =>
-                    toggleSlot.mutate({ farmerMarketId: farmerMarket.id, slotId: slot.id, isActive: checked })
-                  }
-                />
+                <span className="page-primitive__inline-row">
+                  <Switch
+                    checked={slot.is_active}
+                    aria-label={`${dayOfWeekLabel(slot.day_of_week)} ${formatTimeRange(slot.start_time, slot.end_time)} open for booking`}
+                    onCheckedChange={(checked) =>
+                      toggleSlot.mutate({ farmerMarketId: farmerMarket.id, slotId: slot.id, isActive: checked })
+                    }
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Delete the ${dayOfWeekLabel(slot.day_of_week)} ${formatTimeRange(slot.start_time, slot.end_time)} slot`}
+                    onClick={() => setSlotToDelete(slot)}
+                  >
+                    <Trash2 aria-hidden size={16} />
+                  </Button>
+                </span>
               </div>
             ))
           )}
@@ -335,6 +350,26 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
       </Button>
 
       <AddSlotDialog farmerMarket={farmerMarket} day={slotDay} onClose={() => setSlotDay(null)} />
+
+      <ConfirmDialog
+        open={Boolean(slotToDelete)}
+        onOpenChange={(open) => !open && setSlotToDelete(null)}
+        title="Delete this pickup slot?"
+        description={
+          slotToDelete
+            ? `${dayOfWeekLabel(slotToDelete.day_of_week)} ${formatTimeRange(slotToDelete.start_time, slotToDelete.end_time)} at ${market.name} will be removed. Slots with open orders can only be turned off.`
+            : undefined
+        }
+        confirmLabel="Delete slot"
+        destructive
+        loading={deleteSlot.isPending}
+        onConfirm={() =>
+          deleteSlot.mutate(
+            { farmerMarketId: farmerMarket.id, slotId: slotToDelete.id },
+            { onSettled: () => setSlotToDelete(null) },
+          )
+        }
+      />
 
       <ConfirmDialog
         open={confirmLeave}
@@ -430,6 +465,8 @@ export default function FarmerMarketsPage() {
           )}
         </div>
       </div>
+
+      <FarmerTimeOffPanel />
     </div>
   );
 }

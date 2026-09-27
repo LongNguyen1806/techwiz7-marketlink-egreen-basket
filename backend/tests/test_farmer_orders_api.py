@@ -180,7 +180,7 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.status_code, 403)
 
     def test_get_farmer_orders_list_tabs_and_counts(self):
-        self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
+        placed = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
         self._create_order(
             farmer=self.farmer,
@@ -208,7 +208,15 @@ class FarmerOrdersAPITestCase(TestCase):
 
         counts = self.client.get("/api/farmer/orders/tab-counts/").data["data"]
         self.assertEqual(
-            counts, {"placed": 1, "accepted": 2, "ready": 1, "overdue": 0, "change_requests": 1}
+            counts,
+            {
+                "placed": 1,
+                "accepted": 2,
+                "ready": 1,
+                "overdue": 0,
+                "change_requests": 1,
+                "by_date": {placed.pickup_date.isoformat(): {"placed": 1, "accepted": 2, "ready": 1}},
+            },
         )
 
     def test_get_order_detail_and_allowed_actions(self):
@@ -554,8 +562,32 @@ class FarmerOrdersAPITestCase(TestCase):
         res = self.client.get("/api/farmer/orders/tab-counts/")
         self.assertEqual(res.status_code, 200)
         data = res.data["data"]
-        for key in ("placed", "accepted", "ready", "overdue", "change_requests"):
+        for key in ("placed", "accepted", "ready", "overdue", "change_requests", "by_date"):
             self.assertIn(key, data)
+
+    def test_fa20_tab_counts_by_date_splits_open_orders_per_pickup_day(self):
+        placed = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
+        self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
+        self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
+        self._create_order(farmer=self.farmer, status=OrderStatus.COMPLETED)  # finished: not counted
+        self._create_order(farmer=self.other_farmer, status=OrderStatus.PLACED)  # another stall
+        past = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
+        past.pickup_date = timezone.localdate() - timedelta(days=1)  # before today: left out
+        past.save(update_fields=["pickup_date"])
+
+        self.client.force_authenticate(user=self.farmer_user)
+        by_date = self.client.get("/api/farmer/orders/tab-counts/").data["data"]["by_date"]
+
+        self.assertEqual(by_date, {placed.pickup_date.isoformat(): {"placed": 2, "accepted": 1, "ready": 0}})
+
+    def test_fa20_tab_counts_by_date_respects_market_filter(self):
+        self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
+        self.client.force_authenticate(user=self.farmer_user)
+
+        res = self.client.get(f"/api/farmer/orders/tab-counts/?market_id={self.market.id + 999}")
+
+        self.assertEqual(res.data["data"]["by_date"], {})
+        self.assertEqual(res.data["data"]["placed"], 0)
 
     def test_fa21_picking_list_endpoint(self):
         self.client.force_authenticate(user=self.farmer_user)

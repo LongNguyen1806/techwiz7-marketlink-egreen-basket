@@ -398,8 +398,27 @@ class FarmerOrderTabCountsView(FarmerBaseOrderView):
                 status__in=IN_PROGRESS_STATUSES, pickup_end_at__lt=timezone.now()
             ).count(),
             "change_requests": base_qs.filter(status=_S.ACCEPTED, pending_change__isnull=False).count(),
+            "by_date": _open_counts_by_date(base_qs),
         }
         return api_response(message="OK", data=data, request=request)
+
+
+_TAB_BY_OPEN_STATUS = {_S.PLACED: "placed", _S.ACCEPTED: "accepted", _S.READY_FOR_PICKUP: "ready"}
+
+
+def _open_counts_by_date(base_qs: QuerySet[Order]) -> dict[str, dict[str, int]]:
+    """Open orders per pickup date from today on, split by tab, for F-02's pickup-day filter."""
+    rows = (
+        base_qs.filter(status__in=list(_TAB_BY_OPEN_STATUS), pickup_date__gte=timezone.localdate())
+        .values("pickup_date", "status")
+        .annotate(total=Count("id"))
+        .order_by("pickup_date")
+    )
+    by_date: dict[str, dict[str, int]] = {}
+    for row in rows:
+        bucket = by_date.setdefault(row["pickup_date"].isoformat(), {"placed": 0, "accepted": 0, "ready": 0})
+        bucket[_TAB_BY_OPEN_STATUS[row["status"]]] = row["total"]
+    return by_date
 
 
 class FarmerOrderPickingListView(FarmerBaseOrderView):

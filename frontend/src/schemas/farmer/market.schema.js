@@ -12,6 +12,28 @@ const stallLabelField = z
 
 export const stallLabelSchema = z.object({ stall_label: stallLabelField });
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** FA-32 (D-023). `today` is the GMT+7 date as YYYY-MM-DD, so plain string compares work. */
+export function makeClosureSchema(today) {
+  return z
+    .object({
+      start_date: z.string().regex(ISO_DATE, 'Pick the first day off'),
+      end_date: z.string().regex(ISO_DATE, 'Pick the last day off'),
+      reason: z.string().trim().max(200, 'Reason must be 200 characters or fewer'),
+    })
+    .superRefine(({ start_date: start, end_date: end }, ctx) => {
+      if (ISO_DATE.test(start) && start < today) {
+        ctx.addIssue({ code: 'custom', path: ['start_date'], message: 'The first day off cannot be in the past' });
+      }
+      if (ISO_DATE.test(start) && ISO_DATE.test(end) && end < start) {
+        ctx.addIssue({ code: 'custom', path: ['end_date'], message: 'The last day off must be on or after the first' });
+      }
+    });
+}
+
+export const CLOSURE_DEFAULTS = { start_date: '', end_date: '', reason: '' };
+
 export const joinMarketSchema = z.object({
   market_id: z.number({ error: 'Select a market' }).int().positive('Select a market'),
   stall_label: stallLabelField,

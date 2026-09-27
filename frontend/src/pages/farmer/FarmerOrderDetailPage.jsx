@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { Countdown } from '../../components/common/Countdown';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { OrderTimeline } from '../../components/common/OrderTimeline';
@@ -10,6 +12,11 @@ import { FarmerChangeRequestPanel } from '../../components/farmer/FarmerChangeRe
 import { FarmerOrderActions } from '../../components/farmer/FarmerOrderActions';
 import { Button } from '../../components/ui/Button';
 import { ROUTES } from '../../constants/routes';
+import {
+  ORDER_ACTIONS,
+  allowedOrderActions,
+  useFarmerOrderAction,
+} from '../../hooks/queries/farmer/useFarmerOrderActions';
 import { useFarmerOrder } from '../../hooks/queries/farmer/useFarmerOrders';
 import { formatMoney, formatPickupWindow } from '../../utils/formatters';
 import { unitLabel } from '../../utils/labels';
@@ -28,6 +35,8 @@ function BackToList() {
 export default function FarmerOrderDetailPage() {
   const { id } = useParams();
   const query = useFarmerOrder(id);
+  const orderAction = useFarmerOrderAction();
+  const [soldOutItem, setSoldOutItem] = useState(null);
 
   if (query.isPending && query.fetchStatus !== 'idle') return <PageSkeleton />;
   if (!query.data) {
@@ -46,6 +55,7 @@ export default function FarmerOrderDetailPage() {
 
   const order = query.data;
   const isOpen = OPEN_STATUSES.includes(order.status);
+  const canMarkItemSoldOut = allowedOrderActions(order).includes(ORDER_ACTIONS.MARK_ITEM_SOLD_OUT);
 
   return (
     <div className="page-primitive__stack-6">
@@ -95,7 +105,14 @@ export default function FarmerOrderDetailPage() {
                   {item.quantity} × <PriceTag amount={item.unit_price} unit={unitLabel(item.unit)} />
                 </p>
               </div>
-              <p className="farmer-order-detail__item-total">{formatMoney(item.line_total)}</p>
+              <div className="page-primitive__inline-row">
+                {canMarkItemSoldOut ? (
+                  <Button size="sm" variant="outline" data-write onClick={() => setSoldOutItem(item)}>
+                    Sold out
+                  </Button>
+                ) : null}
+                <p className="farmer-order-detail__item-total">{formatMoney(item.line_total)}</p>
+              </div>
             </li>
           ))}
         </ul>
@@ -106,6 +123,23 @@ export default function FarmerOrderDetailPage() {
       </div>
 
       <BackToList />
+
+      {/* FA-36 (D-036): the shopper then agrees (Accept) or not (Decline). */}
+      <ConfirmDialog
+        open={Boolean(soldOutItem)}
+        onOpenChange={(open) => !open && setSoldOutItem(null)}
+        title={soldOutItem ? `Remove ${soldOutItem.product_name} from this order and mark it sold out?` : ''}
+        description={`Please call the customer first${order.customer.phone ? ` (${order.customer.phone})` : ''}. The item leaves the order, the total is recalculated and its stock is set to 0.`}
+        confirmLabel="Remove item"
+        destructive
+        loading={orderAction.isPending}
+        onConfirm={() =>
+          orderAction.mutate(
+            { action: ORDER_ACTIONS.MARK_ITEM_SOLD_OUT, order, productId: soldOutItem.product_id },
+            { onSettled: () => setSoldOutItem(null) },
+          )
+        }
+      />
     </div>
   );
 }
