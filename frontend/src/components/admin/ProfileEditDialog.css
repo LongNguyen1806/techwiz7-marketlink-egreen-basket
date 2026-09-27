@@ -1,3 +1,9 @@
+/* The shared admin primitives. Every route is a lazy chunk with its own stylesheet, so a
+   page that uses page-primitive__* classes has to pull them in here: landing straight on
+   this route would otherwise render it unstyled, and it only looked fine because another
+   page had already loaded them. */
+@import '../../styles/common/page-primitives.css';
+
 .profile-edit-dialog__form {
   display: flex;
   flex-direction: column;
