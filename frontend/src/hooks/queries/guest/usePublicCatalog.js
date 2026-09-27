@@ -87,6 +87,95 @@ export function usePublicProductReviews(id) {
   });
 }
 
+const flattenMarketPages = (data) => ({
+  markets: data.pages.flatMap((page) => page.results),
+  total: data.pages[0]?.count ?? 0,
+});
+
+/** Market directory (G-02): filters { q, day, lat, lng, ordering }, 20 per page. */
+export function usePublicMarketList(filters) {
+  return useInfiniteQuery({
+    queryKey: publicKeys.marketList(filters),
+    queryFn: ({ pageParam, signal }) =>
+      catalogApi.getMarkets({ ...filters, page: pageParam, page_size: 20 }, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
+    select: flattenMarketPages,
+    placeholderData: keepPreviousData,
+    staleTime: STALE.SEARCH,
+  });
+}
+
+// Admin-managed; closures and stall counts change rarely.
+export function usePublicMarket(id, coords = {}) {
+  const marketId = Number(id);
+  return useQuery({
+    queryKey: publicKeys.market(marketId, coords),
+    queryFn: ({ signal }) => catalogApi.getMarket(marketId, coords, { signal }),
+    staleTime: STALE.MEDIUM,
+    placeholderData: keepPreviousData,
+    enabled: Number.isInteger(marketId) && marketId > 0,
+  });
+}
+
+const flattenFarmerPages = (data) => ({
+  farmers: data.pages.flatMap((page) => page.results),
+  total: data.pages[0]?.count ?? 0,
+});
+
+export function usePublicMarketFarmers(id, { day } = {}) {
+  const marketId = Number(id);
+  return useInfiniteQuery({
+    queryKey: publicKeys.marketFarmers(marketId, { day }),
+    queryFn: ({ pageParam, signal }) =>
+      catalogApi.getMarketFarmers(marketId, { day, page: pageParam, page_size: 20 }, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
+    select: flattenFarmerPages,
+    placeholderData: keepPreviousData,
+    staleTime: STALE.MEDIUM,
+    enabled: Number.isInteger(marketId) && marketId > 0,
+  });
+}
+
+/** Stall directory (G-13): filters { q, ordering, lat, lng }, 20 per page. */
+export function usePublicFarmerList(filters) {
+  return useInfiniteQuery({
+    queryKey: publicKeys.farmerList(filters),
+    queryFn: ({ pageParam, signal }) =>
+      catalogApi.getFarmers({ ...filters, page: pageParam, page_size: 20 }, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
+    select: flattenFarmerPages,
+    placeholderData: keepPreviousData,
+    staleTime: STALE.SEARCH,
+  });
+}
+
+export function usePublicFarmer(id, coords = {}) {
+  const farmerId = Number(id);
+  return useQuery({
+    queryKey: publicKeys.farmer(farmerId, coords),
+    queryFn: ({ signal }) => catalogApi.getFarmer(farmerId, coords, { signal }),
+    staleTime: STALE.MEDIUM,
+    placeholderData: keepPreviousData,
+    enabled: Number.isInteger(farmerId) && farmerId > 0,
+  });
+}
+
+export function usePublicFarmerReviews(id) {
+  const farmerId = Number(id);
+  return useInfiniteQuery({
+    queryKey: publicKeys.farmerReviews(farmerId),
+    queryFn: ({ pageParam, signal }) => catalogApi.getFarmerReviews(farmerId, { page: pageParam }, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
+    select: flattenReviewPages,
+    staleTime: STALE.MEDIUM,
+    enabled: Number.isInteger(farmerId) && farmerId > 0,
+  });
+}
+
 export function usePublicFarmers(params = {}) {
   return useQuery({
     queryKey: publicKeys.farmers(params),

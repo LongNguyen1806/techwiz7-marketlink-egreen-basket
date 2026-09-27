@@ -4,3 +4,14 @@
   min-height: 220px;
   border-radius: var(--radius-2xl);
 }
+
+.markets-map__popup-name {
+  margin: 0 0 var(--space-1);
+  font-weight: var(--weight-semibold);
+}
+
+.markets-map__popup-link {
+  color: var(--color-primary-700);
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+}

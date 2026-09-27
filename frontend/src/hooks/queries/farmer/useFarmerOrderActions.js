@@ -49,6 +49,8 @@ const SUCCESS_MESSAGES = {
   [A.READY]: 'Marked ready for pickup',
   [A.COMPLETE]: 'Pickup completed',
   [A.NO_SHOW]: 'Marked as no-show',
+  [A.APPROVE_CHANGE]: 'Changes approved',
+  [A.REJECT_CHANGE]: 'Original order kept',
 };
 
 function runAction({ action, order, reason, soldOutProductIds }) {
@@ -64,6 +66,10 @@ function runAction({ action, order, reason, soldOutProductIds }) {
       return farmerApi.completeOrder(id, version);
     case A.NO_SHOW:
       return farmerApi.markOrderNoShow(id, version);
+    case A.APPROVE_CHANGE:
+      return farmerApi.approveChangeRequest(id, version);
+    case A.REJECT_CHANGE:
+      return farmerApi.rejectChangeRequest(id, version, { reason });
     default:
       return Promise.reject(new Error(`Unsupported order action: ${action}`));
   }

@@ -101,6 +101,8 @@
   font-weight: var(--weight-semibold);
 }
 
-.mini-cart__checkout-btn {
+.mini-cart__checkout-btn,
+.mini-cart__view-cart-btn {
   width: 100%;
 }
+

@@ -20,6 +20,22 @@ export const publicRoutes = [
         path: '/products/:id',
         lazy: page(() => import('../../pages/guest/ProductDetailPage')),
       },
+      {
+        path: '/markets',
+        lazy: page(() => import('../../pages/guest/MarketsPage')),
+      },
+      {
+        path: '/markets/:id',
+        lazy: page(() => import('../../pages/guest/MarketDetailPage')),
+      },
+      {
+        path: '/farmers',
+        lazy: page(() => import('../../pages/guest/FarmersPage')),
+      },
+      {
+        path: '/farmers/:id',
+        lazy: page(() => import('../../pages/guest/FarmerDetailPage')),
+      },
       ...customerRoutes,
     ],
   },

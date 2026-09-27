@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -11,14 +12,22 @@ import {
   allowedOrderActions,
   useFarmerOrderAction,
 } from '../../hooks/queries/farmer/useFarmerOrderActions';
+import { ROUTES } from '../../constants/routes';
 import { ApiError } from '../../lib/ApiError';
-import { DECLINE_DEFAULTS, declineOrderSchema } from '../../schemas/farmer/order.schema';
+import {
+  DECLINE_DEFAULTS,
+  REJECT_CHANGE_DEFAULTS,
+  declineOrderSchema,
+  rejectChangeSchema,
+} from '../../schemas/farmer/order.schema';
 import { unitLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerOrderActions.css';
 
 const A = ORDER_ACTIONS;
 
 const BUTTONS = [
+  { action: A.APPROVE_CHANGE, label: 'Approve changes', variant: 'default' },
+  { action: A.REJECT_CHANGE, label: 'Keep original order', variant: 'outline' },
   { action: A.ACCEPT, label: 'Accept', variant: 'default' },
   { action: A.DECLINE, label: 'Decline', variant: 'destructive' },
   { action: A.READY, label: 'Ready', variant: 'accent' },
@@ -26,7 +35,15 @@ const BUTTONS = [
   { action: A.NO_SHOW, label: 'No-show', variant: 'outline' },
 ];
 
+// Approve and reject need the change in front of the farmer, so the list links to the detail page.
+const CHANGE_ACTIONS = [A.APPROVE_CHANGE, A.REJECT_CHANGE];
+
 const CONFIRM_COPY = {
+  [A.APPROVE_CHANGE]: {
+    title: "Apply the customer's changes?",
+    description: 'Extra quantity will be deducted from stock and reduced quantity returned.',
+    confirmLabel: 'Approve changes',
+  },
   [A.ACCEPT]: {
     title: 'Accept this pre-order?',
     description: 'The shopper will be told you accepted and can plan their pickup.',
@@ -154,13 +171,61 @@ DeclineDialog.propTypes = {
   loading: PropTypes.bool,
 };
 
+function RejectChangeDialog({ open, onOpenChange, onSubmit, loading }) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(rejectChangeSchema), defaultValues: REJECT_CHANGE_DEFAULTS });
+
+  useEffect(() => {
+    if (open) reset(REJECT_CHANGE_DEFAULTS);
+  }, [open, reset]);
+
+  const submit = handleSubmit((values) => onSubmit({ reason: values.reason || undefined }));
+
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Keep the original order?"
+      description="The shopper's changes are dropped and the order stays as it was. You can tell them why (optional)."
+      confirmLabel="Keep original order"
+      loading={loading}
+      onConfirm={() => void submit()}
+    >
+      <Textarea
+        placeholder="Reason for the shopper (optional)…"
+        className="farmer-order-actions__reason"
+        maxLength={500}
+        aria-invalid={Boolean(errors.reason)}
+        {...register('reason')}
+      />
+      {errors.reason ? <p className="page-primitive__error">{errors.reason.message}</p> : null}
+    </ConfirmDialog>
+  );
+}
+
+RejectChangeDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onOpenChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+};
+
 export function FarmerOrderActions({ order, size = 'sm' }) {
   const orderAction = useFarmerOrderAction();
   const [pendingAction, setPendingAction] = useState(null);
 
+  // List rows carry an OrderSummary (no items, no pending_change); the detail page has both.
+  const isDetail = Array.isArray(order.items);
   const available = allowedOrderActions(order);
-  const buttons = BUTTONS.filter(({ action }) => available.includes(action));
-  if (buttons.length === 0) return null;
+  const reviewChanges = !isDetail && CHANGE_ACTIONS.some((action) => available.includes(action));
+  const buttons = BUTTONS.filter(
+    ({ action }) => available.includes(action) && (isDetail || !CHANGE_ACTIONS.includes(action)),
+  );
+  if (buttons.length === 0 && !reviewChanges) return null;
 
   const close = () => setPendingAction(null);
 
@@ -181,6 +246,11 @@ export function FarmerOrderActions({ order, size = 'sm' }) {
   return (
     <>
       <div className="farmer-order-actions">
+        {reviewChanges ? (
+          <Button asChild size={size}>
+            <Link to={ROUTES.FARMER.ORDER(order.id)}>Review changes</Link>
+          </Button>
+        ) : null}
         {buttons.map(({ action, label, variant }) => (
           <Button
             key={action}
@@ -202,6 +272,13 @@ export function FarmerOrderActions({ order, size = 'sm' }) {
         onOpenChange={(open) => !open && close()}
         onSubmit={run}
         loading={busyAction === A.DECLINE}
+      />
+
+      <RejectChangeDialog
+        open={pendingAction === A.REJECT_CHANGE}
+        onOpenChange={(open) => !open && close()}
+        onSubmit={run}
+        loading={busyAction === A.REJECT_CHANGE}
       />
 
       <ConfirmDialog

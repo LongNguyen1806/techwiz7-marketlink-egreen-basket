@@ -14,12 +14,18 @@ export const publicKeys = {
   config: () => ['public', 'config'],
   categories: () => ['public', 'categories'],
   markets: (params = {}) => ['public', 'markets', params],
+  marketList: (params = {}) => ['public', 'markets', 'list', params],
+  market: (id, params = {}) => ['public', 'markets', 'detail', Number(id), params],
+  marketFarmers: (id, params = {}) => ['public', 'markets', 'farmers', Number(id), params],
   products: (params = {}) => ['public', 'products', params],
   
   productList: (params = {}) => ['public', 'products', 'list', params],
   product: (id) => ['public', 'products', 'detail', Number(id)],
   productReviews: (id, params = {}) => ['public', 'products', 'reviews', Number(id), params],
   farmers: (params = {}) => ['public', 'farmers', params],
+  farmerList: (params = {}) => ['public', 'farmers', 'list', params],
+  farmer: (id, params = {}) => ['public', 'farmers', 'detail', Number(id), params],
+  farmerReviews: (id) => ['public', 'farmers', 'reviews', Number(id)],
 };
 
 export const notificationKeys = {

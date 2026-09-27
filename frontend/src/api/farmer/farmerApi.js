@@ -76,6 +76,26 @@ export const farmerApi = {
     return data;
   },
 
+  // FA-34: apply the shopper's pending change; stock moves by the difference (D-030).
+  approveChangeRequest: async (id, version) => {
+    const { data } = await axiosClient.post(
+      `/farmer/orders/${id}/change-request/approve/`,
+      {},
+      { ifMatch: version },
+    );
+    return data;
+  },
+
+  // FA-35: drop the pending change and keep the order as it was; reason is optional.
+  rejectChangeRequest: async (id, version, { reason } = {}) => {
+    const { data } = await axiosClient.post(
+      `/farmer/orders/${id}/change-request/reject/`,
+      reason ? { reason } : {},
+      { ifMatch: version },
+    );
+    return data;
+  },
+
   
 
   

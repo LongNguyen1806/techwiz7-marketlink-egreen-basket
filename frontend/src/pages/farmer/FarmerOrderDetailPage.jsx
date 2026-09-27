@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
 import { PriceTag } from '../../components/common/PriceTag';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { FarmerChangeRequestPanel } from '../../components/farmer/FarmerChangeRequestPanel';
 import { FarmerOrderActions } from '../../components/farmer/FarmerOrderActions';
 import { Button } from '../../components/ui/Button';
 import { ROUTES } from '../../constants/routes';
@@ -54,9 +55,7 @@ export default function FarmerOrderDetailPage() {
         actions={<StatusBadge status={order.status} />}
       />
 
-      {order.has_pending_change ? (
-        <p className="page-primitive__warn-banner">The shopper has asked to change this order.</p>
-      ) : null}
+      {order.has_pending_change ? <FarmerChangeRequestPanel order={order} /> : null}
       {order.stock_warning ? (
         <p className="page-primitive__warn-banner">Your current stock cannot cover every item in this order.</p>
       ) : null}

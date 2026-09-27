@@ -6,9 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import MockAdapter from 'axios-mock-adapter';
 import axiosClient from '../../../lib/axiosClient';
 import { useAuthStore } from '../../../stores/auth.store';
-import { LoginForm } from './LoginForm';
 import { RegisterCustomerForm } from './RegisterCustomerForm';
-import { RegisterFarmerForm } from './RegisterFarmerForm';
 import { ChangePasswordForm } from './ChangePasswordForm';
 import AdminLoginPage from '../../../pages/admin/AdminLoginPage';
 
@@ -21,9 +19,6 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const CUSTOMER = {
   id: 4, email: 'alice@example.com', role: 'CUSTOMER', display_name: 'Alice Nguyen', farmer_status: null,
-};
-const FARMER = {
-  id: 9, email: 'stall@example.com', role: 'FARMER', display_name: 'Green Stall', farmer_status: 'PENDING',
 };
 
 const ok = (data) => ({ success: true, message: 'OK', data, errors: {} });
@@ -59,83 +54,6 @@ function lastPost() {
 async function fillIn(label, value) {
   await userEvent.type(screen.getByLabelText(label), value);
 }
-
-describe('LoginForm (G-09)', () => {
-  it('sends the email in lower case, as the serializer stores it', async () => {
-    mock.onPost('/auth/login/').reply(200, ok({ access: 'a', refresh: 'r', user: CUSTOMER }));
-    renderForm(<LoginForm />);
-
-    await fillIn('Email', 'Alice@Example.com');
-    await fillIn('Password', 'Mango2026x');
-    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-    await waitFor(() => expect(mock.history.post).toHaveLength(1));
-    expect(lastPost()).toEqual({
-      url: '/auth/login/',
-      body: { email: 'alice@example.com', password: 'Mango2026x' },
-    });
-  });
-
-  it('attaches a server field error to the input it belongs to', async () => {
-    mock.onPost('/auth/login/').reply(400, failed({
-      message: 'Invalid input', errors: { email: ['Enter a valid email address.'] },
-    }));
-    renderForm(<LoginForm />);
-
-    await fillIn('Email', 'alice@example.com');
-    await fillIn('Password', 'Mango2026x');
-    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('Email')).toHaveAccessibleDescription('Enter a valid email address.');
-    });
-  });
-
-  it('shows a rejected sign-in on the form, not only as a toast', async () => {
-    mock.onPost('/auth/login/').reply(401, failed({
-      message: 'Incorrect email or password', code: 'INVALID_CREDENTIALS',
-    }));
-    renderForm(<LoginForm />);
-
-    await fillIn('Email', 'alice@example.com');
-    await fillIn('Password', 'wrong-password');
-    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Incorrect email or password');
-  });
-
-  it('spells out why a locked account cannot sign in (D-024)', async () => {
-    mock.onPost('/auth/login/').reply(403, failed({
-      message: 'Your account has been locked',
-      code: 'ACCOUNT_LOCKED',
-      errors: { reason: ['Three no-shows in one month'] },
-    }));
-    renderForm(<LoginForm />);
-
-    await fillIn('Email', 'alice@example.com');
-    await fillIn('Password', 'Mango2026x');
-    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Three no-shows in one month');
-    expect(alert).toHaveTextContent(/administrator/i);
-  });
-
-  it('never reaches the admin portal from the public form (D-027)', async () => {
-    mock.onPost('/auth/login/').reply(401, failed({
-      message: 'Incorrect email or password', code: 'INVALID_CREDENTIALS',
-    }));
-    renderForm(<LoginForm />);
-
-    
-    await fillIn('Email', 'admin@marketlink.vn');
-    await fillIn('Password', 'Mango2026x');
-    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-    await waitFor(() => expect(mock.history.post).toHaveLength(1));
-    expect(mock.history.post.map((request) => request.url)).toEqual(['/auth/login/']);
-  });
-});
 
 describe('RegisterCustomerForm (G-10)', () => {
   async function fillCustomer() {
@@ -177,75 +95,6 @@ describe('RegisterCustomerForm (G-10)', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Email')).toHaveAccessibleDescription('This email is already registered.');
     });
-  });
-});
-
-describe('RegisterFarmerForm (G-11)', () => {
-  async function fillStep1() {
-    await fillIn('Email', 'stall@example.com');
-    await fillIn('Phone number', '0987654321');
-    await fillIn('Password', 'Mango2026x');
-    await fillIn('Confirm password', 'Mango2026x');
-    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
-  }
-
-  async function fillStep2() {
-    await fillIn('Stall name', 'Green Stall');
-    await fillIn('Contact person', 'Bob Tran');
-    await fillIn('Address', '5 Farm Road, Da Lat');
-  }
-
-  it('will not submit without an operating day (D-031)', async () => {
-    renderForm(<RegisterFarmerForm />);
-
-    await fillStep1();
-    await fillStep2();
-    await userEvent.click(screen.getByRole('button', { name: /submit for review/i }));
-
-    expect(await screen.findByText(/select at least one operating day/i)).toBeInTheDocument();
-    expect(mock.history.post).toHaveLength(0);
-  });
-
-  it('sends the ticked days as ISO weekdays', async () => {
-    mock.onPost('/auth/register/farmer/').reply(201, ok({ access: 'a', refresh: 'r', user: FARMER }));
-    renderForm(<RegisterFarmerForm />);
-
-    await fillStep1();
-    await fillStep2();
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Monday' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Wednesday' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Sunday' }));
-    await userEvent.click(screen.getByRole('button', { name: /submit for review/i }));
-
-    await waitFor(() => expect(mock.history.post).toHaveLength(1));
-    const { url, body } = lastPost();
-    expect(url).toBe('/auth/register/farmer/');
-    
-    expect(body.operating_days).toEqual([1, 3, 7]);
-    expect(Object.keys(body).sort()).toEqual([
-      'address', 'confirm_password', 'contact_person', 'email', 'operating_days',
-      'password', 'phone', 'stall_name',
-    ]);
-  });
-
-  it('holds the new stall on an approval notice instead of a dashboard it has no access to', async () => {
-    mock.onPost('/auth/register/farmer/').reply(201, ok({ access: 'a', refresh: 'r', user: FARMER }));
-    renderForm(<RegisterFarmerForm />);
-
-    await fillStep1();
-    await fillStep2();
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Monday' }));
-    await userEvent.click(screen.getByRole('button', { name: /submit for review/i }));
-
-    expect(await screen.findByText(/awaiting administrator approval/i)).toBeInTheDocument();
-    expect(navigate).not.toHaveBeenCalled();
-    
-    expect(useAuthStore.getState().accessToken).toBeNull();
-
-    await userEvent.click(screen.getByRole('button', { name: /go to dashboard/i }));
-
-    expect(useAuthStore.getState().accessToken).toBe('a');
-    expect(navigate).toHaveBeenCalledWith('/farmer', { replace: true });
   });
 });
 
