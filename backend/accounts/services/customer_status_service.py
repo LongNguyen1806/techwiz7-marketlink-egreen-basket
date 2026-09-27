@@ -3,6 +3,7 @@ from django.db import transaction
 
 from accounts.models import CustomerProfile
 from marketlink_core.exceptions import BusinessValidationError, ErrorCode
+from notifications.services import disconnect_realtime
 from orders.admin_selectors import open_order_breakdown
 from orders.models import OPEN_STATUSES, ActorRole, Order, OrderStatus
 from orders.services.fsm import transition_order
@@ -38,6 +39,8 @@ def deactivate_customer(*, customer_id: int, reason: str, actor) -> tuple[object
     user.is_active = False
     user.save(update_fields=["is_active", "updated_at"])
     _set_reason(user, reason)
+    # Every device of the locked account stops receiving notifications (after the commit).
+    disconnect_realtime(user_id=user.pk)
 
     # Ordered by id to stay deadlock-free. No reason is passed: for an admin transition the FSM
     # stamps CUSTOMER_LOCKED_BY_ADMIN itself (§5.4 step 5) and gives back the stock of the orders

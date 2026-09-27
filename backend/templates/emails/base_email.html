@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f3;font-family:Arial,Helvetica,sans-serif;color:#1f2a1f;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f3;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">
+          <tr>
+            <td style="background:#2f7d32;color:#ffffff;padding:16px 24px;font-size:18px;font-weight:bold;">MarketLink</td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <h1 style="margin:0 0 16px;font-size:20px;">{{ title }}</h1>
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">{{ message }}</p>
+              {% block details %}{% endblock %}
+              {% if action_url %}
+              <p style="margin:24px 0 0;">
+                <a href="{{ action_url }}" style="display:inline-block;background:#2f7d32;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:6px;font-size:15px;">{% block action_label %}View order{% endblock %}</a>
+              </p>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px;font-size:12px;color:#6b776b;border-top:1px solid #e3e8e2;">
+              You are receiving this email because you have an account on MarketLink. Payment is made in cash when you pick up at the stall.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

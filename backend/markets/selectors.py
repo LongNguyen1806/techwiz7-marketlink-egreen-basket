@@ -126,3 +126,14 @@ def closure_map(*, market_ids) -> dict[int, list[MarketClosure]]:
     for closure in rows:
         grouped.setdefault(closure.market_id, []).append(closure)
     return grouped
+
+# The Farmer branch's selectors live in markets/farmer_selectors.py; re-exported so
+# `from markets.selectors import ...` keeps working for both branches.
+from markets.farmer_selectors import (  # noqa: E402,F401
+    build_market_summaries,
+    coordinate,
+    hhmm,
+    image_url,
+    serialize_closure,
+    serialize_pickup_slot,
+)

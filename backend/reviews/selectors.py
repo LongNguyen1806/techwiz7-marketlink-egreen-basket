@@ -144,3 +144,14 @@ def rating_summary(queryset: QuerySet) -> dict:
         "rating_count": total,
         "distribution": {str(value): counts.get(value, 0) for value in RATING_VALUES},
     }
+
+# The Farmer branch's selectors live in reviews/farmer_selectors.py; re-exported so
+# `from reviews.selectors import ...` keeps working for both branches.
+from reviews.farmer_selectors import (  # noqa: E402,F401
+    TYPE_FARMER,
+    TYPE_PRODUCT,
+    customer_display_name,
+    farmer_reviews_of,
+    product_reviews_of,
+    serialize_review,
+)

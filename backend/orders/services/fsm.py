@@ -1,5 +1,6 @@
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeVar
 
 from django.db import transaction
 from django.utils import timezone
@@ -13,8 +14,11 @@ from marketlink_core.exceptions import (
     ErrorCode,
     ForbiddenActionError,
     PreconditionRequiredError,
+    ResourceNotFoundError,
     UnprocessableEntityError,
 )
+from marketlink_core.history import save_with_history
+from marketlink_core.services.db_retry import run_with_deadlock_retry
 from notifications.models import NotificationType
 from notifications.services import notify
 from orders.models import ActorRole, ChangeReason, Order, OrderStatus, OrderStatusHistory, Transition
@@ -24,13 +28,32 @@ REASON_MIN_LENGTH = 5
 REASON_MAX_LENGTH = 500
 NO_REASON_TEXT = "No reason given."
 
+T = TypeVar("T")
+
+# ORDER_CANCELLED_CUSTOMER_LOCKED: tell the farmer what happened to stock (D-015, D-029).
+LOCKED_STOCK_RETURNED_NOTE = "The items have been returned to your online stock."
+LOCKED_STOCK_UNCHANGED_NOTE = "The order had not been accepted yet, so your stock did not change."
+
 SYSTEM_REASON_TEXT = {
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN: "The farmer's stall has been suspended by an administrator.",
     ChangeReason.CUSTOMER_LOCKED_BY_ADMIN: "The customer's account has been locked by an administrator.",
+    ChangeReason.MARKET_CLOSED_BY_ADMIN: "The market has been closed by an administrator.",
+    ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN: (
+        "The market changed its opening days or hours, and this pickup time is no longer in them."
+    ),
     ChangeReason.PRODUCT_BLOCKED_BY_ADMIN: "An item in this order was removed by an administrator.",
-    ChangeReason.MARKET_CLOSED_BY_ADMIN: "The market this order was to be collected from has closed.",
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
+
+# Admin never types a reason into an order (D-033): each admin cascade stamps a fixed system
+# code. The first code of each group is the default, so AD-07 / AD-12 need not pass one.
+ADMIN_DECLINE_REASONS = (
+    ChangeReason.FARMER_SUSPENDED_BY_ADMIN,
+    ChangeReason.MARKET_CLOSED_BY_ADMIN,
+    ChangeReason.PRODUCT_BLOCKED_BY_ADMIN,
+    ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN,
+)
+ADMIN_CANCEL_REASONS = (ChangeReason.CUSTOMER_LOCKED_BY_ADMIN,)
 
 
 @dataclass(frozen=True)
@@ -62,6 +85,18 @@ TRANSITIONS: dict[tuple[str | None, str], TransitionRule] = {
 }
 
 
+def run_with_retry_if_top_level(fn: Callable[[], T]) -> T:
+    """Retry deadlocks only when fn owns the whole transaction.
+
+    InnoDB rolls back the entire transaction on a deadlock, so retrying inside an outer
+    atomic block would reuse a broken transaction. Callers that already hold a transaction
+    (e.g. admin cascades) must retry at their own top level.
+    """
+    if transaction.get_connection().in_atomic_block:
+        return fn()
+    return run_with_deadlock_retry(fn)
+
+
 def transition_order(
     *,
     order_id: int,
@@ -70,49 +105,81 @@ def transition_order(
     actor_role: str,
     expected_version: int | None = None,
     reason: str | None = None,
+    sold_out_product_ids: Iterable[int] | None = None,
+    mark_all_sold_out: bool = False,
+    admin_reason: str | None = None,
     admin_change_reason: str | None = None,
+    notify_customer: bool = True,
 ) -> Order:
+    admin_reason = admin_change_reason or admin_reason
+    if actor_role != _R.ADMIN and (admin_reason is not None or not notify_customer):
+        raise ValueError("admin_reason and notify_customer are only for admin transitions.")
     reason = (reason or "").strip() or None
-    with transaction.atomic():
-        order = (
-            Order.objects.select_for_update(of=("self",))
-            .select_related("farmer__user", "market", "customer__customer_profile")
-            .get(id=order_id)
-        )
-        _check_version(order, actor_role, expected_version)
-        rule = TRANSITIONS.get((order.status, to_status))
-        if rule is None:
-            raise BusinessValidationError(
-                f"This order cannot change from {order.status} to {to_status}.",
-                code=ErrorCode.INVALID_STATUS_TRANSITION,
+    sold_out_ids = None if sold_out_product_ids is None else set(sold_out_product_ids)
+
+    def _execute() -> Order:
+        with transaction.atomic():
+            order = (
+                Order.objects.select_for_update(of=("self",))
+                .select_related("farmer__user", "market", "customer__customer_profile")
+                .filter(id=order_id)
+                .first()
             )
-        _check_actor(order, rule, actor, actor_role)
-        change_reason = _check_preconditions(
-            order, rule, actor_role, reason, admin_change_reason
-        )
+            if order is None:
+                raise ResourceNotFoundError("Order not found.", code=ErrorCode.NOT_FOUND)
+            # Ownership first so an order outside the actor's scope never reveals its state.
+            _check_ownership(order, actor, actor_role)
+            rule = TRANSITIONS.get((order.status, to_status))
+            if rule is None:
+                raise BusinessValidationError(
+                    f"This order cannot change from {order.status} to {to_status}.",
+                    code=ErrorCode.INVALID_STATUS_TRANSITION,
+                )
+            _check_role(rule, actor_role)
+            _check_version(order, actor_role, expected_version)
+            change_reason = _check_preconditions(order, rule, actor_role, reason, admin_reason)
+            sold_out_targets = _resolve_sold_out_targets(
+                order, rule, actor_role, sold_out_ids, mark_all_sold_out
+            )
 
-        # Locking order: orders (already locked above) -> products (sorted by id)
-        if rule.code == Transition.T2:
-            _deduct_stock(order)
-        elif rule.restores_stock:
-            _restore_stock(order)
+            # Audit trail (v1.8): every history row of this action names the order and the edge;
+            # system actions (lazy sweep) are recorded without a user.
+            history_user = None if actor_role == _R.SYSTEM else actor
+            history_reason = f"Order #{order.pk}: {order.status} -> {to_status} ({rule.code})"
 
-        from_status = order.status
-        order.status = to_status
-        order.version += 1
-        order.save(update_fields=["status", "version", "updated_at"])
-        OrderStatusHistory.objects.create(
-            order=order,
-            from_status=from_status,
-            to_status=to_status,
-            transition=rule.code,
-            actor=None if actor_role == _R.SYSTEM else actor,
-            actor_role=actor_role,
-            change_reason=change_reason,
-            request_id=get_request_id(),
-        )
-        _send_notifications(order, rule, actor_role, change_reason)
-    return order
+            # Locking order: orders (already locked above) -> products (sorted by id)
+            if rule.code == Transition.T2:
+                _deduct_stock(order, reason=history_reason, user=history_user)
+            elif rule.restores_stock:
+                _restore_stock(order, reason=history_reason, user=history_user)
+            if sold_out_targets:
+                _mark_products_sold_out(
+                    sold_out_targets, reason=f"{history_reason}: declared sold out", user=history_user
+                )
+
+            from_status = order.status
+            order.status = to_status
+            order.version += 1
+            update_fields = ["status", "version", "updated_at"]
+            if to_status in (_S.DECLINED, _S.CANCELLED, _S.NO_SHOW, _S.COMPLETED, _S.EXPIRED):
+                if order.pending_change is not None:
+                    order.pending_change = None
+                    update_fields.append("pending_change")
+            save_with_history(order, update_fields=update_fields, reason=history_reason, user=history_user)
+            OrderStatusHistory.objects.create(
+                order=order,
+                from_status=from_status,
+                to_status=to_status,
+                transition=rule.code,
+                actor=None if actor_role == _R.SYSTEM else actor,
+                actor_role=actor_role,
+                change_reason=change_reason,
+                request_id=get_request_id(),
+            )
+            _send_notifications(order, rule, actor_role, change_reason, notify_customer=notify_customer)
+        return order
+
+    return run_with_retry_if_top_level(_execute)
 
 
 def record_order_placed(*, order: Order, actor: Any) -> None:
@@ -144,19 +211,81 @@ def _check_version(order: Order, actor_role: str, expected_version: int | None) 
         )
 
 
-def _check_actor(order: Order, rule: TransitionRule, actor: Any | None, actor_role: str) -> None:
-    if actor_role not in rule.actors:
-        raise ForbiddenActionError(code=ErrorCode.ACTION_NOT_PERMITTED_FOR_ROLE)
+def _check_ownership(order: Order, actor: Any | None, actor_role: str) -> None:
     if actor_role == _R.FARMER:
         if order.farmer_id != getattr(actor, "pk", None):
-            raise ForbiddenActionError(code=ErrorCode.ACTION_NOT_PERMITTED_FOR_ROLE)
+            raise ResourceNotFoundError("Order not found.", code=ErrorCode.NOT_FOUND)
         if order.farmer.status == FarmerStatus.SUSPENDED:
             raise ForbiddenActionError(
                 "Your stall is suspended, so orders cannot be updated.",
                 code=ErrorCode.FARMER_SUSPENDED,
             )
-    elif actor_role == _R.CUSTOMER and order.customer_id != getattr(actor, "pk", None):
+    elif actor_role == _R.CUSTOMER:
+        if order.customer_id != getattr(actor, "pk", None):
+            raise ResourceNotFoundError("Order not found.", code=ErrorCode.NOT_FOUND)
+
+
+def _check_role(rule: TransitionRule, actor_role: str) -> None:
+    if actor_role not in rule.actors:
         raise ForbiddenActionError(code=ErrorCode.ACTION_NOT_PERMITTED_FOR_ROLE)
+
+
+def _resolve_sold_out_targets(
+    order: Order,
+    rule: TransitionRule,
+    actor_role: str,
+    sold_out_ids: set[int] | None,
+    mark_all_sold_out: bool,
+) -> set[int]:
+    declared = mark_all_sold_out or sold_out_ids is not None
+    is_farmer_decline = actor_role == _R.FARMER and rule.code in (Transition.T3, Transition.T4)
+    if not is_farmer_decline:
+        if declared and (mark_all_sold_out or sold_out_ids):
+            raise BusinessValidationError(
+                "Items can be marked sold out only when the farmer declines an order.",
+                errors={"mark_sold_out_product_ids": ["Not allowed for this action."]},
+            )
+        return set()
+
+    # T4 returns stock, so the farmer must say explicitly which items are gone (W1.2).
+    if rule.code == Transition.T4 and not declared:
+        raise BusinessValidationError(
+            "Please state which items are sold out before declining an accepted order.",
+            errors={
+                "mark_sold_out_product_ids": [
+                    "Required for accepted orders. Send an empty list to return every item to stock."
+                ]
+            },
+        )
+
+    order_product_ids = {item.product_id for item in order.items.all()}
+    if mark_all_sold_out:
+        return order_product_ids
+    targets = sold_out_ids or set()
+    unknown = targets - order_product_ids
+    if unknown:
+        raise BusinessValidationError(
+            "Sold-out items must be items of this order.",
+            errors={
+                "mark_sold_out_product_ids": [
+                    f"Product IDs {sorted(unknown)} are not part of this order."
+                ]
+            },
+        )
+    return targets
+
+
+def _admin_change_reason(code: str, admin_reason: str | None) -> str:
+    allowed = (
+        ADMIN_DECLINE_REASONS
+        if code in (Transition.T3, Transition.T4, Transition.T12)
+        else ADMIN_CANCEL_REASONS
+    )
+    if admin_reason is None:
+        return allowed[0]
+    if admin_reason not in allowed:
+        raise ValueError(f"{admin_reason!r} is not a valid admin reason for {code}.")
+    return admin_reason
 
 
 def _check_preconditions(
@@ -164,7 +293,7 @@ def _check_preconditions(
     rule: TransitionRule,
     actor_role: str,
     reason: str | None,
-    admin_change_reason: str | None = None,
+    admin_reason: str | None = None,
 ) -> str | None:
     if reason and len(reason) > REASON_MAX_LENGTH:
         raise BusinessValidationError(
@@ -210,15 +339,7 @@ def _check_preconditions(
 
     if actor_role == _R.ADMIN:
         # Fixed system reason prevents leaking internal administrative notes into end-user emails.
-        # The caller may name which fixed reason applies, because the same DECLINED transitions
-        # now serve two different admin actions: suspending a stall and blocking one product.
-        # Without this, a shopper whose order died because of a takedown would be told the
-        # stall had been suspended, which is simply untrue.
-        if admin_change_reason:
-            return admin_change_reason
-        if code in (Transition.T3, Transition.T4, Transition.T12):
-            return ChangeReason.FARMER_SUSPENDED_BY_ADMIN
-        return ChangeReason.CUSTOMER_LOCKED_BY_ADMIN
+        return _admin_change_reason(code, admin_reason)
 
     if code == Transition.T8:
         if now < order.pickup_start_at:
@@ -227,30 +348,50 @@ def _check_preconditions(
     return reason
 
 
-def _deduct_stock(order: Order) -> None:
+def _deduct_stock(order: Order, *, reason: str, user: Any) -> None:
     deltas: dict[int, int] = {}
     for item in order.items.all():
         deltas[item.product_id] = deltas.get(item.product_id, 0) - item.quantity
     if deltas:
-        apply_stock_delta(products=lock_products(product_ids=deltas.keys()), deltas=deltas)
+        apply_stock_delta(
+            products=lock_products(product_ids=deltas.keys()), deltas=deltas, reason=reason, user=user
+        )
 
 
-def _restore_stock(order: Order) -> None:
+def _restore_stock(order: Order, *, reason: str, user: Any) -> None:
     deltas: dict[int, int] = {}
     for item in order.items.all():
         deltas[item.product_id] = deltas.get(item.product_id, 0) + item.quantity
     if deltas:
-        apply_stock_delta(products=lock_products(product_ids=deltas.keys()), deltas=deltas)
+        apply_stock_delta(
+            products=lock_products(product_ids=deltas.keys()), deltas=deltas, reason=reason, user=user
+        )
+
+
+def _mark_products_sold_out(product_ids: set[int], *, reason: str, user: Any) -> None:
+    # Runs after any T4 restock so the final stock of these products is exactly 0.
+    for product in lock_products(product_ids=product_ids).values():
+        if product.stock_quantity != 0:
+            product.stock_quantity = 0
+            save_with_history(product, update_fields=["stock_quantity", "updated_at"], reason=reason, user=user)
 
 
 def _send_notifications(
-    order: Order, rule: TransitionRule, actor_role: str, change_reason: str | None
+    order: Order,
+    rule: TransitionRule,
+    actor_role: str,
+    change_reason: str | None,
+    *,
+    notify_customer: bool = True,
 ) -> None:
     context = build_order_context(order)
     readable_reason = SYSTEM_REASON_TEXT.get(change_reason, change_reason) or NO_REASON_TEXT
     customer, farmer_user = order.customer, order.farmer.user
     code = rule.code
 
+    if not notify_customer and code in (Transition.T3, Transition.T4, Transition.T12):
+        # The caller tells the customer itself: one MARKET_CLOSED or MARKET_UPDATED per customer.
+        return
     if code == Transition.T2:
         notify(recipient=customer, event_type=NotificationType.ORDER_ACCEPTED, context=context)
     elif code in (Transition.T3, Transition.T4, Transition.T12):
@@ -264,7 +405,14 @@ def _send_notifications(
             notify(
                 recipient=farmer_user,
                 event_type=NotificationType.ORDER_CANCELLED_CUSTOMER_LOCKED,
-                context=context,
+                context={
+                    **context,
+                    "stock_note": (
+                        LOCKED_STOCK_RETURNED_NOTE
+                        if rule.restores_stock
+                        else LOCKED_STOCK_UNCHANGED_NOTE
+                    ),
+                },
             )
         else:
             notify(

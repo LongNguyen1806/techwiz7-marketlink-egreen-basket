@@ -19,7 +19,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, FarmerProfile, FarmerStatus
-from catalog.models import Product
+from catalog.models import Product, ReviewStatus
 from marketlink_core.constants import BOOKING_HORIZON_DAYS
 from marketlink_core.geo import distance_km
 from marketlink_core.policies.roles import RoleCode
@@ -76,16 +76,6 @@ def list_pending_farmers(*, limit: int) -> list[FarmerProfile]:
     return list(list_farmers_for_admin(status=FarmerStatus.PENDING)[:limit])
 
 
-# How the guest home page ranks stalls when nobody has chosen a sort.
-#
-# A completed order is the strongest signal there is: somebody paid and collected. A review
-# is weaker - it costs nothing to leave - but it shows the stall is being talked about, so it
-# counts for less rather than nothing. The two are added rather than compared in sequence:
-# ranking on orders alone would put a stall with 40 sales and no reviews above one with 39
-# sales and 60 reviews, which is not what a shopper means by "popular".
-#
-# Rating decides between stalls of equal standing, and is deliberately not part of the score:
-# a single five-star review must not outrank a hundred sales.
 ORDER_WEIGHT = 2
 REVIEW_WEIGHT = 1
 
@@ -113,6 +103,7 @@ def _in_stock_subquery():
                 is_hidden_by_admin=False,
                 is_available=True,
                 stock_quantity__gt=0,
+                review_status=ReviewStatus.APPROVED,
             )
             .order_by()
             .values("farmer_id")
@@ -170,6 +161,7 @@ def public_farmers(
             products__category_id=category_id,
             products__is_archived=False,
             products__is_hidden_by_admin=False,
+            products__review_status=ReviewStatus.APPROVED,
         )
     if coordinates is not None:
         lat, lng = coordinates
@@ -370,3 +362,10 @@ def farmer_order_stats(*, farmer_id: int) -> dict:
         "expired": rows.get(OrderStatus.EXPIRED, 0),
         "no_show": rows.get(OrderStatus.NO_SHOW, 0),
     }
+
+# The Farmer branch's selectors live in accounts/farmer_selectors.py; re-exported so
+# `from accounts.selectors import ...` keeps working for both branches.
+from accounts.farmer_selectors import (  # noqa: E402,F401
+    build_farmer_own_profile,
+    build_farmer_public,
+)

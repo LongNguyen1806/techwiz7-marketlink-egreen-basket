@@ -5,8 +5,11 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from accounts.auth.tokens import SESSION_CLAIM
 from marketlink_core.exceptions import ErrorCode
+from marketlink_core.permissions import IsCustomerOrFarmer
 from marketlink_core.responses import api_response
+from marketlink_core.services.ws_ticket import DEFAULT_TTL, create_ws_ticket
 
 
 def _database_status() -> str:
@@ -61,19 +64,21 @@ class HealthCheckView(APIView):
 
 
 class WebSocketTicketView(APIView):
+    """AU-08: one-time ticket for /ws/notifications/ (Customer, Farmer only)."""
+
+    permission_classes = [IsCustomerOrFarmer]
+
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(description="Envelope with data: {ticket, expires_in}."), 401: None, 403: None},
+        summary="One-time WebSocket ticket",
+    )
     def post(self, request):
-        from rest_framework.permissions import IsAuthenticated
-        from marketlink_core.services.ws_ticket import DEFAULT_TTL, create_ws_ticket
-
-        if not request.user or not request.user.is_authenticated:
-            from marketlink_core.exceptions import AuthenticationError
-            raise AuthenticationError("Please sign in to obtain a WebSocket ticket.")
-
         role_code = getattr(getattr(request.user, "role", None), "code", "")
-        ticket = create_ws_ticket(user_id=request.user.pk, role=role_code)
+        session_id = request.auth.get(SESSION_CLAIM) if request.auth is not None else None
+        ticket = create_ws_ticket(user_id=request.user.pk, role=role_code, session_id=session_id)
         return api_response(
             message="Ticket generated.",
             data={"ticket": ticket, "expires_in": DEFAULT_TTL},
             request=request,
         )
-

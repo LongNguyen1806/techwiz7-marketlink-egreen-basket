@@ -2,6 +2,8 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from catalog.services.farmer_product import validate_image_upload
+from marketlink_core.exceptions import BusinessValidationError
 from markets.models import DayOfWeek, Market
 from markets.serializers import ClosureSerializer
 from markets.selectors import OPERATING_DAYS_ATTR, UPCOMING_CLOSURES_ATTR, today
@@ -119,6 +121,7 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
         min_length=1,
         help_text="ISO weekday numbers, 1 = Monday through 7 = Sunday.",
     )
+    image = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = Market
@@ -137,6 +140,15 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
     def validate_name(self, value: str) -> str:
         return value.strip()
 
+    def validate_image(self, value):
+        # NFR-01: same checks as farmer uploads (type, 2MB, real content); the re-encoded copy is stored.
+        if not value:
+            return value
+        try:
+            return validate_image_upload(value)
+        except BusinessValidationError as exc:
+            raise serializers.ValidationError(exc.errors.get("image", [str(exc.detail)])) from None
+
     def validate(self, attrs):
         instance = self.instance
         open_time = attrs.get("open_time", getattr(instance, "open_time", None))
@@ -148,6 +160,18 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class MarketEditImpactSerializer(serializers.Serializer):
+    """The preview the edit form shows before a save that moves or reschedules a market."""
+
+    changed_fields = serializers.ListField(child=serializers.CharField())
+    location_changed = serializers.BooleanField()
+    schedule_changed = serializers.BooleanField()
+    orders_to_cancel = serializers.IntegerField()
+    slots_to_disable = serializers.IntegerField()
+    customers_to_notify = serializers.IntegerField()
+    stalls_to_notify = serializers.IntegerField()
+
+
 class MarketCloseSerializer(serializers.Serializer):
     """AD-17. The reason is recorded and shown to everyone; the note is emailed to the stalls."""
 
@@ -155,3 +179,4 @@ class MarketCloseSerializer(serializers.Serializer):
     farmer_message = serializers.CharField(
         required=False, allow_blank=True, max_length=1000, trim_whitespace=True
     )
+

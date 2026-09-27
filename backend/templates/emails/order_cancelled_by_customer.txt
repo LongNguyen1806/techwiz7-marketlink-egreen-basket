@@ -1,0 +1,13 @@
+{% autoescape off %}{{ title }}
+
+{{ message }}
+
+Order: #{{ order_id }}
+Customer: {{ customer_name }}
+Reason: {{ reason }}
+{% if action_url %}
+View order: {{ action_url }}
+{% endif %}
+-- 
+MarketLink. Payment is made in cash when you pick up at the stall.
+{% endautoescape %}

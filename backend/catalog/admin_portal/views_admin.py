@@ -8,16 +8,19 @@ from catalog.admin_portal.serializers_admin import (
     CategoryAdminReadSerializer,
     CategoryAdminWriteSerializer,
     ModerationReasonSerializer,
+    PriceGuidelineSerializer,
     ProductAdminSerializer,
     ProductBlockImpactSerializer,
 )
-from catalog.models import Product
+from catalog.models import AIReviewKind, AIVerdict, PriceGuideline, Product, ProductAIReview
 from catalog.selectors import (
     get_product_for_admin,
     list_categories_for_admin,
     list_products_for_admin,
     markets_for_products,
 )
+from catalog.ai_review.service import review_product
+from catalog.ai_review.stats import ai_review_stats
 from catalog.services.category_service import delete_category
 from catalog.models import ReviewStatus
 from catalog.services.product_moderation_service import (
@@ -130,9 +133,24 @@ def _int(raw: str | None) -> int | None:
         return None
 
 
+def _latest_reviews(ids: list[int], kind: str) -> dict[int, ProductAIReview]:
+    """The newest review of each kind per product, in one query for the whole page."""
+    latest: dict[int, ProductAIReview] = {}
+    reviews = (
+        ProductAIReview.objects.filter(product_id__in=ids, kind=kind)
+        .select_related("suggested_category")
+        .order_by("product_id", "-created_at", "-id")
+    )
+    for review in reviews:
+        latest.setdefault(review.product_id, review)
+    return latest
+
+
 def _product_context(products) -> dict:
     ids = [product.pk for product in products]
     return {
+        "ai_reviews": _latest_reviews(ids, AIReviewKind.LISTING),
+        "ai_photo_checks": _latest_reviews(ids, AIReviewKind.WEEKLY_IMAGE),
         "held_quantities": get_open_held_quantities(product_ids=ids),
         "pending_quantities": get_pending_quantities(product_ids=ids),
         "markets": markets_for_products(product_ids=ids),
@@ -155,6 +173,7 @@ class ProductModerationListView(ListAPIView):
             category_id=_int(params.get("category_id")),
             is_hidden=_flag(params.get("is_hidden")),
             review_status=params.get("review_status"),
+            ai_verdict=params.get("ai_verdict"),
             ordering=params.get("ordering"),
         )
 
@@ -168,6 +187,12 @@ class ProductModerationListView(ListAPIView):
             OpenApiParameter("category_id", int),
             OpenApiParameter("is_hidden", bool),
             OpenApiParameter("review_status", str, enum=[*ReviewStatus.values]),
+            OpenApiParameter(
+                "ai_verdict",
+                str,
+                enum=[*AIVerdict.values, "NONE"],
+                description="Latest AI listing review; NONE = not reviewed yet.",
+            ),
             OpenApiParameter(
                 "ordering",
                 str,
@@ -361,3 +386,67 @@ def _require_product(product_id: int) -> int:
     if not Product.objects.filter(pk=product_id).exists():
         raise ResourceNotFoundError("Product not found.")
     return product_id
+
+
+# ------------------------------------------------------------------ AI-assisted listing review
+
+
+class ProductAIRecheckView(APIView):
+    """Run the AI review again now (after a guideline change, or when it was unavailable)."""
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(request=None, responses={200: ProductAdminSerializer, 404: None}, summary="Re-run the AI listing review")
+    def post(self, request, id: int) -> Response:
+        _require_product(id)
+        review_product(id, force=True)
+        product = list_products_for_admin(product_id=id).first()
+        data = ProductAdminSerializer(product, context=_product_context([product])).data
+        return api_response(message="AI review finished. It is advice; the decision stays yours.", data=data, request=request)
+
+
+class PriceGuidelineListCreateView(ListCreateAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = PriceGuidelineSerializer
+    pagination_class = None
+    queryset = PriceGuideline.objects.select_related("category")
+
+    def list(self, request, *args, **kwargs):
+        return api_response(message="OK", data=self.get_serializer(self.get_queryset(), many=True).data, request=request)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return api_response(message="Guideline added.", data=serializer.data, status_code=status.HTTP_201_CREATED, request=request)
+
+
+class PriceGuidelineDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = PriceGuidelineSerializer
+    queryset = PriceGuideline.objects.select_related("category")
+    lookup_url_kwarg = "id"
+    http_method_names = ["get", "patch", "delete"]
+
+    def retrieve(self, request, *args, **kwargs):
+        return api_response(message="OK", data=self.get_serializer(self.get_object()).data, request=request)
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return api_response(message="Guideline saved.", data=serializer.data, request=request)
+
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AIReviewStatsView(APIView):
+    """How the AI's advice compares with what admins then decided."""
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(parameters=[OpenApiParameter("days", int, description="Look-back window, 1-365 (default 30).")])
+    def get(self, request) -> Response:
+        return api_response(message="OK", data=ai_review_stats(days=_int(request.query_params.get("days")) or 30), request=request)

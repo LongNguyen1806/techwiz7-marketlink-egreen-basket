@@ -1,0 +1,9 @@
+{% extends "emails/base_email.html" %}
+{% block details %}
+              <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;">
+                <tr><td style="padding:4px 12px 4px 0;color:#6b776b;">Order</td><td style="padding:4px 0;">#{{ order_id }}</td></tr>
+                <tr><td style="padding:4px 12px 4px 0;color:#6b776b;">Farmer</td><td style="padding:4px 0;">{{ farmer_name }}</td></tr>
+                <tr><td style="padding:4px 12px 4px 0;color:#6b776b;">Pickup</td><td style="padding:4px 0;">{{ pickup_label }}</td></tr>
+                <tr><td style="padding:4px 12px 4px 0;color:#6b776b;">Market</td><td style="padding:4px 0;">{{ market_name }}</td></tr>
+              </table>
+{% endblock %}

@@ -27,11 +27,17 @@ class NotificationType(models.TextChoices):
     MARKET_SCHEDULE_CHANGED = "MARKET_SCHEDULE_CHANGED", "Market Schedule Changed"
     # Sent to both sides when Admin closes a market (AD-17), carrying the reason they gave.
     MARKET_CLOSED = "MARKET_CLOSED", "Market Closed"
+    # Sent to both sides when Admin changes where or when a market runs: one notice each,
+    # carrying every change and any orders it cancelled.
+    MARKET_UPDATED = "MARKET_UPDATED", "Market Details Changed"
     # Sent to the stall when Admin takes one of its products down (AD-21b).
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Product Blocked by Admin"
     # The outcome of the review a new or edited listing goes through.
     PRODUCT_APPROVED = "PRODUCT_APPROVED", "Product Approved"
     PRODUCT_REJECTED = "PRODUCT_REJECTED", "Product Rejected"
+    # Admin notifications
+    # The AI listing review found a likely violation (or the weekly photo check found a problem).
+    AI_LISTING_FLAGGED = "AI_LISTING_FLAGGED", "Listing Flagged by AI Review"
 
 
 

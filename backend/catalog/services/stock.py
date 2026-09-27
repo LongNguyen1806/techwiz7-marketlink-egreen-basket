@@ -1,10 +1,12 @@
 from collections.abc import Iterable
+from typing import Any
 
 from django.db.models import Sum
 from django.utils import timezone
 
 from catalog.models import Product
 from marketlink_core.exceptions import BusinessValidationError, ErrorCode
+from marketlink_core.history import UNSET, save_with_history
 from orders.models import OrderItem, OrderStatus
 
 
@@ -14,7 +16,15 @@ def lock_products(*, product_ids: Iterable[int]) -> dict[int, Product]:
     return {product.id: product for product in products}
 
 
-def apply_stock_delta(*, products: dict[int, Product], deltas: dict[int, int]) -> None:
+def apply_stock_delta(
+    *,
+    products: dict[int, Product],
+    deltas: dict[int, int],
+    reason: str | None = None,
+    user: Any = UNSET,
+) -> None:
+    """Add deltas (negative = take stock). Each change gets a product history row (v1.8 audit
+    trail) stamped with `reason`, e.g. "Order #12 accepted (T2)"; `user=None` marks a system action."""
     shortages = {
         str(product_id): [f"Only {products[product_id].stock_quantity} {products[product_id].unit.lower()} left."]
         for product_id, delta in deltas.items()
@@ -29,7 +39,7 @@ def apply_stock_delta(*, products: dict[int, Product], deltas: dict[int, int]) -
             continue
         product = products[product_id]
         product.stock_quantity += delta
-        product.save(update_fields=["stock_quantity", "updated_at"])
+        save_with_history(product, update_fields=["stock_quantity", "updated_at"], reason=reason, user=user)
 
 
 def get_held_quantities(*, product_ids: Iterable[int]) -> dict[int, int]:

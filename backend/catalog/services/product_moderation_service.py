@@ -18,6 +18,7 @@ from django.utils import timezone
 
 from marketlink_core.exceptions import BusinessValidationError, ErrorCode
 
+from catalog.ai_review.service import record_admin_decision
 from catalog.models import REVIEWABLE_FIELDS, ModerationAction, Product, ReviewStatus
 from notifications.models import NotificationType
 from notifications.services import notify
@@ -210,6 +211,8 @@ def _set_review(product: Product, *, status: str, note: str | None, actor) -> No
     product.save(
         update_fields=["review_status", "review_note", "reviewed_at", "reviewed_by", "updated_at"]
     )
+    # Kept next to the AI's advice, so the admin screen can show how often the two agree.
+    record_admin_decision(product.pk, status, actor)
 
 
 def needs_review_again(product: Product, changed_fields) -> bool:
@@ -219,20 +222,23 @@ def needs_review_again(product: Product, changed_fields) -> bool:
     purpose: a stall that must wait for an admin before correcting its own stock will stop
     correcting it, and the stock figure is the one number the whole booking flow rests on.
 
+    An APPROVED listing goes back to PENDING; a REJECTED one is resubmitted by fixing what the
+    admin pointed out. A PENDING one is already in the queue.
+
     Called from whichever endpoint saves a stall's edit; kept here so both sides of the app
     apply the same rule rather than each deciding for itself.
     """
-    if product.review_status != ReviewStatus.APPROVED:
-        # Already waiting, or already refused: an edit does not make it any more pending.
+    if product.review_status == ReviewStatus.PENDING:
         return False
     return any(field in REVIEWABLE_FIELDS for field in changed_fields)
 
 
 def send_back_for_review(product: Product) -> None:
-    """Put an edited listing back in the queue, leaving the approved version on sale.
+    """Put an edited listing back in the queue until an admin looks at the new wording.
 
-    Hiding it while it waits would mean a stall loses its shopfront every time it fixes a
-    typo, which teaches stalls not to fix typos.
+    While it waits it is off the shopper side (catalogue, detail, search, new orders and order
+    edits all require APPROVED), because the row now holds the unreviewed wording. Orders
+    already placed for it are untouched and keep moving through accept, ready and complete.
     """
     product.review_status = ReviewStatus.PENDING
     product.review_note = None

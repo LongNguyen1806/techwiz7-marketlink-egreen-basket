@@ -1,160 +1,197 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-
 import { authApi } from '../../api/common/authApi';
-import { ApiError } from '@/lib/ApiError';
-import { DASHBOARD_PATH, QUERY_KEYS, STALE } from '@/config/constants';
+import { authKeys } from '../../constants/queryKeys';
+import { ROLES } from '../../constants/roles';
+import { ROUTES, homePathForRole } from '../../constants/routes';
+import { STALE } from '../../constants/staleTimes';
+import { notify } from '../../lib/toast';
 import {
   PORTALS,
   authStoreFor,
+  currentPortal,
   portalForPath,
   selectIsAuthenticated,
   useAdminAuthStore,
   useMarketAuthStore,
-} from '@/stores/auth.store';
+} from '../../stores/auth.store';
 
-function homePathForRole(role) {
-  if (role === 'ADMIN') return DASHBOARD_PATH.ADMIN;
-  if (role === 'FARMER') return DASHBOARD_PATH.FARMER;
-  return DASHBOARD_PATH.CUSTOMER;
-}
+const ROLE_AREAS = {
+  '/farmer': ROLES.FARMER,
+  '/customer': ROLES.CUSTOMER,
+  '/admin': ROLES.ADMIN,
+};
 
 const LOGIN_PATH = {
-  [PORTALS.MARKET]: '/login',
-  [PORTALS.ADMIN]: '/admin/login',
+  [PORTALS.MARKET]: ROUTES.LOGIN,
+  [PORTALS.ADMIN]: ROUTES.ADMIN.LOGIN,
 };
 
 export function loginPathFor(portal) {
-  return LOGIN_PATH[portal] ?? LOGIN_PATH[PORTALS.MARKET];
+  return LOGIN_PATH[portal] ?? ROUTES.LOGIN;
 }
 
-/** Which session this page belongs to: `/admin/*` is the admin portal, the rest is the market. */
+function redirectAfterSignIn(location, role) {
+  const from = location.state?.from?.pathname;
+  if (from) {
+    const area = Object.keys(ROLE_AREAS).find((prefix) => from.startsWith(prefix));
+    if (!area || ROLE_AREAS[area] === role) return from;
+  }
+  return homePathForRole(role);
+}
+
+/** The portal of the current page: /admin/* is the admin portal, everything else the market. */
 export function usePortal() {
   const { pathname } = useLocation();
   return portalForPath(pathname);
 }
 
-function reportUnlessFieldErrors(error) {
-  const apiError = ApiError.fromUnknown(error);
-  if (Object.keys(apiError.fieldErrors).length === 0) {
-    toast.error(apiError.friendlyMessage);
-  }
+export function useIsAuthenticated() {
+  const portal = usePortal();
+  // Both stores are read so the hook order never changes when the portal does.
+  const market = useMarketAuthStore(selectIsAuthenticated);
+  const admin = useAdminAuthStore(selectIsAuthenticated);
+  return portal === PORTALS.ADMIN ? admin : market;
+}
+
+export function useCurrentUser() {
+  const portal = usePortal();
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery({
+    queryKey: authKeys.me(portal),
+    queryFn: ({ signal }) => authApi.me({ signal }),
+    enabled: isAuthenticated,
+    staleTime: STALE.SESSION,
+  });
 }
 
 export function useAuth() {
+  const isAuthenticated = useIsAuthenticated();
+  const meQuery = useCurrentUser();
+  const user = isAuthenticated ? (meQuery.data ?? null) : null;
+  return {
+    user,
+    role: user?.role ?? null,
+    isAuthenticated,
+    isLoading: isAuthenticated && meQuery.isPending,
+    isError: isAuthenticated && meQuery.isError && !user,
+    refetch: meQuery.refetch,
+  };
+}
+
+/**
+ * When a portal's account changes (sign-out, expiry, another tab), drop what was cached for it:
+ * everything if this tab shows that portal, otherwise just that portal's /auth/me/.
+ */
+export function useAuthSessionSync() {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const watch = (portal) =>
+      authStoreFor(portal).subscribe((state, previous) => {
+        if (previous.userId === null || state.userId === previous.userId) return;
+        if (currentPortal() === portal) queryClient.clear();
+        else queryClient.removeQueries({ queryKey: authKeys.me(portal) });
+      });
+    const unsubscribes = [watch(PORTALS.MARKET), watch(PORTALS.ADMIN)];
+    return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+  }, [queryClient]);
+}
+
+function useStartSession(portal) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const portal = usePortal();
+  const location = useLocation();
 
-  // Both stores are subscribed to unconditionally so the hook order never changes when a
-  // navigation moves this component from one portal to the other. A boolean is selected
-  // rather than the state object, which zustand replaces on every write.
-  const marketAuthed = useMarketAuthStore(selectIsAuthenticated);
-  const adminAuthed = useAdminAuthStore(selectIsAuthenticated);
-  const isAuthenticated = portal === PORTALS.ADMIN ? adminAuthed : marketAuthed;
-
-  const meQuery = useQuery({
-    queryKey: QUERY_KEYS.ME(portal),
-    queryFn: authApi.me,
-    enabled: isAuthenticated,
-    staleTime: STALE.SESSION,
-    retry: false,
-  });
-
-  // Sign-in writes to the portal the user is signing in to, which is where the form lives.
-  const startSession = (targetPortal) => (data) => {
-    authStoreFor(targetPortal).getState().setTokens({
-      access: data.access,
-      refresh: data.refresh,
-      role: data.user.role,
-    });
-    queryClient.setQueryData(QUERY_KEYS.ME(targetPortal), data.user);
-    navigate(homePathForRole(data.user.role), { replace: true });
+  return ({ access, refresh, user }) => {
+    authStoreFor(portal).getState().setTokens({ access, refresh });
+    queryClient.setQueryData(authKeys.me(portal), user);
+    navigate(redirectAfterSignIn(location, user.role), { replace: true });
   };
+}
 
-  // Clearing the cache is safe here because a react-query cache belongs to one tab, and this
-  // tab is being sent to a login screen. What must survive is the *other portal's tokens*,
-  // and those live in their own store, which this does not touch.
-  const endSession = () => {
-    authStoreFor(portal).getState().clearSession();
-    queryClient.clear();
-    navigate(loginPathFor(portal), { replace: true });
-  };
-
-  const loginMutation = useMutation({
+export function useLogin() {
+  const startSession = useStartSession(PORTALS.MARKET);
+  return useMutation({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
-      startSession(PORTALS.MARKET)(data);
-      toast.success('Welcome back — you are signed in');
+    onSuccess: (session) => {
+      startSession(session);
+      notify.success(`Welcome back, ${session.user.display_name}`);
     },
-    onError: reportUnlessFieldErrors,
   });
+}
 
-  const adminLoginMutation = useMutation({
+// The page shows its own form errors, so the global error toast is off.
+export function useAdminLogin() {
+  const startSession = useStartSession(PORTALS.ADMIN);
+  return useMutation({
     mutationFn: authApi.adminLogin,
-    onSuccess: (data) => {
-      startSession(PORTALS.ADMIN)(data);
-      toast.success('Welcome back — you are signed in');
+    meta: { silent: true },
+    onSuccess: (session) => {
+      startSession(session);
+      notify.success(`Welcome back, ${session.user.display_name}`);
     },
-    onError: reportUnlessFieldErrors,
   });
+}
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      const { accessToken } = authStoreFor(portal).getState();
-      try {
-        if (accessToken) await authApi.logout(accessToken);
-      } catch {
-        // Clear the local session even if the API call fails.
-      }
-    },
-    onSettled: endSession,
-  });
-
-  const changePasswordMutation = useMutation({
-    mutationFn: authApi.changePassword,
-    onSuccess: () => {
-      toast.success('Password updated — please sign in again.');
-      endSession();
-    },
-    onError: reportUnlessFieldErrors,
-  });
-
-  const registerCustomerMutation = useMutation({
-    mutationFn: authApi.registerCustomer,
-    onSuccess: (data) => {
-      startSession(PORTALS.MARKET)(data);
-      toast.success('Account created — welcome to MarketLink');
-    },
-    onError: reportUnlessFieldErrors,
-  });
-
-  const registerFarmerMutation = useMutation({
+export function useRegisterFarmer() {
+  const startSession = useStartSession(PORTALS.MARKET);
+  return useMutation({
     mutationFn: authApi.registerFarmer,
-    onSuccess: (data) => {
-      startSession(PORTALS.MARKET)(data);
-      toast.success('Stall submitted — we will review it shortly.');
+    onSuccess: (session) => {
+      startSession(session);
+      notify.success('Your stall application has been sent', {
+        description: "We'll let you know as soon as an administrator approves it.",
+      });
     },
-    onError: reportUnlessFieldErrors,
   });
+}
 
-  return {
-    portal,
-    user: meQuery.data,
-    isLoadingMe: meQuery.isLoading,
-    isAuthenticated,
-    login: loginMutation.mutateAsync,
-    loginPending: loginMutation.isPending,
-    adminLogin: adminLoginMutation.mutateAsync,
-    adminLoginPending: adminLoginMutation.isPending,
-    logout: () => logoutMutation.mutate(),
-    changePassword: changePasswordMutation.mutateAsync,
-    changePasswordPending: changePasswordMutation.isPending,
-    registerCustomer: registerCustomerMutation.mutateAsync,
-    registerCustomerPending: registerCustomerMutation.isPending,
-    registerFarmer: registerFarmerMutation.mutateAsync,
-    registerFarmerPending: registerFarmerMutation.isPending,
-    setRole: (role) => authStoreFor(portal).getState().setRole(role),
-  };
+// silent: the caller shows the error in its own form, so the global error toast stays off.
+export function useRegisterCustomer({ silent = false } = {}) {
+  const startSession = useStartSession(PORTALS.MARKET);
+  return useMutation({
+    mutationFn: authApi.registerCustomer,
+    meta: { silent },
+    onSuccess: (session) => {
+      startSession(session);
+      notify.success('Welcome to MarketLink', { description: 'Your account is ready.' });
+    },
+  });
+}
+
+/** Signs out of the current portal only; the other portal's session stays. */
+export function useLogout() {
+  const navigate = useNavigate();
+  const portal = usePortal();
+  return useMutation({
+    mutationFn: () => {
+      const { refreshToken } = authStoreFor(portal).getState();
+      return refreshToken ? authApi.logout(refreshToken) : Promise.resolve();
+    },
+    meta: { silent: true },
+    onSettled: () => {
+      authStoreFor(portal).getState().clearSession();
+      navigate(loginPathFor(portal), { replace: true });
+      notify.success('You have signed out');
+    },
+  });
+}
+
+export function useChangePassword({ silent = false } = {}) {
+  return useMutation({
+    mutationFn: authApi.changePassword,
+    meta: {
+      silent,
+      errorMessages: {
+        THROTTLED: {
+          title: 'Too many attempts',
+          description: 'Please wait a minute before trying to change your password again.',
+        },
+      },
+    },
+    onSuccess: () => {
+      notify.success('Password changed', { description: 'Other devices have been signed out.' });
+    },
+  });
 }

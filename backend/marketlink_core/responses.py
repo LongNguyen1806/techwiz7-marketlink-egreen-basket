@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import ProtectedError, RestrictedError
@@ -160,7 +161,7 @@ def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Respons
             _log_access_denied(request)
         return reply("You do not have permission to access this resource.", 403, ErrorCode.PERMISSION_DENIED)
 
-    if isinstance(exc, (NotFound, Http404)):
+    if isinstance(exc, (NotFound, Http404, ObjectDoesNotExist)):
         return reply("The requested resource was not found.", 404, ErrorCode.NOT_FOUND)
 
     if isinstance(exc, Throttled):

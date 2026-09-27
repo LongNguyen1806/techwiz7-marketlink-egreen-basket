@@ -1,0 +1,14 @@
+{% autoescape off %}{{ title }}
+
+{{ message }}
+
+Order: #{{ order_id }}
+Farmer: {{ farmer_name }}
+Pickup: {{ pickup_label }}
+Market: {{ market_name }}
+{% if action_url %}
+View order: {{ action_url }}
+{% endif %}
+-- 
+MarketLink. Payment is made in cash when you pick up at the stall.
+{% endautoescape %}

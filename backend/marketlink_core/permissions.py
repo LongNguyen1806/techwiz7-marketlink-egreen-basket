@@ -4,7 +4,7 @@ from marketlink_core.policies.roles import RoleCode
 
 
 class _RolePermission(BasePermission):
-    role: str = ""
+    roles: tuple[str, ...] = ()
     message = "You do not have permission to access this resource."
 
     def has_permission(self, request, view) -> bool:
@@ -12,16 +12,21 @@ class _RolePermission(BasePermission):
         if not user or not user.is_authenticated or not user.is_active:
             return False
         role = getattr(user, "role", None)
-        return role is not None and role.code == self.role
+        return role is not None and role.code in self.roles
 
 
 class IsCustomer(_RolePermission):
-    role = RoleCode.CUSTOMER
+    roles = (RoleCode.CUSTOMER,)
 
 
 class IsFarmer(_RolePermission):
-    role = RoleCode.FARMER
+    roles = (RoleCode.FARMER,)
 
 
 class IsAdmin(_RolePermission):
-    role = RoleCode.ADMIN
+    roles = (RoleCode.ADMIN,)
+
+
+# AU-08 / N-01: only customers and farmers receive notifications.
+class IsCustomerOrFarmer(_RolePermission):
+    roles = (RoleCode.CUSTOMER, RoleCode.FARMER)

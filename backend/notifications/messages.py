@@ -44,7 +44,7 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         title="Order #{order_id} expired",
         message=(
             "{farmer_name} did not confirm your order before the pickup time, so it has "
-            "expired and the reserved items were released."
+            "expired. Please place a new order if you still need these items."
         ),
         target_url="/customer/orders/{order_id}",
         required=("order_id", "farmer_name"),
@@ -61,6 +61,15 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         message="{farmer_name} rejected your change request for order #{order_id}. Reason: {reason}",
         target_url="/customer/orders/{order_id}",
         required=("order_id", "farmer_name", "reason"),
+    ),
+    NotificationType.ORDER_ITEM_SOLD_OUT: NotificationSpec(
+        title="An item in order #{order_id} is sold out",
+        message=(
+            "{farmer_name} has run out of {product_name}, so it was removed from your order "
+            "#{order_id}. The farmer will contact you about the rest of the order."
+        ),
+        target_url="/customer/orders/{order_id}",
+        required=("order_id", "farmer_name", "product_name"),
     ),
     NotificationType.RESTOCK: NotificationSpec(
         title="{product_name} is back in stock",
@@ -89,12 +98,13 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
     ),
     NotificationType.ORDER_CANCELLED_CUSTOMER_LOCKED: NotificationSpec(
         title="Order #{order_id} was cancelled",
+        # stock_note depends on the edge: T6 / T13 return stock, T5 (PLACED) never took any (D-029).
         message=(
             "The customer's account was locked by an administrator, so this order was "
-            "cancelled and the items have been returned to your online stock."
+            "cancelled. {stock_note}"
         ),
         target_url="/farmer/orders/{order_id}",
-        required=("order_id",),
+        required=("order_id", "stock_note"),
         email_template="order_cancelled_customer_locked",
     ),
     NotificationType.ACCOUNT_STATUS_CHANGED: NotificationSpec(
@@ -107,17 +117,17 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         title="{market_name} has closed",
         message=(
             "{market_name} is no longer running, so {order_count} of your orders there were "
-            # stall_note is optional and renders empty for shoppers. It carries the stall's
-            # suspension, so closing a market sends one message rather than two about the
-            # same event.
             "cancelled. Reason: {reason} {stall_note}"
         ),
-        # Both sides read this one, so the link goes to the list each role actually has.
         target_url="{target_url}",
         required=("market_name", "order_count", "reason", "target_url"),
-        # Closing a market is the kind of thing someone needs to hear about even if they are
-        # not looking at the app, so this one also goes out by email.
         email_template="market_closed",
+    ),
+    NotificationType.MARKET_UPDATED: NotificationSpec(
+        title="{market_name} has changed",
+        message="{changes} {order_note} {slot_note}",
+        target_url="{target_url}",
+        required=("market_name", "changes", "target_url"),
     ),
     NotificationType.PRODUCT_BLOCKED: NotificationSpec(
         title="{product_name} was taken down",
@@ -127,14 +137,18 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         ),
         target_url="/farmer/products",
         required=("product_name", "order_count", "reason"),
-        # In-app only. D-010 names the six events that also go out by email and this is not
-        # one of them; the stall sees it the next time they open the app.
     ),
     NotificationType.PRODUCT_APPROVED: NotificationSpec(
         title="{product_name} is on sale",
         message="An administrator approved {product_name}. Shoppers can see it now.",
         target_url="/farmer/products",
         required=("product_name",),
+    ),
+    NotificationType.AI_LISTING_FLAGGED: NotificationSpec(
+        title="AI review flagged {product_name}",
+        message="{check_label} at {stall_name}: {summary} The decision is yours.",
+        target_url="/admin/approvals?product={product_id}",
+        required=("product_name", "stall_name", "check_label", "summary", "product_id"),
     ),
     NotificationType.PRODUCT_REJECTED: NotificationSpec(
         title="{product_name} was not approved",
