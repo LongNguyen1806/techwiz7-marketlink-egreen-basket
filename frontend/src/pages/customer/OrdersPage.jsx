@@ -33,27 +33,23 @@ export default function OrdersPage() {
   const reorder = useReorder();
 
   const tab = searchParams.get('tab') === 'history' ? 'history' : 'open';
-  const selected = (searchParams.get('status') ?? '').split(',').filter(Boolean);
+  const selectedStatus = searchParams.get('status') ?? '';
   const params = {
     tab,
-    ...(selected.length ? { status: selected.join(',') } : {}),
-    
+    ...(selectedStatus ? { status: selectedStatus } : {}),
     ordering: tab === 'open' ? 'pickup_start_at' : '-created_at',
   };
   const { data, isLoading } = useCustomerOrders(params);
 
   function switchTab(next) {
-    
     setSearchParams(next === 'open' ? {} : { tab: next });
   }
 
-  function toggleStatus(value) {
-    const next = selected.includes(value)
-      ? selected.filter((status) => status !== value)
-      : [...selected, value];
+  function selectStatus(value) {
+    const nextStatus = selectedStatus === value ? '' : value;
     const query = {};
     if (tab === 'history') query.tab = tab;
-    if (next.length) query.status = next.join(',');
+    if (nextStatus) query.status = nextStatus;
     setSearchParams(query);
   }
 
@@ -132,13 +128,27 @@ export default function OrdersPage() {
 
       <fieldset className="orders-page__filters">
         <legend className="orders-page__filters-legend">Status</legend>
+        <label className="orders-page__filter">
+          <input
+            type="radio"
+            name="status-filter"
+            className="orders-page__filter-input"
+            checked={!selectedStatus}
+            onChange={() => selectStatus('')}
+          />
+          <span className="orders-page__filter-text">All</span>
+        </label>
         {STATUSES[tab].map((status) => (
           <label className="orders-page__filter" key={status.value}>
             <input
-              type="checkbox"
+              type="radio"
+              name="status-filter"
               className="orders-page__filter-input"
-              checked={selected.includes(status.value)}
-              onChange={() => toggleStatus(status.value)}
+              checked={selectedStatus === status.value}
+              onClick={() => {
+                if (selectedStatus === status.value) selectStatus('');
+              }}
+              onChange={() => selectStatus(status.value)}
             />
             <span className="orders-page__filter-text">{status.label}</span>
           </label>
