@@ -21,6 +21,10 @@ class AuditAction(models.TextChoices):
     CUSTOMER_ACTIVATED = "CUSTOMER_ACTIVATED", "Activate Customer"
     PRODUCT_HIDDEN = "PRODUCT_HIDDEN", "Hide Product"
     PRODUCT_RESTORED = "PRODUCT_RESTORED", "Restore Product"
+    # A legal takedown, which also cancels orders - kept apart from a plain hide so the
+    # security log shows which of the two an admin actually did.
+    PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Block Product"
+    PRODUCT_UNBLOCKED = "PRODUCT_UNBLOCKED", "Unblock Product"
     REVIEW_HIDDEN = "REVIEW_HIDDEN", "Hide Review"
     REVIEW_RESTORED = "REVIEW_RESTORED", "Restore Review"
     # v1.8: market management by Admin (AD-15, AD-16, AD-17)

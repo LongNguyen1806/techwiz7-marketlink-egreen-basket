@@ -27,6 +27,7 @@ NO_REASON_TEXT = "No reason given."
 SYSTEM_REASON_TEXT = {
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN: "The farmer's stall has been suspended by an administrator.",
     ChangeReason.CUSTOMER_LOCKED_BY_ADMIN: "The customer's account has been locked by an administrator.",
+    ChangeReason.PRODUCT_BLOCKED_BY_ADMIN: "An item in this order was removed by an administrator.",
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
 
@@ -68,6 +69,7 @@ def transition_order(
     actor_role: str,
     expected_version: int | None = None,
     reason: str | None = None,
+    admin_change_reason: str | None = None,
 ) -> Order:
     reason = (reason or "").strip() or None
     with transaction.atomic():
@@ -84,7 +86,9 @@ def transition_order(
                 code=ErrorCode.INVALID_STATUS_TRANSITION,
             )
         _check_actor(order, rule, actor, actor_role)
-        change_reason = _check_preconditions(order, rule, actor_role, reason)
+        change_reason = _check_preconditions(
+            order, rule, actor_role, reason, admin_change_reason
+        )
 
         # Locking order: orders (already locked above) -> products (sorted by id)
         if rule.code == Transition.T2:
@@ -155,7 +159,11 @@ def _check_actor(order: Order, rule: TransitionRule, actor: Any | None, actor_ro
 
 
 def _check_preconditions(
-    order: Order, rule: TransitionRule, actor_role: str, reason: str | None
+    order: Order,
+    rule: TransitionRule,
+    actor_role: str,
+    reason: str | None,
+    admin_change_reason: str | None = None,
 ) -> str | None:
     if reason and len(reason) > REASON_MAX_LENGTH:
         raise BusinessValidationError(
@@ -201,6 +209,12 @@ def _check_preconditions(
 
     if actor_role == _R.ADMIN:
         # Fixed system reason prevents leaking internal administrative notes into end-user emails.
+        # The caller may name which fixed reason applies, because the same DECLINED transitions
+        # now serve two different admin actions: suspending a stall and blocking one product.
+        # Without this, a shopper whose order died because of a takedown would be told the
+        # stall had been suspended, which is simply untrue.
+        if admin_change_reason:
+            return admin_change_reason
         if code in (Transition.T3, Transition.T4, Transition.T12):
             return ChangeReason.FARMER_SUSPENDED_BY_ADMIN
         return ChangeReason.CUSTOMER_LOCKED_BY_ADMIN

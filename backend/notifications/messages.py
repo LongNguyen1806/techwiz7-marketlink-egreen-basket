@@ -116,6 +116,17 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         # not looking at the app, so this one also goes out by email.
         email_template="market_closed",
     ),
+    NotificationType.PRODUCT_BLOCKED: NotificationSpec(
+        title="{product_name} was taken down",
+        message=(
+            "An administrator removed {product_name} from the marketplace and cancelled "
+            "{order_count} open orders for it. Reason: {reason}"
+        ),
+        target_url="/farmer/products",
+        required=("product_name", "order_count", "reason"),
+        # In-app only. D-010 names the six events that also go out by email and this is not
+        # one of them; the stall sees it the next time they open the app.
+    ),
     NotificationType.MARKET_SCHEDULE_CHANGED: NotificationSpec(
         title="{market_name} changed its schedule",
         message=(

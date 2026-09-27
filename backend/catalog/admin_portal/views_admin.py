@@ -9,6 +9,7 @@ from catalog.admin_portal.serializers_admin import (
     CategoryAdminWriteSerializer,
     ModerationReasonSerializer,
     ProductAdminSerializer,
+    ProductBlockImpactSerializer,
 )
 from catalog.models import Product
 from catalog.selectors import (
@@ -18,7 +19,14 @@ from catalog.selectors import (
     markets_for_products,
 )
 from catalog.services.category_service import delete_category
-from catalog.services.product_moderation_service import hide_product, restore_product
+from catalog.services.product_moderation_service import (
+    block_impact,
+    block_product,
+    hide_product,
+    open_order_counts,
+    restore_product,
+    unblock_product,
+)
 from catalog.services.stock import get_open_held_quantities, get_pending_quantities
 from marketlink_core.exceptions import ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
@@ -96,6 +104,11 @@ class CategoryDetailView(RetrieveUpdateDestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# How many cancelled order ids one audit row will carry. Beyond this the list stops being
+# something a person reads and the JSON column starts paying for it.
+AUDIT_ID_LIMIT = 200
+
+
 def _flag(raw: str | None) -> bool | None:
     if raw is None:
         return None
@@ -120,6 +133,9 @@ def _product_context(products) -> dict:
         "held_quantities": get_open_held_quantities(product_ids=ids),
         "pending_quantities": get_pending_quantities(product_ids=ids),
         "markets": markets_for_products(product_ids=ids),
+        # What a block would cancel, shown on the row so the admin sees the cost before
+        # opening the dialog.
+        "open_order_counts": open_order_counts(product_ids=ids),
     }
 
 
@@ -132,6 +148,7 @@ class ProductModerationListView(ListAPIView):
         return list_products_for_admin(
             q=params.get("q"),
             farmer_id=_int(params.get("farmer_id")),
+            product_id=_int(params.get("product_id")),
             is_hidden=_flag(params.get("is_hidden")),
             ordering=params.get("ordering"),
         )
@@ -140,6 +157,9 @@ class ProductModerationListView(ListAPIView):
         parameters=[
             OpenApiParameter("q", str, description="Matches the product name or stall name."),
             OpenApiParameter("farmer_id", int),
+            OpenApiParameter(
+                "product_id", int, description="A single product, for a link straight to it."
+            ),
             OpenApiParameter("is_hidden", bool),
             OpenApiParameter(
                 "ordering",
@@ -161,17 +181,33 @@ class ProductModerationListView(ListAPIView):
 class _ProductModerationView(APIView):
     permission_classes = [IsAdmin]
 
-    def _respond(self, request, *, product_id: int, action: str, message: str) -> Response:
+    def _respond(
+        self,
+        request,
+        *,
+        product_id: int,
+        action: str,
+        message: str,
+        extra: dict | None = None,
+        audit_extra: dict | None = None,
+    ) -> Response:
         product = get_product_for_admin(product_id=product_id)
         # Audit rows are written after the business transaction so a rollback cannot erase them.
         log_request_event(
             request,
             action=action,
             status_code=200,
-            details={"product_id": product_id, "reason": product.hidden_reason},
+            details={
+                "product_id": product_id,
+                "reason": product.hidden_reason,
+                **(extra or {}),
+                **(audit_extra or {}),
+            },
         )
         serializer = ProductAdminSerializer(product, context=_product_context([product]))
-        return api_response(message=message, request=request, data=serializer.data)
+        return api_response(
+            message=message, request=request, data={**serializer.data, **(extra or {})}
+        )
 
 
 class ProductHideView(_ProductModerationView):
@@ -207,6 +243,72 @@ class ProductRestoreView(_ProductModerationView):
             product_id=id,
             action=AuditAction.PRODUCT_RESTORED,
             message="Product restored.",
+        )
+
+
+class ProductBlockImpactView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        responses={200: ProductBlockImpactSerializer, 404: None},
+        summary="What blocking this product would cancel",
+    )
+    def get(self, request, id: int) -> Response:
+        _require_product(id)
+        return api_response(
+            message="OK", request=request, data=block_impact(product_id=id)
+        )
+
+
+class ProductBlockView(_ProductModerationView):
+    @extend_schema(
+        request=ModerationReasonSerializer,
+        responses={200: ProductAdminSerializer, 404: None},
+        summary="Block a product and cancel its open orders",
+    )
+    def post(self, request, id: int) -> Response:
+        _require_product(id)
+        serializer = ModerationReasonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        _, cancelled = block_product(
+            product_id=id, reason=serializer.validated_data["reason"], actor=request.user
+        )
+        return self._respond(
+            request,
+            product_id=id,
+            action=AuditAction.PRODUCT_BLOCKED,
+            message="Product blocked.",
+            extra={"affected_orders": len(cancelled)},
+            # Which orders, not just how many. The count says the takedown was costly; the
+            # ids are what lets someone answer a shopper asking why theirs disappeared.
+            # Capped so one enormous takedown cannot bloat the log row.
+            audit_extra={
+                "cancelled_order_ids": cancelled[:AUDIT_ID_LIMIT],
+                **(
+                    {"cancelled_order_ids_truncated": True}
+                    if len(cancelled) > AUDIT_ID_LIMIT
+                    else {}
+                ),
+            },
+        )
+
+
+class ProductUnblockView(_ProductModerationView):
+    @extend_schema(
+        request=None,
+        responses={200: ProductAdminSerializer, 404: None},
+        summary="Put a blocked product back on sale",
+    )
+    def post(self, request, id: int) -> Response:
+        _require_product(id)
+        unblock_product(product_id=id)
+        # Deliberately not "restored": the cancelled orders stay cancelled, and the message
+        # should not suggest otherwise.
+        return self._respond(
+            request,
+            product_id=id,
+            action=AuditAction.PRODUCT_UNBLOCKED,
+            message="Product is on sale again. The cancelled orders were not reinstated.",
         )
 
 

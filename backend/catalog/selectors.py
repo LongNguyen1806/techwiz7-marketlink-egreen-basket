@@ -48,6 +48,7 @@ def list_products_for_admin(
     *,
     q: str | None = None,
     farmer_id: int | None = None,
+    product_id: int | None = None,
     is_hidden: bool | None = None,
     ordering: str | None = None,
 ) -> QuerySet[Product]:
@@ -66,6 +67,10 @@ def list_products_for_admin(
         queryset = queryset.filter(Q(name__icontains=q) | Q(farmer__stall_name__icontains=q))
     if farmer_id is not None:
         queryset = queryset.filter(farmer_id=farmer_id)
+    # One row by id, which is how the follow-up queue hands a flagged product over: the link
+    # has to land on that product, not on a page it happens to be somewhere in.
+    if product_id is not None:
+        queryset = queryset.filter(pk=product_id)
     if is_hidden is not None:
         queryset = queryset.filter(is_hidden_by_admin=is_hidden)
     return queryset.order_by(

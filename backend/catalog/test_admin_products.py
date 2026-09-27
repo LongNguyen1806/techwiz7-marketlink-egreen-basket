@@ -2,8 +2,9 @@ import pytest
 from django.urls import reverse
 
 from accounts.models import FarmerStatus
-from catalog.models import Product, Unit
-from orders.models import OrderStatus
+from catalog.models import ModerationAction, Product, Unit
+from notifications.models import Notification, NotificationType
+from orders.models import ActorRole, ChangeReason, OrderStatus, OrderStatusHistory
 from system.models import AuditAction, AuditLog
 
 LIST_URL_NAME = "admin-product-list"
@@ -284,3 +285,235 @@ def test_unrated_products_stay_at_the_bottom_either_way(
         response = admin_client.get(reverse(LIST_URL_NAME), {"ordering": ordering})
         ids = [row["id"] for row in response.data["data"]["results"]]
         assert ids[-1] == unrated.id, f"{ordering} floated an unrated product"
+
+
+# --------------------------------------------------------------------- AD-21b
+# Block is the takedown: it hides the listing *and* kills the orders. Hide leaves the orders
+# alone. The tests below are mostly about keeping those two apart.
+
+IMPACT_URL_NAME = "admin-product-block-impact"
+BLOCK_URL_NAME = "admin-product-block"
+UNBLOCK_URL_NAME = "admin-product-unblock"
+
+
+@pytest.mark.django_db
+def test_hide_leaves_every_open_order_untouched(admin_client, product, make_order_with_item):
+    placed = make_order_with_item(product=product, status=OrderStatus.PLACED)
+    accepted = make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
+
+    admin_client.post(
+        reverse(HIDE_URL_NAME, args=[product.id]),
+        {"reason": "Checking the source"},
+        format="json",
+    )
+
+    placed.refresh_from_db()
+    accepted.refresh_from_db()
+    assert placed.status == OrderStatus.PLACED
+    assert accepted.status == OrderStatus.ACCEPTED
+    product.refresh_from_db()
+    assert product.moderation_action == ModerationAction.HIDE
+
+
+@pytest.mark.django_db
+def test_block_impact_counts_open_orders_and_distinct_customers(
+    admin_client, product, make_order_with_item
+):
+    make_order_with_item(product=product, status=OrderStatus.PLACED)
+    make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
+    make_order_with_item(product=product, status=OrderStatus.READY_FOR_PICKUP)
+    # Finished and cancelled orders are nobody's problem any more.
+    make_order_with_item(product=product, status=OrderStatus.COMPLETED)
+    make_order_with_item(product=product, status=OrderStatus.CANCELLED)
+
+    data = admin_client.get(reverse(IMPACT_URL_NAME, args=[product.id])).data["data"]
+
+    assert data["open_orders"] == {
+        "PLACED": 1,
+        "ACCEPTED": 1,
+        "READY_FOR_PICKUP": 1,
+        "total": 3,
+    }
+    # The fixture uses one shopper for all of them.
+    assert data["affected_customers"] == 1
+
+
+@pytest.mark.django_db
+def test_block_declines_open_orders_restocks_and_audits(
+    admin_client, product, admin_user, make_order_with_item
+):
+    placed = make_order_with_item(product=product, quantity=4, status=OrderStatus.PLACED)
+    accepted = make_order_with_item(product=product, quantity=6, status=OrderStatus.ACCEPTED)
+    completed = make_order_with_item(product=product, quantity=9, status=OrderStatus.COMPLETED)
+    before = Product.objects.get(pk=product.id).stock_quantity
+
+    response = admin_client.post(
+        reverse(BLOCK_URL_NAME, args=[product.id]),
+        {"reason": "Sold without a licence"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["data"]["affected_orders"] == 2
+    assert response.data["data"]["moderation_action"] == ModerationAction.BLOCK
+
+    placed.refresh_from_db()
+    accepted.refresh_from_db()
+    completed.refresh_from_db()
+    assert placed.status == OrderStatus.DECLINED
+    assert accepted.status == OrderStatus.DECLINED
+    # A finished order is history; the takedown does not reach back into it.
+    assert completed.status == OrderStatus.COMPLETED
+
+    # D-029: only the ACCEPTED order had taken stock off the shelf, so only its 6 come back.
+    product.refresh_from_db()
+    assert product.stock_quantity == before + 6
+
+    entry = AuditLog.objects.get(action=AuditAction.PRODUCT_BLOCKED)
+    assert entry.user == admin_user
+    assert entry.details["affected_orders"] == 2
+    # Which orders died, so the row can answer a shopper asking why theirs was cancelled.
+    assert entry.details["cancelled_order_ids"] == sorted([placed.id, accepted.id])
+    assert completed.id not in entry.details["cancelled_order_ids"]
+
+
+@pytest.mark.django_db
+def test_block_stamps_the_takedown_reason_not_the_suspension_one(
+    admin_client, product, make_order_with_item
+):
+    # The same DECLINED transitions serve a stall suspension and a product takedown. If the
+    # reason were still picked from the transition code alone, this shopper would be told the
+    # stall had been suspended, which never happened.
+    order = make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
+
+    admin_client.post(
+        reverse(BLOCK_URL_NAME, args=[product.id]),
+        {"reason": "Legal takedown"},
+        format="json",
+    )
+
+    row = OrderStatusHistory.objects.filter(order=order).latest("id")
+    assert row.to_status == OrderStatus.DECLINED
+    assert row.actor_role == ActorRole.ADMIN
+    assert row.change_reason == ChangeReason.PRODUCT_BLOCKED_BY_ADMIN
+
+
+@pytest.mark.django_db
+def test_block_cancels_the_whole_order_not_just_the_blocked_line(
+    admin_client, product, category, approved_farmer, make_order_with_item
+):
+    other = Product.objects.create(
+        farmer=approved_farmer,
+        category=category,
+        name="Something else",
+        price="3.00",
+        unit=Unit.KG,
+        stock_quantity=50,
+    )
+    order = make_order_with_item(product=product, quantity=2, status=OrderStatus.ACCEPTED)
+    order.items.create(
+        product=other,
+        product_name=other.name,
+        unit_price=other.price,
+        unit=other.unit,
+        quantity=5,
+        line_total="15.00",
+    )
+    other_before = other.stock_quantity
+
+    admin_client.post(
+        reverse(BLOCK_URL_NAME, args=[product.id]),
+        {"reason": "Legal takedown"},
+        format="json",
+    )
+
+    order.refresh_from_db()
+    assert order.status == OrderStatus.DECLINED
+    # Both lines survive as a record, and the untouched product gets its stock back too,
+    # because the order it belonged to is gone.
+    assert order.items.count() == 2
+    other.refresh_from_db()
+    assert other.stock_quantity == other_before + 5
+
+
+@pytest.mark.django_db
+def test_block_notifies_the_stall(admin_client, product, approved_farmer, make_order_with_item):
+    make_order_with_item(product=product, status=OrderStatus.PLACED)
+
+    admin_client.post(
+        reverse(BLOCK_URL_NAME, args=[product.id]),
+        {"reason": "Legal takedown"},
+        format="json",
+    )
+
+    note = Notification.objects.get(
+        recipient=approved_farmer.user, type=NotificationType.PRODUCT_BLOCKED
+    )
+    assert product.name in note.title
+    assert "Legal takedown" in note.message
+
+
+@pytest.mark.django_db
+def test_block_requires_a_reason(admin_client, product, make_order_with_item):
+    order = make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
+
+    response = admin_client.post(
+        reverse(BLOCK_URL_NAME, args=[product.id]), {"reason": "no"}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert "reason" in response.data["errors"]
+    order.refresh_from_db()
+    assert order.status == OrderStatus.ACCEPTED
+    product.refresh_from_db()
+    assert product.is_hidden_by_admin is False
+
+
+@pytest.mark.django_db
+def test_unblock_puts_it_back_on_sale_without_reviving_the_orders(
+    admin_client, product, admin_user, make_order_with_item
+):
+    order = make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
+    admin_client.post(
+        reverse(BLOCK_URL_NAME, args=[product.id]),
+        {"reason": "Legal takedown"},
+        format="json",
+    )
+
+    response = admin_client.post(reverse(UNBLOCK_URL_NAME, args=[product.id]))
+
+    assert response.status_code == 200
+    assert response.data["data"]["is_hidden_by_admin"] is False
+    assert response.data["data"]["moderation_action"] is None
+    assert response.data["data"]["hidden_reason"] is None
+
+    # The whole point of the separate verb: this order stays dead.
+    order.refresh_from_db()
+    assert order.status == OrderStatus.DECLINED
+
+    assert (
+        AuditLog.objects.filter(action=AuditAction.PRODUCT_UNBLOCKED, user=admin_user).count() == 1
+    )
+
+
+@pytest.mark.django_db
+def test_moderation_list_reports_the_action_and_the_open_order_count(
+    admin_client, product, make_order_with_item
+):
+    make_order_with_item(product=product, status=OrderStatus.PLACED)
+    make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
+    make_order_with_item(product=product, status=OrderStatus.COMPLETED)
+
+    row = admin_client.get(reverse(LIST_URL_NAME)).data["data"]["results"][0]
+
+    assert row["open_order_count"] == 2
+    assert row["moderation_action"] is None
+    # The rating average must survive the extra counting; it is aggregated over the same join.
+    assert row["rating_count"] == 0
+
+
+@pytest.mark.django_db
+def test_customer_cannot_block_or_unblock(customer_client, product):
+    for name in (IMPACT_URL_NAME, BLOCK_URL_NAME, UNBLOCK_URL_NAME):
+        method = customer_client.get if name == IMPACT_URL_NAME else customer_client.post
+        assert method(reverse(name, args=[product.id])).status_code == 403
