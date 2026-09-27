@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useCsvDownload } from '@/hooks/useCsvDownload';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,13 +13,13 @@ import {
   useDeactivateCustomer,
 } from '../../hooks/queries/admin/useAdminCustomers';
 import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
+import { FilterBar } from '@/components/common/table/FilterBar';
 import { SortableTh } from '@/components/common/table/SortableTh';
 import { EmptyState } from '@/components/common/feedback/EmptyState';
 import { PageHeader } from '@/components/common/layout/PageHeader';
 import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
 import { Badge } from '@/components/common/badges/Badge';
 import { Button } from '@/components/common/forms/Button';
-import { Input } from '@/components/common/forms/Input';
 import { Textarea } from '@/components/common/forms/Textarea';
 
 import './AdminCustomersPage.css';
@@ -28,18 +27,37 @@ import './AdminCustomersPage.css';
 // AD-12 requires 5 to 500 characters; checking here saves a round trip.
 const REASON_MIN_LENGTH = 5;
 
+const CUSTOMER_FILTERS = [
+  { name: 'q', label: 'Search name, email or phone', type: 'search' },
+  {
+    name: 'is_active',
+    label: 'Account',
+    type: 'select',
+    allLabel: 'Active and locked',
+    options: [
+      { value: 'true', label: 'Active' },
+      { value: 'false', label: 'Locked' },
+    ],
+  },
+  {
+    name: 'at_risk',
+    label: 'Risk',
+    type: 'select',
+    allLabel: 'Everyone',
+    options: [{ value: 'true', label: 'At risk only' }],
+  },
+];
+
 export default function AdminCustomersPage() {
-  const [q, setQ] = useState('');
   const csv = useCsvDownload('customers');
-  // Searching as the admin types, but one request per pause rather than one per keystroke.
-  const searchTerm = useDebouncedValue(q);
   const [deactivateId, setDeactivateId] = useState(null);
   const [reason, setReason] = useState('');
   const [impactText, setImpactText] = useState('');
 
   const [ordering, setOrdering] = useState(undefined);
+  const [filters, setFilters] = useState({});
 
-  const query = useAdminCustomers({ q: searchTerm || undefined, ordering });
+  const query = useAdminCustomers({ ...filters, ordering });
   const deactivate = useDeactivateCustomer();
   const activate = useActivateCustomer();
 
@@ -65,21 +83,19 @@ export default function AdminCustomersPage() {
             size="sm"
             variant="outline"
             loading={csv.pending}
-            onClick={() => csv.download({ q: searchTerm || undefined, ordering })}
+            onClick={() => csv.download({ ...filters, ordering })}
           >
             Export CSV
           </Button>
         }
         description="Lock or unlock accounts and monitor no-show history."
       />
-      <div className="page-primitive__actions-row">
-        <Input
-          label="Search email / name"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="page-primitive__input-narrow"
-        />
-      </div>
+      <FilterBar
+        fields={CUSTOMER_FILTERS}
+        value={filters}
+        onChange={setFilters}
+        onReset={() => setFilters({})}
+      />
 
       {query.isLoading ? (
         <PageSkeleton />

@@ -5,10 +5,12 @@ import { ApiError } from '@/lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
 import { QUERY_KEYS } from '@/config/constants';
 
-export function useAdminAnnouncements() {
+export function useAdminAnnouncements(params = {}) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_ANNOUNCEMENTS,
-    queryFn: adminApi.getAnnouncements,
+    queryKey: QUERY_KEYS.ADMIN_ANNOUNCEMENTS(params),
+    queryFn: () => adminApi.getAnnouncements(params),
+    staleTime: 0,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -19,7 +21,7 @@ export function useCreateAnnouncement() {
     onSuccess: () => {
       toast.success('Announcement created');
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_ANNOUNCEMENTS,
+        queryKey: [QUERY_KEYS.ADMIN_ANNOUNCEMENTS()[0]],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
@@ -33,7 +35,7 @@ export function useDeleteAnnouncement() {
     onSuccess: () => {
       toast.success('Announcement removed');
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_ANNOUNCEMENTS,
+        queryKey: [QUERY_KEYS.ADMIN_ANNOUNCEMENTS()[0]],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
@@ -46,7 +48,7 @@ export function useToggleAnnouncement() {
     mutationFn: ({ id, is_active }) => adminApi.updateAnnouncement(id, { is_active }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_ANNOUNCEMENTS,
+        queryKey: [QUERY_KEYS.ADMIN_ANNOUNCEMENTS()[0]],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),

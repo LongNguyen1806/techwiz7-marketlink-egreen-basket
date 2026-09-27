@@ -24,12 +24,39 @@ import { formatDateTime } from '@/utils/formatters';
 import { audienceLabel } from '@/utils/labels';
 
 import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
+import { FilterBar } from '@/components/common/table/FilterBar';
 
 import './AdminAnnouncementsPage.css';
 
+const ANNOUNCEMENT_FILTERS = [
+  { name: 'q', label: 'Search title or text', type: 'search' },
+  {
+    name: 'audience',
+    label: 'Audience',
+    type: 'select',
+    allLabel: 'Everyone and roles',
+    options: [
+      { value: 'ALL', label: audienceLabel('ALL') },
+      { value: 'CUSTOMER', label: audienceLabel('CUSTOMER') },
+      { value: 'FARMER', label: audienceLabel('FARMER') },
+    ],
+  },
+  {
+    name: 'is_active',
+    label: 'State',
+    type: 'select',
+    allLabel: 'On and off',
+    options: [
+      { value: 'true', label: 'Showing' },
+      { value: 'false', label: 'Off' },
+    ],
+  },
+];
+
 export default function AdminAnnouncementsPage() {
   const [deleting, setDeleting] = useState(null);
-  const query = useAdminAnnouncements();
+  const [filters, setFilters] = useState({});
+  const query = useAdminAnnouncements(filters);
   const create = useCreateAnnouncement();
   const remove = useDeleteAnnouncement();
   const toggle = useToggleAnnouncement();
@@ -129,6 +156,13 @@ export default function AdminAnnouncementsPage() {
           </p>
         ) : null}
       </form>
+
+      <FilterBar
+        fields={ANNOUNCEMENT_FILTERS}
+        value={filters}
+        onChange={setFilters}
+        onReset={() => setFilters({})}
+      />
 
       {query.isLoading ? (
         <PageSkeleton />

@@ -11,6 +11,7 @@ import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
 import { Badge } from '@/components/common/badges/Badge';
 import { Button } from '@/components/common/forms/Button';
 import { SortSelect } from '@/components/common/table/SortSelect';
+import { FilterBar } from '@/components/common/table/FilterBar';
 import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
 import { Textarea } from '@/components/common/forms/Textarea';
 import { Input } from '@/components/common/forms/Input';
@@ -19,6 +20,20 @@ import './AdminMarketsPage.css';
 
 // AD-17 shares the 5-500 character reason with AD-06 and AD-07.
 const REASON_MIN_LENGTH = 5;
+
+const MARKET_FILTERS = [
+  { name: 'q', label: 'Search name or address', type: 'search' },
+  {
+    name: 'is_active',
+    label: 'State',
+    type: 'select',
+    allLabel: 'Open and closed',
+    options: [
+      { value: 'true', label: 'Open' },
+      { value: 'false', label: 'Closed' },
+    ],
+  },
+];
 const CONFIRM_WORD = 'confirm';
 
 const SORT_OPTIONS = [
@@ -35,7 +50,8 @@ export default function AdminMarketsPage() {
   const [reason, setReason] = useState('');
   const [farmerMessage, setFarmerMessage] = useState('');
   const [typed, setTyped] = useState('');
-  const query = useAdminMarkets({ ordering });
+  const [filters, setFilters] = useState({});
+  const query = useAdminMarkets({ ...filters, ordering });
   const toggle = useToggleAdminMarket();
 
   return (
@@ -48,6 +64,13 @@ export default function AdminMarketsPage() {
             <Link to="/admin/markets/new">Add a market</Link>
           </Button>
         }
+      />
+
+      <FilterBar
+        fields={MARKET_FILTERS}
+        value={filters}
+        onChange={setFilters}
+        onReset={() => setFilters({})}
       />
 
       <SortSelect
