@@ -9,6 +9,8 @@ const AdminFarmersPage = lazy(() => import('@/pages/admin/AdminFarmersPage'));
 const AdminFarmerDetailPage = lazy(() => import('@/pages/admin/AdminFarmerDetailPage'));
 const AdminCustomersPage = lazy(() => import('@/pages/admin/AdminCustomersPage'));
 const AdminOrdersPage = lazy(() => import('@/pages/admin/AdminOrdersPage'));
+const AdminQueuePage = lazy(() => import('@/pages/admin/AdminQueuePage'));
+const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage'));
 const AdminCustomerDetailPage = lazy(
   () => import('@/pages/admin/AdminCustomerDetailPage'),
 );
@@ -74,6 +76,22 @@ export const adminRoutes = [
             element: (
               <Suspend>
                 <AdminOrdersPage />
+              </Suspend>
+            ),
+          },
+          {
+            path: '/admin/queue',
+            element: (
+              <Suspend>
+                <AdminQueuePage />
+              </Suspend>
+            ),
+          },
+          {
+            path: '/admin/limits',
+            element: (
+              <Suspend>
+                <AdminSettingsPage />
               </Suspend>
             ),
           },

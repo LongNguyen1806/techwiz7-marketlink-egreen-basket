@@ -12,7 +12,9 @@ import {
   Megaphone,
   ScrollText,
   KeyRound,
+  ListChecks,
   ReceiptText,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 import { ThemeToggle } from '@/components/common/layout/ThemeToggle';
@@ -35,12 +37,14 @@ const navItems = [
   { to: '/admin/farmers', label: 'Farmers', icon: Warehouse, end: false },
   { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
   { to: '/admin/orders', label: 'Orders', icon: ReceiptText, end: false },
+  { to: '/admin/queue', label: 'Follow-up queue', icon: ListChecks, end: false },
   { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree, end: false },
   { to: '/admin/moderation', label: 'Moderation', icon: ShieldAlert, end: false },
   { to: '/admin/reports', label: 'Reports', icon: FileBarChart, end: false },
   { to: '/admin/announcements', label: 'Announcements', icon: Megaphone, end: false },
   { to: '/admin/audit-logs', label: 'System log', icon: ScrollText, end: false },
+  { to: '/admin/limits', label: 'Platform limits', icon: SlidersHorizontal, end: false },
   { to: '/admin/password', label: 'My password', icon: KeyRound, end: false },
 ];
 

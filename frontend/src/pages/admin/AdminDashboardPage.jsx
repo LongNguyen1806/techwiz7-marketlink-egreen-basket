@@ -27,6 +27,20 @@ import { orderStatusLabel } from '@/utils/labels';
 
 import './AdminDashboardPage.css';
 
+// Counts an admin can act on today, each linking to the screen that acts on it. Separate
+// from the totals below, which describe the platform rather than ask for anything.
+const ATTENTION = [
+  {
+    key: 'stalls_awaiting_approval',
+    label: 'Stalls awaiting approval',
+    to: '/admin/farmers?status=PENDING',
+  },
+  { key: 'flags_open', label: 'In the follow-up queue', to: '/admin/queue' },
+  { key: 'customers_at_risk', label: 'Shoppers at risk', to: '/admin/customers' },
+  { key: 'hidden_products', label: 'Products hidden', to: '/admin/moderation' },
+  { key: 'markets_closed', label: 'Markets closed', to: '/admin/markets' },
+];
+
 const PIE_COLORS = ['#15803d', '#ca8a04', '#2563eb', '#dc2626', '#64748b', '#7c3aed'];
 
 export default function AdminDashboardPage() {
@@ -67,6 +81,27 @@ export default function AdminDashboardPage() {
         title="Platform overview"
         description="Monitor stalls, markets, orders, and content that needs attention."
       />
+
+      {data.needs_attention ? (
+        <section className="admin-dashboard-page__attention">
+          <h2 className="admin-dashboard-page__attention-title">Waiting for you</h2>
+          <div className="admin-dashboard-page__attention-grid">
+            {ATTENTION.map((item) => {
+              const count = data.needs_attention[item.key] ?? 0;
+              return (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  className={`admin-dashboard-page__task${count ? ' admin-dashboard-page__task--live' : ''}`}
+                >
+                  <b>{count}</b>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <div className="page-primitive__stat-grid-5">
         {cards.map((item) => (

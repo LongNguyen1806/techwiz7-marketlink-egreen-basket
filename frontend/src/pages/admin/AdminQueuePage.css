@@ -1,0 +1,51 @@
+@import '../../styles/common/page-primitives.css';
+
+.admin-queue-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.admin-queue-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.admin-queue-page__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+}
+
+.admin-queue-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.admin-queue-page__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-queue-page__note {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-queue-page__resolution {
+  margin-top: var(--space-3);
+  width: 100%;
+}
