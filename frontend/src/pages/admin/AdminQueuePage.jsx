@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
+import { FlagTargetCard } from '@/components/admin/FlagTargetCard';
 
 import { adminApi } from '@/api/admin/adminApi';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +17,7 @@ import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
 import { Badge } from '@/components/common/badges/Badge';
 import { Button } from '@/components/common/forms/Button';
 import { Textarea } from '@/components/common/forms/Textarea';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/common/drawer/Sheet';
 import { formatDateTime } from '@/utils/formatters';
 
 import './AdminQueuePage.css';
@@ -27,6 +31,9 @@ const TARGET_LABEL = {
 };
 
 const QUEUE_FILTERS = [
+  // Same debounced box as every other admin table: FilterBar waits for typing to stop and
+  // the query runs with staleTime 0, so a stale page of results can never come back.
+  { name: 'q', label: 'Search note or number', type: 'search' },
   {
     name: 'target_type',
     label: 'Kind',
@@ -48,6 +55,9 @@ const RESOLUTION_MIN_LENGTH = 5;
 export default function AdminQueuePage() {
   const [filters, setFilters] = useState({});
   const [resolving, setResolving] = useState(null);
+  // Read in a panel over the queue rather than on another screen: leaving the page throws
+  // away the search and the filters, and this list is worked through one item at a time.
+  const [reviewing, setReviewing] = useState(null);
   const [resolution, setResolution] = useState('');
   const queryClient = useQueryClient();
 
@@ -111,6 +121,23 @@ export default function AdminQueuePage() {
                   </span>
                 </div>
                 <p className="admin-queue-page__note">{flag.note}</p>
+                {/* The reported content itself, and the way to it. Deciding without looking
+                    is guesswork, and a number alone means hunting for the row by hand. */}
+                {flag.target_preview ? (
+                  <p className="admin-queue-page__preview">{flag.target_preview}</p>
+                ) : (
+                  <p className="admin-queue-page__preview admin-queue-page__preview--gone">
+                    The flagged item no longer exists.
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="admin-queue-page__link"
+                  onClick={() => setReviewing(flag)}
+                >
+                  Take a look
+                </Button>
                 {flag.resolved_at ? (
                   <p className="page-primitive__muted-sm">
                     Dealt with by {flag.resolved_by?.email ?? 'someone'}:{' '}
@@ -134,6 +161,42 @@ export default function AdminQueuePage() {
           ))}
         </ul>
       )}
+
+      <Sheet open={Boolean(reviewing)} onOpenChange={(open) => !open && setReviewing(null)}>
+        <SheetContent className="page-primitive__sheet-md">
+          <SheetHeader>
+            <SheetTitle>
+              {reviewing
+                ? `${TARGET_LABEL[reviewing.target_type] ?? reviewing.target_type} #${reviewing.target_id}`
+                : 'Flagged item'}
+            </SheetTitle>
+          </SheetHeader>
+          <p className="admin-queue-page__panel-note">{reviewing?.note}</p>
+          <FlagTargetCard flag={reviewing} />
+          <div className="admin-queue-page__panel-actions">
+            {reviewing?.target_url ? (
+              <Link className="admin-queue-page__link" to={reviewing.target_url}>
+                Open the full screen
+                <ExternalLink className="page-primitive__icon-sm" />
+              </Link>
+            ) : null}
+            {reviewing?.resolved_at ? null : (
+              <Button
+                size="sm"
+                onClick={() => {
+                  // Straight from the panel: having looked at it is exactly when the
+                  // decision gets made.
+                  setResolving(reviewing);
+                  setResolution('');
+                  setReviewing(null);
+                }}
+              >
+                Mark as done
+              </Button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <ConfirmDialog
         open={Boolean(resolving)}

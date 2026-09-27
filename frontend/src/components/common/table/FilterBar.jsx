@@ -78,18 +78,21 @@ export function FilterBar({ fields, value, onChange, onReset }) {
         );
       })}
 
-      {isDirty ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            setText('');
-            onReset();
-          }}
-        >
-          Clear
-        </Button>
-      ) : null}
+      {/* Always rendered, disabled when there is nothing to clear. Showing it only once a
+          filter is set made the row jump and left some screens with the button and some
+          without, so an admin could not learn where it lives. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="filter-bar__clear"
+        disabled={!isDirty}
+        onClick={() => {
+          setText('');
+          onReset();
+        }}
+      >
+        Clear
+      </Button>
     </div>
   );
 }

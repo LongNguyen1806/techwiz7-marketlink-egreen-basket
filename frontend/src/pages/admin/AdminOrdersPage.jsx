@@ -13,6 +13,7 @@ import { SortableTh } from '@/components/common/table/SortableTh';
 import { formatDate, formatDateTime, formatMoney } from '@/utils/formatters';
 import { orderStatusLabel } from '@/utils/labels';
 
+import '@/components/common/table/FilterBar.css';
 import './AdminOrdersPage.css';
 
 const STATUSES = [
@@ -100,6 +101,23 @@ export default function AdminOrdersPage() {
           onChange={(event) => setTo(event.target.value)}
           className="page-primitive__input-auto"
         />
+        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
+            learns one place to look rather than one per screen. */}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="filter-bar__clear"
+          disabled={!q && !status && !from && !to}
+          onClick={() => {
+            setQ('');
+            setStatus('');
+            setFrom('');
+            setTo('');
+            setPage(1);
+          }}
+        >
+          Clear
+        </Button>
       </div>
 
       {query.isLoading ? (

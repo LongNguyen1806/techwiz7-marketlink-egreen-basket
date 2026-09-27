@@ -26,6 +26,7 @@ import { SortableTh } from '@/components/common/table/SortableTh';
 
 import { farmerStatusLabel, farmerStatusVariant } from '@/utils/labels';
 
+import '@/components/common/table/FilterBar.css';
 import './AdminFarmersPage.css';
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'];
@@ -143,6 +144,24 @@ export default function AdminFarmersPage() {
             </option>
           ))}
         </select>
+        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
+            learns one place to look rather than one per screen. */}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="filter-bar__clear"
+          disabled={!q && !status}
+          onClick={() => {
+            setQ('');
+            const next = new URLSearchParams(params);
+            next.delete('status');
+            next.delete('q');
+            setParams(next);
+            setPage(1);
+          }}
+        >
+          Clear
+        </Button>
       </div>
 
       {query.isLoading ? (
