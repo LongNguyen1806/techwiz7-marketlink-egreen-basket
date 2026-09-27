@@ -92,7 +92,7 @@ export default function AdminMarketsPage() {
               <div className="admin-markets-page__card-head">
                 <div>
                   <Link
-                    to={`/admin/markets/${m.id}/edit`}
+                    to={`/admin/markets/${m.id}`}
                     className="admin-markets-page__link"
                   >
                     {m.name}

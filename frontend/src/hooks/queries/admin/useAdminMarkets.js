@@ -28,9 +28,9 @@ export function useAdminMarket(id, enabled = true) {
 export function useToggleAdminMarket() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, active, reason }) => {
+    mutationFn: async ({ id, active, reason, farmerMessage }) => {
       if (active) return adminApi.activateMarket(id);
-      return adminApi.deactivateMarket(id, reason ?? '');
+      return adminApi.deactivateMarket(id, reason ?? '', farmerMessage ?? '');
     },
     onSuccess: (data, vars) => {
       if (vars.active) {
@@ -60,10 +60,24 @@ export function useSaveAdminMarket(marketId) {
       }
       return adminApi.createMarket(payload);
     },
-    onSuccess: () => {
-      toast.success(isEdit ? 'Market updated' : 'Market created');
+    onSuccess: (data) => {
+      const moved = data?.orders_to_reschedule ?? 0;
+      const notified = data?.notified ?? 0;
+      let message = isEdit ? 'Market updated' : 'Market created';
+      if (moved) message += `. ${moved} order${moved === 1 ? '' : 's'} need a new pickup time`;
+      if (notified) message += `. ${notified} ${notified === 1 ? 'person' : 'people'} notified`;
+      toast.success(message);
       void invalidateMarkets(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'market', marketId] });
     },
+    onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
+  });
+}
+
+// Runs before an edit is saved, so the admin sees who a new schedule or address reaches.
+export function useMarketEditImpact(marketId) {
+  return useMutation({
+    mutationFn: (payload) => adminApi.previewMarketUpdate(marketId, payload),
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
   });
 }

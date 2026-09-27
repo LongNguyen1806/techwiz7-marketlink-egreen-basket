@@ -34,6 +34,7 @@ ConfirmDialog.propTypes = {
     cancelLabel: PropTypes.string,
     loading: PropTypes.bool,
     destructive: PropTypes.bool,
+    confirmDisabled: PropTypes.bool,
     onConfirm: PropTypes.func.isRequired,
     children: PropTypes.node,
 };
