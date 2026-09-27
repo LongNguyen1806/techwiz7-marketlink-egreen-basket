@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
+from catalog.icons import CATEGORY_ICONS
 from catalog.models import Category, Product, Unit
 from markets.models import DayOfWeek, FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from marketlink_core.policies.roles import RoleCode
@@ -14,12 +15,14 @@ from marketlink_core.policies.roles import RoleCode
 DEV_ADMIN_PASSWORD = "Admin@12345"
 DEV_DEMO_PASSWORD = "Demo@12345"
 
+# An icon belongs to one category and one only. These six are the generic ones, so they take
+# the obvious pictures and the larger demo seed steers around them.
 CATEGORIES = [
     ("Vegetables", "carrot"),
     ("Fruits", "apple"),
     ("Dairy & Eggs", "egg"),
     ("Bakery", "croissant"),
-    ("Spices", "pepper"),
+    ("Spices", "nut"),
     ("Others", "basket"),
 ]
 
@@ -77,11 +80,8 @@ FARMERS = [
         "phone": "0912345678",
         "address": "Ben Tre Province",
         "stalls": [
-            {
-                "market": "Cho Ben Thanh",
-                "stall_label": "Row D, Stall 5",
-                "slots": [(DayOfWeek.SATURDAY, time(8, 0), time(11, 0))],
-            },
+            # One stall, one market: trading somewhere else is a fresh registration, and the
+            # database now carries that as a unique index on the farmer.
             {
                 "market": "Cho Ba Chieu",
                 "stall_label": "Fruit row, Stall 3",
@@ -164,11 +164,32 @@ class Command(BaseCommand):
     def _seed_categories(self) -> dict[str, Category]:
         result = {}
         for order, (name, icon) in enumerate(CATEGORIES, start=1):
-            category, _ = Category.objects.get_or_create(
+            # Freed first: the icon column is unique, so creating the row would fail before
+            # there were any rows to reconcile. The column is required too, so a category
+            # wearing this picture for want of anything better is moved to another free name
+            # rather than emptied.
+            squatter = Category.objects.filter(icon=icon).exclude(name=name).first()
+            if squatter is not None:
+                squatter.icon = self._free_icon()
+                squatter.save(update_fields=["icon", "updated_at"])
+            category, created = Category.objects.get_or_create(
                 name=name, defaults={"icon": icon, "display_order": order}
             )
+            if not created and category.icon != icon:
+                category.icon = icon
+                category.save(update_fields=["icon", "updated_at"])
             result[name] = category
         return result
+
+    def _free_icon(self) -> str:
+        used = set(Category.objects.values_list("icon", flat=True))
+        for name in CATEGORY_ICONS:
+            if name not in used:
+                return name
+        raise CommandError(
+            "Every icon is taken. Add names to catalog/icons.py and the matching pictures to "
+            "frontend/src/utils/categoryIcon.js."
+        )
 
     def _seed_markets(self) -> dict[str, Market]:
         result = {}
@@ -201,9 +222,14 @@ class Command(BaseCommand):
             },
         )
         for stall in spec["stalls"]:
+            market = markets[stall["market"]]
+            # A stall trades at one market. A database seeded before that rule may still have
+            # this farmer registered somewhere else, and the unique index would refuse the new
+            # row rather than explain itself, so the old registration goes first.
+            FarmerMarket.objects.filter(farmer=farmer).exclude(market=market).delete()
             farmer_market, _ = FarmerMarket.objects.get_or_create(
                 farmer=farmer,
-                market=markets[stall["market"]],
+                market=market,
                 defaults={"stall_label": stall["stall_label"]},
             )
             for day, start, end in stall["slots"]:

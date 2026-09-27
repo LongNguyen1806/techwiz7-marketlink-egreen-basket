@@ -5,10 +5,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
+from accounts.services.farmer_status_service import suspend_farmer
 from markets.conftest import MONDAY, SATURDAY, WEDNESDAY
-from markets.models import Market, PickupSlot
+from markets.models import FarmerMarket, Market, PickupSlot
 from notifications.models import Notification, NotificationType
-from orders.models import OrderStatus
+from orders.models import ChangeReason, OrderStatus, OrderStatusHistory
 from system.models import AuditAction, AuditLog
 
 LIST_URL_NAME = "admin-market-list"
@@ -422,7 +423,7 @@ REASON = "The market building is being demolished."
 
 
 @pytest.mark.django_db
-def test_closing_a_market_does_not_suspend_its_stalls(
+def test_closing_a_market_suspends_its_stalls(
     admin_client, market, farmer_market, approved_farmer
 ):
     admin_client.post(
@@ -430,10 +431,95 @@ def test_closing_a_market_does_not_suspend_its_stalls(
     )
 
     approved_farmer.refresh_from_db()
-    # A stall may trade at several markets; closing one of them is no fault of the farmer,
-    # and SUSPENDED would cut them off everywhere and stain their profile.
+    # A stall trades at exactly one market. Closing it leaves the stall with nowhere to sell,
+    # so it is suspended rather than left listed with no way to trade.
+    assert approved_farmer.status == FarmerStatus.SUSPENDED
+    assert market.name in approved_farmer.status_reason
+
+
+@pytest.mark.django_db
+def test_a_pending_stall_at_a_closed_market_is_left_alone(
+    admin_client, market, approved_farmer, make_farmer
+):
+    # Only APPROVED -> SUSPENDED exists. Forcing an unapproved profile through it would raise
+    # and take the whole closure down with it.
+    pending = make_farmer(email="waiting@marketlink.test", stall_name="Waiting Stall")
+    FarmerMarket.objects.create(farmer=pending, market=market, stall_label="Row Z, Stall 1")
+
+    response = admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    assert response.status_code == 200
+    pending.refresh_from_db()
+    assert pending.status == FarmerStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_the_stall_hears_about_the_closure_and_the_suspension_in_one_message(
+    admin_client, market, farmer_market, approved_farmer
+):
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    notes = Notification.objects.filter(recipient=approved_farmer.user)
+    # One event, one message. Two would read as two separate problems.
+    assert notes.count() == 1
+    note = notes.get()
+    assert note.type == NotificationType.MARKET_CLOSED
+    assert "suspended" in note.message
+
+
+@pytest.mark.django_db
+def test_an_order_cancelled_by_a_closure_says_the_market_closed(
+    admin_client, market, farmer_market, approved_farmer, make_order
+):
+    order = make_order(pickup_date=timezone.localdate() + timedelta(days=2))
+
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    row = OrderStatusHistory.objects.filter(order=order).latest("id")
+    # Not FARMER_SUSPENDED_BY_ADMIN: the stall did nothing wrong, and telling the shopper
+    # otherwise is a slur on a stall that was trading normally.
+    assert row.change_reason == ChangeReason.MARKET_CLOSED_BY_ADMIN
+
+
+@pytest.mark.django_db
+def test_reopening_a_market_puts_its_stalls_back(
+    admin_client, market, farmer_market, approved_farmer
+):
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
+
+    approved_farmer.refresh_from_db()
     assert approved_farmer.status == FarmerStatus.APPROVED
+    # The sentence explaining the suspension goes with the suspension.
     assert approved_farmer.status_reason is None
+
+
+@pytest.mark.django_db
+def test_reopening_does_not_reinstate_a_stall_suspended_for_its_own_reasons(
+    admin_client, market, farmer_market, approved_farmer, admin_user
+):
+    suspend_farmer(
+        farmer_id=approved_farmer.user_id, reason="Sold mislabelled produce", actor=admin_user
+    )
+
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+    admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
+
+    approved_farmer.refresh_from_db()
+    # Reopening a market undoes what the closure did. It is not an amnesty.
+    assert approved_farmer.status == FarmerStatus.SUSPENDED
+    assert approved_farmer.status_reason == "Sold mislabelled produce"
 
 
 @pytest.mark.django_db

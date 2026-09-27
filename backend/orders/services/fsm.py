@@ -28,6 +28,7 @@ SYSTEM_REASON_TEXT = {
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN: "The farmer's stall has been suspended by an administrator.",
     ChangeReason.CUSTOMER_LOCKED_BY_ADMIN: "The customer's account has been locked by an administrator.",
     ChangeReason.PRODUCT_BLOCKED_BY_ADMIN: "An item in this order was removed by an administrator.",
+    ChangeReason.MARKET_CLOSED_BY_ADMIN: "The market this order was to be collected from has closed.",
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
 
