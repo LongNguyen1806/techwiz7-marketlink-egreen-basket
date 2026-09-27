@@ -23,6 +23,8 @@ class AuditAction(models.TextChoices):
     PRODUCT_RESTORED = "PRODUCT_RESTORED", "Restore Product"
     # A legal takedown, which also cancels orders - kept apart from a plain hide so the
     # security log shows which of the two an admin actually did.
+    PRODUCT_APPROVED = "PRODUCT_APPROVED", "Approve Product"
+    PRODUCT_REJECTED = "PRODUCT_REJECTED", "Reject Product"
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Block Product"
     PRODUCT_UNBLOCKED = "PRODUCT_UNBLOCKED", "Unblock Product"
     REVIEW_HIDDEN = "REVIEW_HIDDEN", "Hide Review"

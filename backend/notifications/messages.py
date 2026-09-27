@@ -117,9 +117,8 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         title="{market_name} has closed",
         message=(
             "{market_name} is no longer running, so {order_count} of your orders there were "
-            "cancelled. Reason: {reason}"
+            "cancelled. Reason: {reason} {stall_note}"
         ),
-        # Both sides read this one, so the link goes to the list each role actually has.
         target_url="{target_url}",
         required=("market_name", "order_count", "reason", "target_url"),
         email_template="market_closed",
@@ -127,11 +126,26 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
     NotificationType.PRODUCT_BLOCKED: NotificationSpec(
         title="{product_name} was taken down",
         message=(
-            "An administrator took down {product_name} because it violated platform policy. "
-            "Any open orders containing this item were cancelled."
+            "An administrator removed {product_name} from the marketplace and cancelled "
+            "{order_count} open orders for it. Reason: {reason}"
         ),
-        target_url="{target_url}",
-        required=("product_name", "target_url"),
+        target_url="/farmer/products",
+        required=("product_name", "order_count", "reason"),
+    ),
+    NotificationType.PRODUCT_APPROVED: NotificationSpec(
+        title="{product_name} is on sale",
+        message="An administrator approved {product_name}. Shoppers can see it now.",
+        target_url="/farmer/products",
+        required=("product_name",),
+    ),
+    NotificationType.PRODUCT_REJECTED: NotificationSpec(
+        title="{product_name} was not approved",
+        message=(
+            "An administrator did not approve {product_name}, so it is not on sale. "
+            "Reason: {reason}"
+        ),
+        target_url="/farmer/products",
+        required=("product_name", "reason"),
     ),
     NotificationType.MARKET_SCHEDULE_CHANGED: NotificationSpec(
         title="{market_name} changed its schedule",

@@ -34,11 +34,11 @@ from marketlink_core.constants import (
 from orders.admin_selectors import at_risk_threshold, at_risk_window_days
 from system.flags import list_flags, raise_flag, resolve_flag, target_previews
 from system.serializers import (
-    AdminSettingsSerializer,
     AuditLogReadSerializer,
     FlagResolutionSerializer,
     ModerationFlagReadSerializer,
     ModerationFlagWriteSerializer,
+    AdminSettingsSerializer,
     ChangeLogEntrySerializer,
     DashboardSerializer,
     OrdersByMonthSerializer,
@@ -352,8 +352,8 @@ class AdminSettingsView(APIView):
     """What limits are in force right now.
 
     Read only on purpose: these come from the environment, so changing one is a deploy, not a
-    form submission. The screen exists because an admin otherwise has no way to find out what
-    the platform is enforcing.
+    form submission. The screen is how an admin who is new to the platform finds out what it
+    enforces - the rules are otherwise only visible by running into them.
     """
 
     permission_classes = [IsAdmin]

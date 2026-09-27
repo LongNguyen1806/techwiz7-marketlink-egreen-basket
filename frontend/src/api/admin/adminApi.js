@@ -200,6 +200,16 @@ export const adminApi = {
     return data;
   },
 
+  approveProduct: async (id) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/approve/`);
+    return data;
+  },
+
+  rejectProduct: async (id, reason) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/reject/`, { reason });
+    return data;
+  },
+
   // AD-21b. A takedown, unlike a hide, also cancels the open orders, so the dialog asks what
   // that would cost before the admin commits to it.
   fetchProductBlockImpact: async (id) => {

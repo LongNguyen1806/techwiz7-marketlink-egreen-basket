@@ -16,7 +16,9 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
-from catalog.models import ModerationAction, Product
+from marketlink_core.exceptions import BusinessValidationError, ErrorCode
+
+from catalog.models import REVIEWABLE_FIELDS, ModerationAction, Product, ReviewStatus
 from notifications.models import NotificationType
 from notifications.services import notify
 from orders.admin_selectors import open_order_breakdown
@@ -163,3 +165,79 @@ def open_order_counts(*, product_ids) -> dict[int, int]:
         .values_list("items__product_id", "total")
     )
     return dict(rows)
+
+
+# --------------------------------------------------------------------- review
+# A listing is written by a stall and shown to shoppers by an admin. Approving is the common
+# case and takes one click; rejecting has to say why, because the stall can only fix what it
+# has been told about.
+
+
+@transaction.atomic
+def approve_product(*, product_id: int, actor) -> Product:
+    product = Product.objects.select_for_update().select_related("farmer__user").get(pk=product_id)
+    if product.review_status == ReviewStatus.APPROVED:
+        raise BusinessValidationError(
+            "This listing has already been approved.",
+            code=ErrorCode.INVALID_STATUS_TRANSITION,
+        )
+    _set_review(product, status=ReviewStatus.APPROVED, note=None, actor=actor)
+    notify(
+        recipient=product.farmer.user,
+        event_type=NotificationType.PRODUCT_APPROVED,
+        context={"product_name": product.name},
+    )
+    return product
+
+
+@transaction.atomic
+def reject_product(*, product_id: int, reason: str, actor) -> Product:
+    product = Product.objects.select_for_update().select_related("farmer__user").get(pk=product_id)
+    _set_review(product, status=ReviewStatus.REJECTED, note=reason, actor=actor)
+    notify(
+        recipient=product.farmer.user,
+        event_type=NotificationType.PRODUCT_REJECTED,
+        context={"product_name": product.name, "reason": reason},
+    )
+    return product
+
+
+def _set_review(product: Product, *, status: str, note: str | None, actor) -> None:
+    product.review_status = status
+    product.review_note = note
+    product.reviewed_at = timezone.now()
+    product.reviewed_by = actor
+    product.save(
+        update_fields=["review_status", "review_note", "reviewed_at", "reviewed_by", "updated_at"]
+    )
+
+
+def needs_review_again(product: Product, changed_fields) -> bool:
+    """Whether an edit puts the listing back in the queue.
+
+    Only the fields that describe *what the thing is* count. Price and stock are excluded on
+    purpose: a stall that must wait for an admin before correcting its own stock will stop
+    correcting it, and the stock figure is the one number the whole booking flow rests on.
+
+    Called from whichever endpoint saves a stall's edit; kept here so both sides of the app
+    apply the same rule rather than each deciding for itself.
+    """
+    if product.review_status != ReviewStatus.APPROVED:
+        # Already waiting, or already refused: an edit does not make it any more pending.
+        return False
+    return any(field in REVIEWABLE_FIELDS for field in changed_fields)
+
+
+def send_back_for_review(product: Product) -> None:
+    """Put an edited listing back in the queue, leaving the approved version on sale.
+
+    Hiding it while it waits would mean a stall loses its shopfront every time it fixes a
+    typo, which teaches stalls not to fix typos.
+    """
+    product.review_status = ReviewStatus.PENDING
+    product.review_note = None
+    product.reviewed_at = None
+    product.reviewed_by = None
+    product.save(
+        update_fields=["review_status", "review_note", "reviewed_at", "reviewed_by", "updated_at"]
+    )

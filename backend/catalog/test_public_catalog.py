@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from catalog.selectors import MAX_CART_REFRESH_IDS
 from favorites.models import FavoriteProduct
 
@@ -26,6 +26,9 @@ def make_product(category, approved_farmer):
             price=price,
             unit=Unit.KG,
             stock_quantity=stock,
+            # These stand for listings already on sale. A fresh Product() is PENDING, which
+            # is the right default for the model and the wrong one for a shopper's view.
+            review_status=overrides.pop("review_status", ReviewStatus.APPROVED),
             **overrides,
         )
 

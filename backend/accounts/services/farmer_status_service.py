@@ -34,13 +34,23 @@ def _require_transition(profile: FarmerProfile, to_status: str) -> None:
         )
 
 
-def _apply(profile: FarmerProfile, *, to_status: str, reason: str | None, actor) -> None:
+def _apply(
+    profile: FarmerProfile,
+    *,
+    to_status: str,
+    reason: str | None,
+    actor,
+    history_reason: str | None = None,
+) -> None:
     profile.status = to_status
     profile.status_reason = reason
     # django-simple-history fills farmer_profile_histories, which A-03 renders as the
     # approval trail: who changed the status, when, and why.
     profile._history_user = actor
-    profile._change_reason = reason
+    # A cascade stamps its own marker here rather than the sentence shown to the farmer, so
+    # that undoing the cascade later can find exactly the rows it caused - the same trick
+    # market closure already uses on pickup slots.
+    profile._change_reason = history_reason or reason
     profile.save(update_fields=["status", "status_reason", "updated_at"])
 
 
@@ -71,21 +81,47 @@ def reject_farmer(*, farmer_id: int, reason: str, actor) -> FarmerProfile:
 
 
 @transaction.atomic
-def reinstate_farmer(*, farmer_id: int, actor) -> FarmerProfile:
+def reinstate_farmer(
+    *,
+    farmer_id: int,
+    actor,
+    history_reason: str | None = None,
+    send_notification: bool = True,
+) -> FarmerProfile:
     profile = _load_locked(farmer_id)
     _require_transition(profile, FarmerStatus.APPROVED)
     # status_reason is cleared: the suspension it explained is over.
-    _apply(profile, to_status=FarmerStatus.APPROVED, reason=None, actor=actor)
-    _notify_status(profile, to_status=FarmerStatus.APPROVED, reason=None)
+    _apply(
+        profile,
+        to_status=FarmerStatus.APPROVED,
+        reason=None,
+        actor=actor,
+        history_reason=history_reason,
+    )
+    if send_notification:
+        _notify_status(profile, to_status=FarmerStatus.APPROVED, reason=None)
     return profile
 
 
 # §5.4: suspend the stall, then decline every open order and give the stock back.
 @transaction.atomic
-def suspend_farmer(*, farmer_id: int, reason: str, actor) -> tuple[FarmerProfile, int]:
+def suspend_farmer(
+    *,
+    farmer_id: int,
+    reason: str,
+    actor,
+    history_reason: str | None = None,
+    send_notification: bool = True,
+) -> tuple[FarmerProfile, int]:
     profile = _load_locked(farmer_id)
     _require_transition(profile, FarmerStatus.SUSPENDED)
-    _apply(profile, to_status=FarmerStatus.SUSPENDED, reason=reason, actor=actor)
+    _apply(
+        profile,
+        to_status=FarmerStatus.SUSPENDED,
+        reason=reason,
+        actor=actor,
+        history_reason=history_reason,
+    )
 
     # Ordered by id so this never deadlocks against a farmer or customer acting on the same
     # rows. No reason is passed: for an admin transition the FSM stamps the FARMER_SUSPENDED_BY_ADMIN
@@ -106,7 +142,10 @@ def suspend_farmer(*, farmer_id: int, reason: str, actor) -> tuple[FarmerProfile
             actor_role=ActorRole.ADMIN,
         )
 
-    _notify_status(profile, to_status=FarmerStatus.SUSPENDED, reason=reason)
+    # A caller that already tells the farmer what happened turns this off, so the stall is
+    # not told the same thing twice in two different words.
+    if send_notification:
+        _notify_status(profile, to_status=FarmerStatus.SUSPENDED, reason=reason)
     return profile, len(order_ids)
 
 

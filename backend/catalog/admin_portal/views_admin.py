@@ -19,11 +19,14 @@ from catalog.selectors import (
     markets_for_products,
 )
 from catalog.services.category_service import delete_category
+from catalog.models import ReviewStatus
 from catalog.services.product_moderation_service import (
+    approve_product,
     block_impact,
     block_product,
     hide_product,
     open_order_counts,
+    reject_product,
     restore_product,
     unblock_product,
 )
@@ -149,7 +152,9 @@ class ProductModerationListView(ListAPIView):
             q=params.get("q"),
             farmer_id=_int(params.get("farmer_id")),
             product_id=_int(params.get("product_id")),
+            category_id=_int(params.get("category_id")),
             is_hidden=_flag(params.get("is_hidden")),
+            review_status=params.get("review_status"),
             ordering=params.get("ordering"),
         )
 
@@ -160,7 +165,9 @@ class ProductModerationListView(ListAPIView):
             OpenApiParameter(
                 "product_id", int, description="A single product, for a link straight to it."
             ),
+            OpenApiParameter("category_id", int),
             OpenApiParameter("is_hidden", bool),
+            OpenApiParameter("review_status", str, enum=[*ReviewStatus.values]),
             OpenApiParameter(
                 "ordering",
                 str,
@@ -199,7 +206,7 @@ class _ProductModerationView(APIView):
             status_code=200,
             details={
                 "product_id": product_id,
-                "reason": product.hidden_reason,
+                "reason": product.hidden_reason or product.review_note,
                 **(extra or {}),
                 **(audit_extra or {}),
             },
@@ -309,6 +316,44 @@ class ProductUnblockView(_ProductModerationView):
             product_id=id,
             action=AuditAction.PRODUCT_UNBLOCKED,
             message="Product is on sale again. The cancelled orders were not reinstated.",
+        )
+
+
+class ProductApproveView(_ProductModerationView):
+    @extend_schema(
+        request=None,
+        responses={200: ProductAdminSerializer, 404: None},
+        summary="Approve a listing so shoppers can see it",
+    )
+    def post(self, request, id: int) -> Response:
+        _require_product(id)
+        approve_product(product_id=id, actor=request.user)
+        return self._respond(
+            request,
+            product_id=id,
+            action=AuditAction.PRODUCT_APPROVED,
+            message="Listing approved.",
+        )
+
+
+class ProductRejectView(_ProductModerationView):
+    @extend_schema(
+        request=ModerationReasonSerializer,
+        responses={200: ProductAdminSerializer, 404: None},
+        summary="Refuse a listing, with a reason the stall can act on",
+    )
+    def post(self, request, id: int) -> Response:
+        _require_product(id)
+        serializer = ModerationReasonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reject_product(
+            product_id=id, reason=serializer.validated_data["reason"], actor=request.user
+        )
+        return self._respond(
+            request,
+            product_id=id,
+            action=AuditAction.PRODUCT_REJECTED,
+            message="Listing refused. The stall has been told why.",
         )
 
 

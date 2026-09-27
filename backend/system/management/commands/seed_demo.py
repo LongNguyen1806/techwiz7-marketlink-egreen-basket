@@ -31,7 +31,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
-from catalog.models import Category, Product, Unit
+from catalog.icons import CATEGORY_ICONS
+from catalog.models import Category, Product, ReviewStatus, Unit
 from favorites.models import FavoriteFarmer, FavoriteMarket, FavoriteProduct
 from marketlink_core.policies.roles import RoleCode
 from markets.models import (
@@ -105,18 +106,26 @@ STREETS = [
     "Quang Trung", "Phan Van Tri", "Xo Viet Nghe Tinh", "Nguyen Van Troi", "Hoang Van Thu",
 ]
 
-# 20 categories: enough to fill a filter dropdown and force the drag-to-reorder list to scroll.
+# Seventeen categories, all of them things a farm produces. The six generic ones seeded by
+# seed_minimal (Vegetables, Fruits, Dairy & Eggs, Bakery, Spices, Others) are deliberately not
+# repeated here, and their icons are steered around: an icon belongs to one category only.
 CATEGORY_SPECS = [
-    ("Leafy greens", "leaf"), ("Root vegetables", "carrot"), ("Gourds & squash", "carrot"),
-    ("Fresh herbs", "leaf"), ("Chillies & peppers", "pepper"), ("Mushrooms", "basket"),
-    ("Tropical fruit", "apple"), ("Citrus", "apple"), ("Berries", "apple"),
-    ("Melons", "apple"), ("Rice & grains", "wheat"), ("Beans & pulses", "wheat"),
-    ("Eggs", "egg"), ("Dairy", "milk"), ("Honey & preserves", "honey"),
-    ("Dried goods", "basket"), ("Bakery", "croissant"), ("Pickles & ferments", "basket"),
-    ("Spices", "pepper"), ("Seedlings & plants", "leaf"),
+    ("Leafy greens", "leafy-green"), ("Root vegetables", "salad"),
+    ("Gourds & squash", "vegan"), ("Fresh herbs", "leaf"),
+    ("Chillies & peppers", "chilli"), ("Mushrooms", "tree"),
+    ("Tropical fruit", "banana"), ("Citrus", "citrus"),
+    ("Berries", "cherry"), ("Melons", "grape"),
+    ("Rice & grains", "wheat"), ("Beans & pulses", "bean"),
+    ("Honey & preserves", "flower"), ("Dried goods", "seafood"),
+    ("Pickles & ferments", "soup"), ("Fresh fish", "fish"),
+    ("Poultry & eggs", "drumstick"),
 ]
 # The last two arrive switched off, so the "Active / Inactive" filter is not showing one state.
-INACTIVE_CATEGORIES = {"Spices", "Seedlings & plants"}
+INACTIVE_CATEGORIES = {"Pickles & ferments", "Dried goods"}
+
+# Names this command used to create. "Seedlings & plants" is not produce; "Eggs", "Dairy",
+# "Bakery" and "Spices" repeated the generic categories seed_minimal already makes.
+RETIRED_CATEGORIES = ("Eggs", "Dairy", "Bakery", "Spices", "Seedlings & plants")
 
 # 12 real markets. The last two are closed, so the market filter and the reopen path both have
 # a subject.
@@ -150,14 +159,11 @@ PRODUCE = {
     "Melons": ["Watermelon", "Honeydew", "Cantaloupe"],
     "Rice & grains": ["Jasmine rice", "Brown rice", "Sticky rice", "Corn", "Millet"],
     "Beans & pulses": ["Mung bean", "Black bean", "Peanut", "Soybean", "Long bean"],
-    "Eggs": ["Chicken eggs", "Duck eggs", "Quail eggs", "Salted duck eggs"],
-    "Dairy": ["Fresh cow milk", "Yoghurt", "Soft cheese"],
     "Honey & preserves": ["Wild honey", "Ginger jam", "Tamarind paste"],
     "Dried goods": ["Dried shrimp", "Dried bamboo", "Dried longan", "Rice paper"],
-    "Bakery": ["Banh mi", "Pandan cake", "Coconut biscuit"],
-    "Pickles & ferments": ["Pickled mustard", "Kimchi", "Pickled leek"],
-    "Spices": ["Star anise", "Cinnamon bark", "Turmeric", "Lemongrass"],
-    "Seedlings & plants": ["Basil seedling", "Chilli seedling", "Tomato seedling"],
+    "Pickles & ferments": ["Pickled mustard", "Pickled leek", "Salted aubergine"],
+    "Fresh fish": ["Tilapia", "Snakehead fish", "Catfish", "River prawn"],
+    "Poultry & eggs": ["Chicken eggs", "Duck eggs", "Quail eggs", "Free-range chicken"],
 }
 
 PRODUCT_REVIEW_TEXT = [
@@ -205,16 +211,48 @@ ANNOUNCEMENT_TOPICS = [
     "Public holiday closures",
 ]
 
-FLAG_NOTES = [
-    "Photo looks taken from another shop's listing.",
-    "Price is an order of magnitude off the others.",
-    "Review reads like it was written by the stall.",
-    "Second complaint about weight this month.",
-    "Description mentions a phone number.",
-    "Shopper reported the item was never handed over.",
-    "Same text posted on four different stalls.",
-    "Category looks wrong for this item.",
+# One set of notes per kind of flagged thing. Drawing from a single pool put "Shopper
+# reported the item was never handed over" on a stall and "Review reads like it was written
+# by the stall" on a product, which makes the demo queue read as nonsense.
+FLAG_NOTES_BY_TARGET = {
+    "PRODUCT": [
+        "Photo looks taken from another shop's listing.",
+        "Price is an order of magnitude off the others.",
+        "Description mentions a phone number.",
+        "Category looks wrong for this item.",
+    ],
+    "PRODUCT_REVIEW": [
+        "Review reads like it was written by the stall.",
+        "Same text posted on four different products.",
+        "Names a competitor and a phone number.",
+    ],
+    "FARMER_REVIEW": [
+        "Review is about the market, not the stall.",
+        "Reads like a rival stall left it.",
+        "Abusive language about the stallholder.",
+    ],
+    "FARMER": [
+        "Second complaint about weight this month.",
+        "Shopper reported the goods were never handed over.",
+        "Stall label does not match where it actually trades.",
+    ],
+    "CUSTOMER": [
+        "Three no-shows in a fortnight.",
+        "Abusive messages to two different stalls.",
+        "Looks like a duplicate of an existing account.",
+    ],
+}
+# Flattened for the purge, which finds this command's own rows by their text.
+FLAG_NOTES = [note for notes in FLAG_NOTES_BY_TARGET.values() for note in notes]
+# Written the way a refusal has to be written: a stall can only fix what it is told about.
+REJECTION_REASONS = [
+    "The photo shows a different product from the one described.",
+    "The description carries a phone number. Contact details belong on the stall profile.",
+    "The category is wrong for this item.",
+    "The name claims an organic certification the platform does not verify.",
+    "The photo is taken from another shop's listing.",
 ]
+
 FLAG_RESOLUTIONS = [
     "Called the stall, photo replaced.",
     "Left as is, price is correct for the grade.",
@@ -392,7 +430,6 @@ class Command(BaseCommand):
         FavoriteProduct.objects.filter(product__farmer_id__in=farmer_ids).delete()
 
         Notification.objects.filter(recipient_id__in=user_ids).delete()
-        ModerationFlag.objects.filter(note__in=FLAG_NOTES).delete()
         Announcement.objects.filter(title__in=ANNOUNCEMENT_TOPICS).delete()
         AuditLog.objects.filter(user_id__in=user_ids).delete()
 
@@ -411,10 +448,54 @@ class Command(BaseCommand):
                 continue
             MarketOperatingDay.objects.filter(market=market).delete()
             market.delete()
+        # Retired names included: an earlier version of this command created categories that
+        # are no longer produce, or that duplicated the generic ones from seed_minimal. Left
+        # out of the purge they would sit in the list for ever, because nothing else knows
+        # this command put them there.
         Category.objects.filter(
-            name__in=[spec[0] for spec in CATEGORY_SPECS], products__isnull=True
+            name__in=[spec[0] for spec in CATEGORY_SPECS] + list(RETIRED_CATEGORIES),
+            products__isnull=True,
         ).delete()
+        # Last, because it is decided by what the deletions above left behind.
+        self._purge_orphan_flags()
         self.stdout.write("  Previous demo data removed.")
+
+    def _purge_orphan_flags(self) -> None:
+        """Drop queue entries whose target no longer exists.
+
+        Matching on the note text was not enough: a previous run's wording stops matching the
+        moment those sample notes are edited, and the stale rows then sit in the queue for
+        ever. A flag pointing at a row that has just been deleted is demo litter by
+        definition, and one pointing at something real is left alone whoever raised it.
+        """
+        from accounts.models import CustomerProfile, FarmerProfile
+        from catalog.models import Product
+        from reviews.models import FarmerReview, ProductReview
+
+        models_by_kind = {
+            FlagTarget.PRODUCT: Product,
+            FlagTarget.PRODUCT_REVIEW: ProductReview,
+            FlagTarget.FARMER_REVIEW: FarmerReview,
+            FlagTarget.FARMER: FarmerProfile,
+            FlagTarget.CUSTOMER: CustomerProfile,
+        }
+        orphans: list[int] = []
+        for kind, model in models_by_kind.items():
+            wanted = set(
+                ModerationFlag.objects.filter(target_type=kind).values_list("target_id", flat=True)
+            )
+            if not wanted:
+                continue
+            alive = set(model.objects.filter(pk__in=wanted).values_list("pk", flat=True))
+            missing = wanted - alive
+            if missing:
+                orphans.extend(
+                    ModerationFlag.objects.filter(
+                        target_type=kind, target_id__in=missing
+                    ).values_list("id", flat=True)
+                )
+        if orphans:
+            ModerationFlag.objects.filter(id__in=orphans).delete()
 
     # ------------------------------------------------------------- foundations
 
@@ -427,7 +508,11 @@ class Command(BaseCommand):
     def _seed_categories(self, wanted: int) -> list[Category]:
         result = []
         for order, (name, icon) in enumerate(CATEGORY_SPECS[:wanted], start=1):
-            category, _ = Category.objects.get_or_create(
+            # Freed first, not afterwards: a category from an earlier seed may be holding
+            # this picture, and the icon column is unique, so creating the row would fail
+            # before there were any rows to reconcile.
+            self._claim_icon(icon, for_name=name)
+            category, created = Category.objects.get_or_create(
                 name=name,
                 defaults={
                     "icon": icon,
@@ -435,9 +520,30 @@ class Command(BaseCommand):
                     "is_active": name not in INACTIVE_CATEGORIES,
                 },
             )
+            if not created and category.icon != icon:
+                category.icon = icon
+                category.save(update_fields=["icon", "updated_at"])
             result.append(category)
         self.counts = {"Categories": len(result)}
         return result
+
+    def _claim_icon(self, icon: str, *, for_name: str) -> None:
+        """Move whoever else is wearing this icon onto a free one."""
+        holder = Category.objects.filter(icon=icon).exclude(name=for_name).first()
+        if holder is None:
+            return
+        holder.icon = self._free_icon()
+        holder.save(update_fields=["icon", "updated_at"])
+
+    def _free_icon(self) -> str:
+        used = set(Category.objects.values_list("icon", flat=True))
+        for name in CATEGORY_ICONS:
+            if name not in used:
+                return name
+        raise CommandError(
+            "Every icon is taken. Add names to catalog/icons.py and the matching pictures to "
+            "frontend/src/utils/categoryIcon.js."
+        )
 
     def _seed_markets(self, wanted: int) -> list[Market]:
         result = []
@@ -598,7 +704,9 @@ class Command(BaseCommand):
         )
         links = []
         for farmer in tradeable:
-            for market in self.rng.sample(active_markets, min(2, len(active_markets))):
+            # Exactly one market per stall: trading somewhere else is a fresh registration,
+            # and the database now carries that as a unique index.
+            for market in [self.rng.choice(active_markets)]:
                 if (farmer.user_id, market.id) in existing_pairs:
                     continue
                 existing_pairs.add((farmer.user_id, market.id))
@@ -612,7 +720,7 @@ class Command(BaseCommand):
                         ),
                     )
                 )
-        FarmerMarket.objects.bulk_create(links, batch_size=200)
+        FarmerMarket.objects.bulk_create(links, batch_size=200, ignore_conflicts=True)
 
         slots = []
         seen_slots = set()
@@ -666,6 +774,18 @@ class Command(BaseCommand):
             # A tenth are out of stock, which is what makes the stock filter and the
             # "sold out" path on the shopper side testable.
             out_of_stock = index % 10 == 0
+            # Roughly a third of the catalogue is waiting and a tenth was refused, so the
+            # approval queue is worth opening the moment the seed finishes and the "Refused"
+            # filter has more than a token row behind it.
+            if index % 3 == 0:
+                review_status = ReviewStatus.PENDING
+                review_note = None
+            elif index % 10 == 0:
+                review_status = ReviewStatus.REJECTED
+                review_note = self.rng.choice(REJECTION_REASONS)
+            else:
+                review_status = ReviewStatus.APPROVED
+                review_note = None
             rows.append(
                 Product(
                     farmer=farmer,
@@ -678,6 +798,12 @@ class Command(BaseCommand):
                     weekly_default_quantity=self.rng.choice([None, 10, 20, 50]),
                     is_available=not out_of_stock,
                     is_archived=archived,
+                    review_status=review_status,
+                    review_note=review_note,
+                    reviewed_at=self.now - timedelta(days=self.rng.randint(1, 40))
+                    if review_status != ReviewStatus.PENDING
+                    else None,
+                    reviewed_by=admin if review_status != ReviewStatus.PENDING else None,
                     is_hidden_by_admin=hidden,
                     hidden_reason="Photo does not match the item described." if hidden else None,
                     hidden_at=self.now - timedelta(days=self.rng.randint(1, 30)) if hidden else None,
@@ -1125,7 +1251,7 @@ class Command(BaseCommand):
                 ModerationFlag(
                     target_type=kind,
                     target_id=target_id,
-                    note=FLAG_NOTES[len(rows) % len(FLAG_NOTES)],
+                    note=self.rng.choice(FLAG_NOTES_BY_TARGET[kind]),
                     raised_by=admin,
                     resolved_at=self.now - timedelta(days=self.rng.randint(1, 25))
                     if resolved

@@ -4,6 +4,7 @@ from rest_framework.validators import UniqueValidator
 
 from accounts.admin_portal.serializers_admin import OpenOrderBreakdownSerializer
 from accounts.models import FarmerStatus
+from catalog.icons import canonical_icon
 from catalog.models import Category, Product
 
 NAME_MIN_LENGTH = 2
@@ -30,6 +31,10 @@ class CategoryAdminReadSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+DUPLICATE_ICON_MESSAGE = "Another category already uses this icon."
+UNKNOWN_ICON_MESSAGE = "Choose one of the icons offered."
+
+
 class CategoryAdminWriteSerializer(serializers.ModelSerializer):
     # Declaring `name` here replaces the auto-built field, which would have carried
     # the model's UniqueValidator, so the validator is restored explicitly. The
@@ -43,12 +48,33 @@ class CategoryAdminWriteSerializer(serializers.ModelSerializer):
         ],
     )
 
+    # A free-text icon name used to be accepted and then drawn as a leaf if nothing matched,
+    # so a typo became a wrong picture on the shopper's home page with nothing to notice.
+    # Kept as a CharField rather than a ChoiceField because an older name has to be readable
+    # and rewritten, and a ChoiceField refuses it before any of that can run.
+    icon = serializers.CharField(max_length=50)
+
     class Meta:
         model = Category
         fields = ["name", "icon", "display_order", "is_active"]
 
     def validate_name(self, value: str) -> str:
         return value.strip()
+
+    def validate_icon(self, value: str) -> str:
+        # Accepts the names an older database stored, so editing a category seeded before the
+        # icon set was widened does not fail on a value the admin never typed.
+        icon = canonical_icon(value)
+        if icon is None:
+            raise serializers.ValidationError(UNKNOWN_ICON_MESSAGE)
+        # Checked here rather than with a UniqueValidator on the field: that one would test
+        # the name as typed, and "pepper" is free while the "chilli" it becomes may not be.
+        clash = Category.objects.filter(icon=icon)
+        if self.instance is not None:
+            clash = clash.exclude(pk=self.instance.pk)
+        if clash.exists():
+            raise serializers.ValidationError(DUPLICATE_ICON_MESSAGE)
+        return icon
 
 
 class ModerationReasonSerializer(serializers.Serializer):
@@ -85,6 +111,9 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "is_available",
             "availability",
             "is_archived",
+            "review_status",
+            "review_note",
+            "reviewed_at",
             "is_hidden_by_admin",
             "moderation_action",
             "hidden_reason",

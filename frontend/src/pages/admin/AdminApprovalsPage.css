@@ -1,0 +1,119 @@
+/* The shared admin primitives. Every route is a lazy chunk with its own stylesheet, so a
+   page that uses page-primitive__* classes has to pull them in here: landing straight on
+   this route would otherwise render it unstyled, and it only looked fine because another
+   page had already loaded them. */
+@import '../../styles/common/page-primitives.css';
+
+/* This screen is two lists in tabs. The stalls tab is a table like Farmers and Customers; the
+   products tab is a card per stall, using the same Card as the dashboard, with rows inside it
+   laid out like the rows on Products and Follow-up queue. Nothing here invents a new shape -
+   it only positions what the shared pieces leave to the page. */
+
+/* ---- stalls table ------------------------------------------------------- */
+
+/* Stall name over contact person, email over phone: one cell, two lines, so the table stays
+   five columns wide instead of eight. */
+.admin-approvals-page__name {
+  display: block;
+  font-weight: var(--weight-medium);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.admin-approvals-page__name:hover {
+  text-decoration: underline;
+}
+
+.admin-approvals-page__table-td-stacked {
+  display: block;
+}
+
+/* ---- listings grouped by stall ------------------------------------------ */
+
+.admin-approvals-page__stalls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+/* CardHeader stacks its children; here the stall and its whole-stall button sit on one line,
+   and wrap rather than overflow on a phone. */
+.admin-approvals-page__stall-head {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+}
+
+.admin-approvals-page__stall-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.admin-approvals-page__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Same row as Products and the follow-up queue: content left, actions right, a hairline
+   between neighbours. */
+.admin-approvals-page__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-approvals-page__item + .admin-approvals-page__item {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.admin-approvals-page__info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-approvals-page__thumb {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+}
+
+/* May shrink: without min-width 0 a long description pushes the buttons off the card instead
+   of wrapping. */
+.admin-approvals-page__text {
+  min-width: 0;
+}
+
+.admin-approvals-page__item-name {
+  font-weight: var(--weight-medium);
+}
+
+/* Two lines: enough to judge most listings, short enough that the row stays a row. */
+.admin-approvals-page__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin-top: var(--space-1);
+  max-width: 60ch;
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.admin-approvals-page__reason {
+  margin-top: var(--space-2);
+}

@@ -94,7 +94,10 @@ class FarmerMarket(BaseModel):
     class Meta:
         db_table = "farmer_markets"
         constraints = [
-            models.UniqueConstraint(fields=["farmer", "market"], name="fm_uniq_farmer_market"),
+            # A stall trades at exactly one market; moving elsewhere is a fresh registration.
+            # Unique on the farmer alone, which also subsumes the old (farmer, market) pair
+            # constraint, so that one is gone rather than left as a second index saying less.
+            models.UniqueConstraint(fields=["farmer"], name="fm_uniq_farmer"),
         ]
 
     def __str__(self) -> str:

@@ -47,9 +47,9 @@ def list_flags(
 _TARGET_ROUTES = {
     FlagTarget.FARMER: "/admin/farmers/{id}",
     FlagTarget.CUSTOMER: "/admin/customers/{id}",
-    FlagTarget.PRODUCT: "/admin/moderation?tab=products&product_id={id}",
-    FlagTarget.PRODUCT_REVIEW: "/admin/moderation?tab=reviews&review_id={id}&review_type=PRODUCT",
-    FlagTarget.FARMER_REVIEW: "/admin/moderation?tab=reviews&review_id={id}&review_type=FARMER",
+    FlagTarget.PRODUCT: "/admin/products?product_id={id}",
+    FlagTarget.PRODUCT_REVIEW: "/admin/moderation?review_id={id}&review_type=PRODUCT",
+    FlagTarget.FARMER_REVIEW: "/admin/moderation?review_id={id}&review_type=FARMER",
 }
 
 PREVIEW_MAX_LENGTH = 120

@@ -29,6 +29,9 @@ class NotificationType(models.TextChoices):
     MARKET_CLOSED = "MARKET_CLOSED", "Market Closed"
     # Sent to the stall when Admin takes one of its products down (AD-21b).
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Product Blocked by Admin"
+    # The outcome of the review a new or edited listing goes through.
+    PRODUCT_APPROVED = "PRODUCT_APPROVED", "Product Approved"
+    PRODUCT_REJECTED = "PRODUCT_REJECTED", "Product Rejected"
 
 
 

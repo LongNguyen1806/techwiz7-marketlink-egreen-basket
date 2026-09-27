@@ -4,7 +4,7 @@ import pytest
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import Order, OrderItem, OrderStatus
 
@@ -24,6 +24,9 @@ def approved_farmer(farmer_user):
 
 @pytest.fixture
 def product(category, approved_farmer):
+    # An established listing: written, reviewed, and on sale. A fresh Product() defaults to
+    # PENDING, which is right for the model and wrong for a fixture the rest of the suite
+    # treats as something a shopper can already see.
     return Product.objects.create(
         farmer=approved_farmer,
         category=category,
@@ -31,6 +34,7 @@ def product(category, approved_farmer):
         price="2.50",
         unit=Unit.KG,
         stock_quantity=10,
+        review_status=ReviewStatus.APPROVED,
     )
 
 

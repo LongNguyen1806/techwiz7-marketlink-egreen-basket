@@ -10,7 +10,7 @@ from accounts.selectors import list_pending_farmers
 from marketlink_core.policies.roles import RoleCode
 from markets.models import Market
 from accounts.selectors import list_customers_for_admin
-from catalog.models import Product
+from catalog.models import Product, ReviewStatus
 from orders.models import Order, OrderStatus
 from marketlink_core.exceptions import BusinessValidationError
 from system.flags import open_flags
@@ -111,6 +111,9 @@ def _needs_attention() -> dict:
     return {
         "stalls_awaiting_approval": FarmerProfile.objects.filter(
             status=FarmerStatus.PENDING
+        ).count(),
+        "products_awaiting_approval": Product.objects.filter(
+            review_status=ReviewStatus.PENDING, is_archived=False
         ).count(),
         "flags_open": open_flags().count(),
         "customers_at_risk": list_customers_for_admin(at_risk=True).count(),

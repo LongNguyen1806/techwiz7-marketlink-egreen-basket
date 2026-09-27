@@ -104,19 +104,10 @@ def transition_order(
     sold_out_product_ids: Iterable[int] | None = None,
     mark_all_sold_out: bool = False,
     admin_reason: str | None = None,
+    admin_change_reason: str | None = None,
     notify_customer: bool = True,
 ) -> Order:
-    """Apply one FSM edge under row locks (orders -> products).
-
-    sold_out_product_ids / mark_all_sold_out only apply to farmer declines (T3, T4).
-    ``None`` means the farmer did not declare sold-out items; an empty list means
-    "no item is sold out". T4 by a farmer requires a declaration.
-
-    admin_reason / notify_customer are for admin cascades only. admin_reason picks the
-    system code stamped on the order (ADMIN_DECLINE_REASONS / ADMIN_CANCEL_REASONS; the
-    default is the first of each). notify_customer=False lets a caller that sends its own
-    summary (AD-17 market closure) skip the per-order customer notification.
-    """
+    admin_reason = admin_change_reason or admin_reason
     if actor_role != _R.ADMIN and (admin_reason is not None or not notify_customer):
         raise ValueError("admin_reason and notify_customer are only for admin transitions.")
     reason = (reason or "").strip() or None
