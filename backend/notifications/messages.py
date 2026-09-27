@@ -107,7 +107,10 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         title="{market_name} has closed",
         message=(
             "{market_name} is no longer running, so {order_count} of your orders there were "
-            "cancelled. Reason: {reason}"
+            # stall_note is optional and renders empty for shoppers. It carries the stall's
+            # suspension, so closing a market sends one message rather than two about the
+            # same event.
+            "cancelled. Reason: {reason} {stall_note}"
         ),
         # Both sides read this one, so the link goes to the list each role actually has.
         target_url="{target_url}",
@@ -126,6 +129,21 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         required=("product_name", "order_count", "reason"),
         # In-app only. D-010 names the six events that also go out by email and this is not
         # one of them; the stall sees it the next time they open the app.
+    ),
+    NotificationType.PRODUCT_APPROVED: NotificationSpec(
+        title="{product_name} is on sale",
+        message="An administrator approved {product_name}. Shoppers can see it now.",
+        target_url="/farmer/products",
+        required=("product_name",),
+    ),
+    NotificationType.PRODUCT_REJECTED: NotificationSpec(
+        title="{product_name} was not approved",
+        message=(
+            "An administrator did not approve {product_name}, so it is not on sale. "
+            "Reason: {reason}"
+        ),
+        target_url="/farmer/products",
+        required=("product_name", "reason"),
     ),
     NotificationType.MARKET_SCHEDULE_CHANGED: NotificationSpec(
         title="{market_name} changed its schedule",

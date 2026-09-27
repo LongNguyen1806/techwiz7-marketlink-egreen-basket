@@ -47,7 +47,7 @@ def test_list_returns_every_category_unpaginated_with_product_count(
 def test_create_category(admin_client):
     response = admin_client.post(
         reverse(LIST_URL_NAME),
-        {"name": "Bakery", "icon": "bread", "display_order": 3},
+        {"name": "Bakery", "icon": "croissant", "display_order": 3},
         format="json",
     )
 
@@ -133,3 +133,78 @@ def test_delete_is_refused_while_products_reference_it(admin_client, category, f
 def test_customer_cannot_reach_the_category_admin(customer_client, category):
     assert customer_client.get(reverse(LIST_URL_NAME)).status_code == 403
     assert customer_client.delete(reverse(DETAIL_URL_NAME, args=[category.id])).status_code == 403
+
+
+# --------------------------------------------------------------- unique icons
+# A category's icon is unique and has to be one the app can actually draw. Before this, an
+# unknown name was silently rendered as a leaf, so a typo became a wrong picture on the
+# shopper's home page with nothing to notice.
+
+
+@pytest.mark.django_db
+def test_icon_must_be_one_of_the_known_set(admin_client):
+    response = admin_client.post(
+        reverse(LIST_URL_NAME), {"name": "Bakery", "icon": "bread"}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert "icon" in response.data["errors"]
+    assert not Category.objects.filter(name="Bakery").exists()
+
+
+@pytest.mark.django_db
+def test_icon_is_required(admin_client):
+    response = admin_client.post(reverse(LIST_URL_NAME), {"name": "Bakery"}, format="json")
+
+    assert response.status_code == 400
+    assert "icon" in response.data["errors"]
+
+
+@pytest.mark.django_db
+def test_two_categories_cannot_share_an_icon(admin_client, category):
+    response = admin_client.post(
+        reverse(LIST_URL_NAME), {"name": "Root vegetables", "icon": "carrot"}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert "icon" in response.data["errors"]
+    assert Category.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_keeping_its_own_icon_while_renaming_is_allowed(admin_client, category):
+    # The uniqueness check must not count the row being edited, or no category could ever be
+    # renamed without also being given a new picture.
+    response = admin_client.patch(
+        reverse(DETAIL_URL_NAME, args=[category.id]),
+        {"name": "Fresh vegetables", "icon": "carrot"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    category.refresh_from_db()
+    assert category.name == "Fresh vegetables"
+    assert category.icon == "carrot"
+
+
+@pytest.mark.django_db
+def test_an_icon_freed_by_a_deletion_can_be_reused(admin_client, category):
+    admin_client.delete(reverse(DETAIL_URL_NAME, args=[category.id]))
+
+    response = admin_client.post(
+        reverse(LIST_URL_NAME), {"name": "Root vegetables", "icon": "carrot"}, format="json"
+    )
+
+    assert response.status_code == 201
+
+
+@pytest.mark.django_db
+def test_a_legacy_icon_name_is_stored_in_its_current_form(admin_client):
+    # "pepper" and "flame" were two names for one picture before the set was widened, which
+    # is exactly what uniqueness exists to prevent; both now mean "chilli".
+    response = admin_client.post(
+        reverse(LIST_URL_NAME), {"name": "Spices", "icon": "pepper"}, format="json"
+    )
+
+    assert response.status_code == 201
+    assert Category.objects.get(name="Spices").icon == "chilli"

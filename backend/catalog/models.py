@@ -29,9 +29,32 @@ class ModerationAction(models.TextChoices):
     BLOCK = "BLOCK", "Blocked for legal violation"
 
 
+class ReviewStatus(models.TextChoices):
+    """Whether a listing has been through an admin.
+
+    A stall writes the listing; an admin decides whether shoppers see it. Before this, a
+    listing went live the moment it was saved and the only lever afterwards was to hide it,
+    which is a decision taken too late and in front of an audience.
+    """
+
+    PENDING = "PENDING", "Waiting for review"
+    APPROVED = "APPROVED", "Approved"
+    REJECTED = "REJECTED", "Rejected"
+
+
+# Changing any of these is changing what the listing *claims to be*, so it goes back into the
+# queue. Price and stock are deliberately absent: a stall that has to wait for an admin before
+# it can correct its own stock level will stop correcting it, and then the stock figure - the
+# one number the whole booking flow rests on - becomes fiction.
+REVIEWABLE_FIELDS = ("name", "description", "image", "category_id")
+
+
 class Category(BaseModel):
     name = models.CharField(max_length=50, unique=True, db_collation="utf8mb4_0900_as_ci")
-    icon = models.CharField(max_length=50, null=True, blank=True)
+    # Unique, and required: a picture shared by two categories is a symbol that means two
+    # things, which reads worse on the shopper's home page than no picture at all. The set of
+    # permitted names lives in catalog/icons.py and the serializer refuses anything else.
+    icon = models.CharField(max_length=50, unique=True)
     display_order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
@@ -61,6 +84,22 @@ class Product(BaseModel):
 
     is_available = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
+
+    # The approval state is separate from the hidden flag on purpose: "nobody has looked at
+    # this yet" and "an admin looked and took it down" are different facts, and a listing can
+    # be waiting for a second review while an earlier approved version is still on sale.
+    review_status = models.CharField(
+        max_length=10, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    review_note = models.CharField(max_length=500, null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_products",
+    )
 
     is_hidden_by_admin = models.BooleanField(default=False)
     # NULL whenever is_hidden_by_admin is False; the two are cleared together.
@@ -93,6 +132,9 @@ class Product(BaseModel):
             ),
             models.Index(fields=["price"], name="prod_price_idx"),
             models.Index(fields=["created_at"], name="prod_created_idx"),
+            # The approval queue is read far more often than it is written to, and it is
+            # always read as "everything still waiting, oldest first".
+            models.Index(fields=["review_status", "created_at"], name="prod_review_idx"),
         ]
         constraints = [
             models.CheckConstraint(

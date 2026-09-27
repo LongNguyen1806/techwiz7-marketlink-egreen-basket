@@ -4,7 +4,7 @@ import pytest
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import Market
 from orders.models import Order, OrderItem, OrderStatus
 from reviews.models import FarmerReview, ProductReview
@@ -32,7 +32,8 @@ def market(db):
 
 @pytest.fixture
 def product(db, approved_farmer):
-    category = Category.objects.create(name="Vegetables", display_order=1)
+    # Icons are unique per category now, so a fixture cannot leave it to the default.
+    category = Category.objects.create(name="Vegetables", icon="carrot", display_order=1)
     return Product.objects.create(
         farmer=approved_farmer,
         category=category,
@@ -40,6 +41,8 @@ def product(db, approved_farmer):
         price="2.50",
         unit=Unit.KG,
         stock_quantity=10,
+        # A listing shoppers can already see, which is what these tests are about.
+        review_status=ReviewStatus.APPROVED,
     )
 
 

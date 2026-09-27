@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from django.db.models import Avg, Count, F, Q, QuerySet
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product
+from catalog.models import Category, Product, ReviewStatus
 from marketlink_core.shortcuts import get_or_404
 from markets.models import PickupSlot
 from marketlink_core.ordering import both_directions, resolve_ordering
@@ -40,6 +40,8 @@ ADMIN_PRODUCT_ORDERING = both_directions(
     tiebreak=("-id",),
 )
 ADMIN_PRODUCT_ORDERING["newest"] = ("-created_at", "-id")
+# The approval queue is worked from the front, like any queue.
+ADMIN_PRODUCT_ORDERING["oldest"] = ("created_at", "id")
 ADMIN_PRODUCT_ORDERING["rating"] = (F("rating_avg").asc(nulls_last=True), "-id")
 ADMIN_PRODUCT_ORDERING["-rating"] = (F("rating_avg").desc(nulls_last=True), "-id")
 
@@ -49,7 +51,9 @@ def list_products_for_admin(
     q: str | None = None,
     farmer_id: int | None = None,
     product_id: int | None = None,
+    category_id: int | None = None,
     is_hidden: bool | None = None,
+    review_status: str | None = None,
     ordering: str | None = None,
 ) -> QuerySet[Product]:
     queryset = Product.objects.select_related("farmer", "category").annotate(
@@ -71,8 +75,14 @@ def list_products_for_admin(
     # has to land on that product, not on a page it happens to be somewhere in.
     if product_id is not None:
         queryset = queryset.filter(pk=product_id)
+    # Reviewing a queue one produce type at a time is how an admin builds a sense of what a
+    # good listing for that type looks like.
+    if category_id is not None:
+        queryset = queryset.filter(category_id=category_id)
     if is_hidden is not None:
         queryset = queryset.filter(is_hidden_by_admin=is_hidden)
+    if review_status in ReviewStatus.values:
+        queryset = queryset.filter(review_status=review_status)
     return queryset.order_by(
         *resolve_ordering(ordering, allowed=ADMIN_PRODUCT_ORDERING, default="newest")
     )
@@ -131,6 +141,11 @@ def public_product_base() -> QuerySet[Product]:
         Product.objects.filter(
             is_archived=False,
             is_hidden_by_admin=False,
+            # A listing reaches shoppers only once an admin has looked at it. An edit that
+            # changes what the thing *is* sends it back to PENDING, but the row keeps the
+            # approved wording until the new one is looked at, so the stall is not taken off
+            # the shopper side for fixing a typo.
+            review_status=ReviewStatus.APPROVED,
             farmer__status=FarmerStatus.APPROVED,
             farmer__user__is_active=True,
         )

@@ -65,6 +65,7 @@ class NeedsAttentionSerializer(serializers.Serializer):
     """Counts an admin can act on, as opposed to counts that merely describe the platform."""
 
     stalls_awaiting_approval = serializers.IntegerField()
+    products_awaiting_approval = serializers.IntegerField()
     flags_open = serializers.IntegerField()
     customers_at_risk = serializers.IntegerField()
     hidden_products = serializers.IntegerField()
@@ -171,3 +172,5 @@ class AdminSettingsSerializer(serializers.Serializer):
     max_upload_mb = serializers.IntegerField()
     at_risk_threshold = serializers.IntegerField()
     at_risk_window_days = serializers.IntegerField()
+
+

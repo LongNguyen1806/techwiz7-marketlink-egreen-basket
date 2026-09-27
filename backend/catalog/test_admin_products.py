@@ -2,7 +2,9 @@ import pytest
 from django.urls import reverse
 
 from accounts.models import FarmerStatus
-from catalog.models import ModerationAction, Product, Unit
+from catalog.models import ModerationAction, Product, ReviewStatus, Unit
+from catalog.selectors import public_product_base
+from catalog.services.product_moderation_service import needs_review_again, send_back_for_review
 from notifications.models import Notification, NotificationType
 from orders.models import ActorRole, ChangeReason, OrderStatus, OrderStatusHistory
 from system.models import AuditAction, AuditLog
@@ -517,3 +519,165 @@ def test_customer_cannot_block_or_unblock(customer_client, product):
     for name in (IMPACT_URL_NAME, BLOCK_URL_NAME, UNBLOCK_URL_NAME):
         method = customer_client.get if name == IMPACT_URL_NAME else customer_client.post
         assert method(reverse(name, args=[product.id])).status_code == 403
+
+
+# ------------------------------------------------------------ product review
+# A listing is written by a stall and shown to shoppers by an admin. These tests are mostly
+# about the two ways that can go wrong: letting an unreviewed listing through, and taking an
+# approved one off sale because its stall fixed a typo.
+
+APPROVE_URL_NAME = "admin-product-approve"
+REJECT_URL_NAME = "admin-product-reject"
+
+
+@pytest.mark.django_db
+def test_a_new_listing_starts_in_the_queue(category, approved_farmer):
+    fresh = Product.objects.create(
+        farmer=approved_farmer,
+        category=category,
+        name="New thing",
+        price="4.00",
+        unit=Unit.KG,
+        stock_quantity=5,
+    )
+
+    assert fresh.review_status == ReviewStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_a_listing_waiting_for_review_is_not_public(product):
+    product.review_status = ReviewStatus.PENDING
+    product.save(update_fields=["review_status"])
+
+    assert not public_product_base().filter(pk=product.pk).exists()
+
+
+@pytest.mark.django_db
+def test_an_approved_listing_is_public(product):
+    assert product.review_status == ReviewStatus.APPROVED
+    assert public_product_base().filter(pk=product.pk).exists()
+
+
+@pytest.mark.django_db
+def test_approving_tells_the_stall_and_audits(admin_client, product, admin_user, approved_farmer):
+    product.review_status = ReviewStatus.PENDING
+    product.save(update_fields=["review_status"])
+
+    response = admin_client.post(reverse(APPROVE_URL_NAME, args=[product.id]))
+
+    assert response.status_code == 200
+    assert response.data["data"]["review_status"] == ReviewStatus.APPROVED
+
+    product.refresh_from_db()
+    assert product.reviewed_by == admin_user
+    assert product.reviewed_at is not None
+
+    assert AuditLog.objects.filter(action=AuditAction.PRODUCT_APPROVED).count() == 1
+    assert Notification.objects.filter(
+        recipient=approved_farmer.user, type=NotificationType.PRODUCT_APPROVED
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_approving_twice_is_refused(admin_client, product):
+    # Already approved by the fixture. A second approval is a misread screen, not a no-op, so
+    # it says so rather than silently stamping a new reviewer on it.
+    response = admin_client.post(reverse(APPROVE_URL_NAME, args=[product.id]))
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_rejecting_needs_a_reason_the_stall_can_act_on(admin_client, product):
+    product.review_status = ReviewStatus.PENDING
+    product.save(update_fields=["review_status"])
+
+    response = admin_client.post(
+        reverse(REJECT_URL_NAME, args=[product.id]), {"reason": "no"}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert "reason" in response.data["errors"]
+    product.refresh_from_db()
+    assert product.review_status == ReviewStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_rejecting_keeps_it_off_sale_and_says_why(
+    admin_client, product, approved_farmer
+):
+    product.review_status = ReviewStatus.PENDING
+    product.save(update_fields=["review_status"])
+
+    response = admin_client.post(
+        reverse(REJECT_URL_NAME, args=[product.id]),
+        {"reason": "The photo shows a different product."},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    product.refresh_from_db()
+    assert product.review_status == ReviewStatus.REJECTED
+    assert product.review_note == "The photo shows a different product."
+    assert not public_product_base().filter(pk=product.pk).exists()
+
+    note = Notification.objects.get(
+        recipient=approved_farmer.user, type=NotificationType.PRODUCT_REJECTED
+    )
+    assert "different product" in note.message
+
+
+@pytest.mark.django_db
+def test_editing_what_the_listing_claims_to_be_sends_it_back(product):
+    assert needs_review_again(product, ["name"])
+    assert needs_review_again(product, ["description"])
+    assert needs_review_again(product, ["image"])
+    assert needs_review_again(product, ["category_id"])
+
+
+@pytest.mark.django_db
+def test_editing_price_or_stock_does_not_send_it_back(product):
+    # A stall that has to wait for an admin before correcting its own stock will stop
+    # correcting it, and the stock figure is what the whole booking flow rests on.
+    assert not needs_review_again(product, ["price"])
+    assert not needs_review_again(product, ["stock_quantity"])
+    assert not needs_review_again(product, ["price", "stock_quantity", "is_available"])
+
+
+@pytest.mark.django_db
+def test_a_listing_sent_back_keeps_its_approved_version_on_sale(product):
+    # Hiding it while it waits would mean losing the shopfront over a typo, which teaches
+    # stalls not to fix typos.
+    assert public_product_base().filter(pk=product.pk).exists()
+    send_back_for_review(product)
+
+    product.refresh_from_db()
+    assert product.review_status == ReviewStatus.PENDING
+    assert product.is_hidden_by_admin is False
+    assert product.is_archived is False
+
+
+@pytest.mark.django_db
+def test_the_queue_can_be_filtered_and_worked_oldest_first(
+    admin_client, product, category, approved_farmer
+):
+    waiting = Product.objects.create(
+        farmer=approved_farmer,
+        category=category,
+        name="Waiting thing",
+        price="4.00",
+        unit=Unit.KG,
+        stock_quantity=5,
+    )
+
+    data = admin_client.get(
+        reverse(LIST_URL_NAME), {"review_status": "PENDING", "ordering": "oldest"}
+    ).data["data"]
+
+    assert [row["id"] for row in data["results"]] == [waiting.id]
+
+
+@pytest.mark.django_db
+def test_customer_cannot_approve_or_reject(customer_client, product):
+    for name in (APPROVE_URL_NAME, REJECT_URL_NAME):
+        assert customer_client.post(reverse(name, args=[product.id])).status_code == 403
