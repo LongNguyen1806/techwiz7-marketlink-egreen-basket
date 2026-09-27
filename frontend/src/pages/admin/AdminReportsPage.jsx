@@ -3,6 +3,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,7 +27,9 @@ import { Input } from '@/components/common/forms/Input';
 import { Label } from '@/components/common/forms/Label';
 import { formatVnd } from '@/utils/formatters';
 import { orderStatusLabel } from '@/utils/labels';
+import { orderStatusColor } from '@/utils/statusColors';
 
+import '@/components/common/table/FilterBar.css';
 import './AdminReportsPage.css';
 
 function defaultRange() {
@@ -36,6 +40,16 @@ function defaultRange() {
     from: from.toISOString().slice(0, 10),
     to: to.toISOString().slice(0, 10),
   };
+}
+
+// A full dong figure at the end of a bar is a dozen characters wide and pushes the plot area
+// to nothing. The tooltip still gives the exact number.
+function compactVnd(value) {
+  const amount = Number(value) || 0;
+  if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)} tỷ`;
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)} tr`;
+  if (amount >= 1_000) return `${Math.round(amount / 1_000)} k`;
+  return String(Math.round(amount));
 }
 
 export default function AdminReportsPage() {
@@ -51,6 +65,24 @@ export default function AdminReportsPage() {
 
   const marketsQuery = useAdminMarkets();
   const reportQuery = useAdminReports(applied);
+
+  // Both charts want the biggest bar at the top, and revenue arrives as a decimal string
+  // that a chart axis cannot measure.
+  const report = reportQuery.data;
+  const ordersByStatus = useMemo(
+    () =>
+      (report?.orders_by_status ?? [])
+        .map((row) => ({ ...row, name: orderStatusLabel(row.status) }))
+        .sort((a, b) => b.count - a.count),
+    [report],
+  );
+  const revenueByMarket = useMemo(
+    () =>
+      (report?.revenue_by_market ?? [])
+        .map((row) => ({ ...row, revenue: Number(row.revenue) || 0 }))
+        .sort((a, b) => b.revenue - a.revenue),
+    [report],
+  );
 
   const daysDiff = () => {
     const a = new Date(from);
@@ -141,6 +173,22 @@ export default function AdminReportsPage() {
           </select>
         </div>
         <Button onClick={onApply}>Apply</Button>
+        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
+            learns one place to look rather than one per screen. Here "clear" means the
+            default range, because a report with no dates at all is not a report. */}
+        <Button
+          variant="ghost"
+          className="filter-bar__clear"
+          disabled={from === initial.from && to === initial.to && !marketId}
+          onClick={() => {
+            setFrom(initial.from);
+            setTo(initial.to);
+            setMarketId('');
+            setApplied({ ...initial, market_id: undefined });
+          }}
+        >
+          Clear
+        </Button>
       </div>
 
       {reportQuery.isLoading ? (
@@ -160,17 +208,34 @@ export default function AdminReportsPage() {
               </CardHeader>
               <CardContent className="page-primitive__chart-card-body">
                 <ResponsiveContainer width="100%" height="100%">
+                  {/* Bars run sideways: eight status names along the bottom either overlap
+                      or have to be tilted, and neither reads well. */}
                   <BarChart
-                    data={reportQuery.data.orders_by_status.map((row) => ({
-                      ...row,
-                      name: orderStatusLabel(row.status),
-                    }))}
+                    layout="vertical"
+                    data={ordersByStatus}
+                    margin={{ left: 4, right: 40, top: 4, bottom: 4 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#15803d" radius={[8, 8, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={124}
+                      tick={{ fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip formatter={(value) => [value, 'Orders']} cursor={false} />
+                    <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={16}>
+                      {ordersByStatus.map((row) => (
+                        <Cell key={row.status} fill={orderStatusColor(row.status)} />
+                      ))}
+                      <LabelList
+                        dataKey="count"
+                        position="right"
+                        style={{ fontSize: 12, fontWeight: 600 }}
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -181,12 +246,35 @@ export default function AdminReportsPage() {
               </CardHeader>
               <CardContent className="page-primitive__chart-card-body">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={reportQuery.data.revenue_by_market}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="market_name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(v) => formatVnd(Number(v))} />
-                    <Bar dataKey="revenue" fill="#ca8a04" radius={[8, 8, 0, 0]} />
+                  {/* Same reasoning, plus market names are longer than status names and the
+                      money labels need room at the end of each bar. */}
+                  <BarChart
+                    layout="vertical"
+                    data={revenueByMarket}
+                    margin={{ left: 4, right: 68, top: 4, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 12 }} hide />
+                    <YAxis
+                      type="category"
+                      dataKey="market_name"
+                      width={124}
+                      tick={{ fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      formatter={(value) => [formatVnd(Number(value)), 'Revenue']}
+                      cursor={false}
+                    />
+                    <Bar dataKey="revenue" fill="#ca8a04" radius={[0, 6, 6, 0]} barSize={16}>
+                      <LabelList
+                        dataKey="revenue"
+                        position="right"
+                        formatter={compactVnd}
+                        style={{ fontSize: 12, fontWeight: 600 }}
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

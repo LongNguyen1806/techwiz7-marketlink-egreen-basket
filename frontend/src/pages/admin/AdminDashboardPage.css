@@ -67,3 +67,109 @@
 .admin-dashboard-page__task span {
   font-size: var(--text-sm);
 }
+
+/* ---- Orders by status --------------------------------------------------- */
+
+/* The donut sizes itself from the card, and the total sits in the hole. Position relative so
+   that centred overlay has something to anchor to. */
+.admin-dashboard-page__donut {
+  position: relative;
+  height: 13rem;
+}
+
+.admin-dashboard-page__donut-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.admin-dashboard-page__donut-centre b {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard-page__donut-centre span {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+/* Two columns on anything wider than a phone: eight statuses stacked one per line push the
+   card far taller than the chart beside it. */
+.admin-dashboard-page__legend {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 480px) {
+  .admin-dashboard-page__legend {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-dashboard-page__legend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.admin-dashboard-page__legend b {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard-page__swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+}
+
+.admin-dashboard-page__legend-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-muted-foreground);
+}
+
+/* Fixed width so the percentages line up in a column instead of drifting with the counts. */
+.admin-dashboard-page__legend-share {
+  width: 2.5rem;
+  text-align: right;
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Orders by month ---------------------------------------------------- */
+
+.admin-dashboard-page__month-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.admin-dashboard-page__month-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.admin-dashboard-page__month-select {
+  height: 2.25rem;
+  width: auto;
+  padding-right: var(--space-7);
+}

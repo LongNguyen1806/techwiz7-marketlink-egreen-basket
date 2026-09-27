@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
+  CartesianGrid,
   Cell,
-  Legend,
   Line,
   LineChart,
   Pie,
@@ -10,11 +12,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
 } from 'recharts';
 
 import {
   useAdminDashboard,
+  useAdminOrdersByMonth,
   useDashboardApproveFarmer,
   useDashboardRejectFarmer,
 } from '../../hooks/queries/admin/useAdminDashboard';
@@ -24,6 +26,7 @@ import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
 import { Button } from '@/components/common/forms/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cards/Card';
 import { orderStatusLabel } from '@/utils/labels';
+import { orderStatusColor } from '@/utils/statusColors';
 
 import './AdminDashboardPage.css';
 
@@ -41,10 +44,55 @@ const ATTENTION = [
   { key: 'markets_closed', label: 'Markets closed', to: '/admin/markets' },
 ];
 
-const PIE_COLORS = ['#15803d', '#ca8a04', '#2563eb', '#dc2626', '#64748b', '#7c3aed'];
+// Inside one month the axis only needs the day number; the month and year are in the title.
+function dayOfMonth(value) {
+  const [, , day] = String(value).split('-');
+  return day ? String(Number(day)) : value;
+}
+
+function fullDate(value) {
+  const [year, month, day] = String(value).split('-');
+  return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// Stepping by months on a Date is the one arithmetic the platform's dates need and the one
+// that setMonth gets wrong at year ends, so it is done on the parts.
+function shiftMonth(key, delta) {
+  const [year, month] = key.split('-').map(Number);
+  const index = year * 12 + (month - 1) + delta;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+}
+
+function monthTitle(key) {
+  const [year, month] = key.split('-').map(Number);
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+// A zero is already drawn on the axis line; printing it over twenty of them buries the days
+// that actually had orders.
+function countLabel({ x, y, value }) {
+  if (!value) return null;
+  return (
+    <text x={x} y={y - 8} textAnchor="middle" fontSize={11} fontWeight={600} fill="#15803d">
+      {value}
+    </text>
+  );
+}
 
 export default function AdminDashboardPage() {
   const query = useAdminDashboard();
+  const [month, setMonth] = useState(currentMonthKey);
+  const monthQuery = useAdminOrdersByMonth(month);
   const approve = useDashboardApproveFarmer();
   const reject = useDashboardRejectFarmer();
 
@@ -69,11 +117,17 @@ export default function AdminDashboardPage() {
     { label: 'Orders all time', value: data.totals.orders },
   ];
 
-  // Spelt out here so the legend, the slice labels and the tooltip all read the same.
-  const ordersByStatus = data.orders_by_status.map((row) => ({
-    ...row,
-    name: orderStatusLabel(row.status),
-  }));
+  // Spelt out here so the legend, the donut and the tooltip all read the same. Biggest slice
+  // first, so the eye and the legend follow the same order.
+  const ordersByStatus = data.orders_by_status
+    .map((row) => ({
+      ...row,
+      name: orderStatusLabel(row.status),
+      color: orderStatusColor(row.status),
+    }))
+    .sort((a, b) => b.count - a.count);
+  const totalOrders = ordersByStatus.reduce((sum, row) => sum + row.count, 0);
+  const share = (count) => (totalOrders ? Math.round((count / totalOrders) * 100) : 0);
 
   return (
     <div className="admin-dashboard-page">
@@ -120,17 +174,88 @@ export default function AdminDashboardPage() {
 
       <div className="page-primitive__charts-row">
         <Card>
-          <CardHeader>
-            <CardTitle>Orders · last 30 days</CardTitle>
+          <CardHeader className="admin-dashboard-page__month-header">
+            <CardTitle>Orders · {monthTitle(month)}</CardTitle>
+            <div className="admin-dashboard-page__month-nav">
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label="Previous month"
+                onClick={() => setMonth((current) => shiftMonth(current, -1))}
+              >
+                <ChevronLeft className="page-primitive__icon-sm" />
+              </Button>
+              {/* Any of the twelve months of the year the admin is looking at, without
+                  clicking back through them one at a time. */}
+              <select
+                className="page-primitive__select admin-dashboard-page__month-select"
+                aria-label="Month"
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+              >
+                {MONTH_NAMES.map((name, index) => (
+                  <option
+                    key={name}
+                    value={`${month.split('-')[0]}-${String(index + 1).padStart(2, '0')}`}
+                  >
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label="Next month"
+                // There is nothing to see past today, and the endpoint refuses a year beyond
+                // the next one anyway.
+                disabled={month >= currentMonthKey()}
+                onClick={() => setMonth((current) => shiftMonth(current, 1))}
+              >
+                <ChevronRight className="page-primitive__icon-sm" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="page-primitive__chart-h">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.orders_by_day}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="#15803d" strokeWidth={2} />
+              <LineChart
+                data={monthQuery.data?.days ?? []}
+                margin={{ top: 18, right: 12, bottom: 4 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={dayOfMonth}
+                  tick={{ fontSize: 12 }}
+                  tickMargin={8}
+                  minTickGap={18}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  width={28}
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  labelFormatter={fullDate}
+                  formatter={(value) => [value, 'Orders']}
+                  cursor={{ stroke: 'var(--color-border)' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#15803d"
+                  strokeWidth={2.5}
+                  dot={{ r: 2.5, fill: '#15803d', strokeWidth: 0 }}
+                  activeDot={{ r: 5 }}
+                  label={countLabel}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -140,27 +265,52 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>Orders by status</CardTitle>
           </CardHeader>
-          <CardContent className="page-primitive__chart-h">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={ordersByStatus}
-                  dataKey="count"
-                  nameKey="name"
-                  outerRadius={80}
-                  label
-                >
-                  {ordersByStatus.map((entry, index) => (
-                    <Cell
-                      key={entry.status}
-                      fill={PIE_COLORS[index % PIE_COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Legend />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent>
+            <div className="admin-dashboard-page__donut">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={ordersByStatus}
+                    dataKey="count"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="58%"
+                    outerRadius="88%"
+                    paddingAngle={1}
+                    stroke="none"
+                    isAnimationActive={false}
+                  >
+                    {ordersByStatus.map((entry) => (
+                      <Cell key={entry.status} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [`${value} (${share(value)}%)`, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* The hole is the natural place for the one number the chart is about, and it
+                  saves the slice labels that were colliding with the legend. */}
+              <div className="admin-dashboard-page__donut-centre">
+                <b>{totalOrders}</b>
+                <span>orders</span>
+              </div>
+            </div>
+            {/* Hand-written rather than the charting library's own legend: this one carries a
+                count and a share per row and lines them up in a grid, which that component
+                cannot do. */}
+            <ul className="admin-dashboard-page__legend">
+              {ordersByStatus.map((row) => (
+                <li key={row.status}>
+                  <span
+                    className="admin-dashboard-page__swatch"
+                    style={{ backgroundColor: row.color }}
+                  />
+                  <span className="admin-dashboard-page__legend-name">{row.name}</span>
+                  <b>{row.count}</b>
+                  <span className="admin-dashboard-page__legend-share">{share(row.count)}%</span>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       </div>

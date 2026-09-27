@@ -5,6 +5,16 @@ import { ApiError } from '@/lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
 import { QUERY_KEYS } from '@/config/constants';
 
+export function useAdminOrdersByMonth(month) {
+  return useQuery({
+    queryKey: QUERY_KEYS.ADMIN_ORDERS_BY_MONTH(month),
+    queryFn: () => adminApi.getOrdersByMonth(month),
+    // The previous month stays on screen while the next one loads, so stepping through the
+    // year does not blank the card on every click.
+    placeholderData: (previous) => previous,
+  });
+}
+
 export function useAdminDashboard() {
   return useQuery({
     queryKey: QUERY_KEYS.ADMIN_DASHBOARD,
