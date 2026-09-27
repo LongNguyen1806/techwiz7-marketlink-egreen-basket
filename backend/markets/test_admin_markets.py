@@ -158,7 +158,9 @@ def test_patching_only_the_open_time_checks_against_the_stored_close_time(admin_
 
 
 @pytest.mark.django_db
-def test_renaming_does_not_touch_pickup_slots(admin_client, market, make_slot):
+def test_renaming_does_not_touch_pickup_slots_but_tells_the_stall(
+    admin_client, market, make_slot, farmer_user
+):
     slot = make_slot(day_of_week=MONDAY, start=time(7, 0), end=time(9, 0))
 
     response = admin_client.patch(
@@ -169,7 +171,11 @@ def test_renaming_does_not_touch_pickup_slots(admin_client, market, make_slot):
     assert response.data["data"]["deactivated_slot_count"] == 0
     slot.refresh_from_db()
     assert slot.is_active is True
-    assert not Notification.objects.exists()
+    notification = Notification.objects.get()
+    assert notification.recipient == farmer_user
+    assert notification.type == NotificationType.MARKET_UPDATED
+    assert "Central Market" in notification.message
+    assert "Central Bazaar" in notification.message
 
 
 @pytest.mark.django_db
@@ -191,8 +197,9 @@ def test_dropping_a_day_disables_the_slots_on_it_and_notifies_the_farmer(
     assert dropped.is_active is False
 
     notification = Notification.objects.get(recipient=farmer_user)
-    assert notification.type == NotificationType.MARKET_SCHEDULE_CHANGED
-    assert "Central Market" in notification.message
+    assert notification.type == NotificationType.MARKET_UPDATED
+    assert "Central Market" in notification.title
+    assert "1 of your pickup slots" in notification.message
     assert notification.target_url == "/farmer/markets"
 
 
@@ -216,9 +223,13 @@ def test_narrowing_the_hours_disables_the_slots_outside_them(admin_client, marke
 
 
 @pytest.mark.django_db
-def test_placed_orders_survive_a_schedule_change(admin_client, market, make_slot, make_order):
+def test_orders_that_still_fit_survive_a_schedule_change(
+    admin_client, market, make_slot, make_order
+):
     make_slot(day_of_week=WEDNESDAY, start=time(7, 0), end=time(9, 0))
-    order = make_order(pickup_date=timezone.localdate() + timedelta(days=1))
+    today = timezone.localdate()
+    next_monday = today + timedelta(days=(MONDAY - today.isoweekday()) % 7 or 7)
+    order = make_order(pickup_date=next_monday)
 
     admin_client.patch(
         reverse(DETAIL_URL_NAME, args=[market.id]), {"operating_days": [MONDAY]}, format="json"

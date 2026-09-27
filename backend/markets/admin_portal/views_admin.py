@@ -13,6 +13,7 @@ from markets.admin_portal.serializers_admin import (
     ClosureWriteSerializer,
     MarketAdminReadSerializer,
     MarketAdminWriteSerializer,
+    MarketEditImpactSerializer,
 )
 from markets.models import Market, MarketClosure
 from markets.selectors import (
@@ -26,6 +27,7 @@ from markets.services.market_service import (
     activate_market,
     create_market,
     deactivate_market,
+    preview_market_update,
     update_market,
 )
 from system.models import AuditAction
@@ -41,6 +43,11 @@ def _flag(raw: str | None) -> bool | None:
     if lowered in ("false", "0"):
         return False
     return None
+
+
+def _confirmed(raw) -> bool:
+    # JSON sends a real boolean, a multipart form (the one with the photo) sends text.
+    return raw is True or str(raw).strip().lower() in ("true", "1")
 
 
 def _require_market(market_id: int) -> int:
@@ -125,25 +132,55 @@ class MarketDetailView(RetrieveUpdateAPIView):
         market = self.get_object()
         serializer = self.get_serializer(market, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        # Taken before update_market(), which pops operating_days out of the dict it is given.
-        changed_fields = sorted(serializer.validated_data)
-        _, deactivated_slot_count = update_market(
-            market_id=market.pk, validated=dict(serializer.validated_data)
+        # A change that cancels orders is refused until the admin has seen the count in the
+        # preview and sent confirm_cancel_orders back with the save.
+        _, impact = update_market(
+            market_id=market.pk,
+            validated=dict(serializer.validated_data),
+            actor=request.user,
+            confirm_cancel=_confirmed(request.data.get("confirm_cancel_orders")),
         )
+        summary = impact.summary()
         log_request_event(
             request,
             action=AuditAction.MARKET_UPDATED,
             status_code=200,
             details={
                 "market_id": market.pk,
-                "changed_fields": changed_fields,
-                "deactivated_slot_count": deactivated_slot_count,
+                "changed_fields": summary["changed_fields"],
+                "deactivated_slot_count": summary["slots_to_disable"],
+                "cancelled_orders": summary["orders_to_cancel"],
+                "notified": summary["customers_to_notify"] + summary["stalls_to_notify"],
             },
         )
         # Re-read through the selector so the counts and prefetches are back in place.
         data = MarketAdminReadSerializer(get_market_for_admin(market_id=market.pk)).data
-        data["deactivated_slot_count"] = deactivated_slot_count
+        data["deactivated_slot_count"] = summary["slots_to_disable"]
+        data["cancelled_orders"] = summary["orders_to_cancel"]
+        data["notified"] = summary["customers_to_notify"] + summary["stalls_to_notify"]
         return api_response(message="Market updated.", request=request, data=data)
+
+
+class MarketEditImpactView(APIView):
+    """What a save would do, without saving: the admin confirms these numbers first."""
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        request=MarketAdminWriteSerializer,
+        responses={200: MarketEditImpactSerializer, 400: None, 404: None},
+        summary="Preview what editing a market would change",
+    )
+    def post(self, request, id: int) -> Response:
+        market = Market.objects.filter(pk=id).first()
+        if market is None:
+            raise ResourceNotFoundError("Market not found.")
+        serializer = MarketAdminWriteSerializer(market, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        impact = preview_market_update(
+            market=market, validated=dict(serializer.validated_data)
+        )
+        return api_response(message="OK", request=request, data=impact.summary())
 
 
 class _MarketStateView(APIView):

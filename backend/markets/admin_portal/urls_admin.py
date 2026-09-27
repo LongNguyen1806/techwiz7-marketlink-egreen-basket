@@ -6,12 +6,18 @@ from markets.admin_portal.views_admin import (
     MarketClosureListCreateView,
     MarketDeactivateView,
     MarketDetailView,
+    MarketEditImpactView,
     MarketListCreateView,
 )
 
 urlpatterns = [
     path("admin/markets/", MarketListCreateView.as_view(), name="admin-market-list"),
     path("admin/markets/<int:id>/", MarketDetailView.as_view(), name="admin-market-detail"),
+    path(
+        "admin/markets/<int:id>/impact/",
+        MarketEditImpactView.as_view(),
+        name="admin-market-impact",
+    ),
     path(
         "admin/markets/<int:id>/deactivate/",
         MarketDeactivateView.as_view(),
