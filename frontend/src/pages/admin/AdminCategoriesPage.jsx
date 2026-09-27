@@ -102,13 +102,17 @@ export default function AdminCategoriesPage() {
   const [deleting, setDeleting] = useState(null);
   const form = useForm({
     resolver: zodResolver(categorySchema),
-    defaultValues: { name: '', icon: 'leaf' },
+    defaultValues: { name: '', icon: '' },
   });
 
   if (query.data !== syncedData) {
     setSyncedData(query.data);
     if (query.data) setItems(query.data);
   }
+
+  // Which icon belongs to which category, so the picker can show the spoken-for ones as
+  // spoken for instead of letting the admin pick one and be refused by the API.
+  const takenIcons = Object.fromEntries(items.map((cat) => [cat.icon, cat.name]));
 
   const sensors = useSensors(useSensor(PointerSensor));
   const reorder = useReorderCategories();
@@ -150,7 +154,7 @@ export default function AdminCategoriesPage() {
         className="admin-categories-page__create"
         onSubmit={form.handleSubmit((values) => {
           create.mutate(values, {
-            onSuccess: () => form.reset({ name: '', icon: 'leaf' }),
+            onSuccess: () => form.reset({ name: '', icon: '' }),
             onError: (error) => {
               mapServerErrorsToForm(
                 ApiError.fromUnknown(error).fieldErrors,
@@ -179,8 +183,9 @@ export default function AdminCategoriesPage() {
           </Button>
         </div>
         <IconPicker
-          value={form.watch('icon') ?? 'leaf'}
+          value={form.watch('icon') ?? ''}
           onChange={(icon) => form.setValue('icon', icon, { shouldDirty: true })}
+          taken={takenIcons}
         />
       </form>
 

@@ -168,7 +168,8 @@ def test_a_flagged_product_carries_a_link_and_a_preview(admin_client, admin_user
 
     row = admin_client.get(reverse(LIST_URL)).data["data"]["results"][0]
 
-    assert row["target_url"] == f"/admin/moderation?tab=products&product_id={product.id}"
+    # Products have their own screen; only reviews live on the moderation one now.
+    assert row["target_url"] == f"/admin/products?product_id={product.id}"
     assert product.name in row["target_preview"]
 
 

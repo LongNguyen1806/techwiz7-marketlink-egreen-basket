@@ -9,6 +9,8 @@ const AdminFarmersPage = lazy(() => import('@/pages/admin/AdminFarmersPage'));
 const AdminFarmerDetailPage = lazy(() => import('@/pages/admin/AdminFarmerDetailPage'));
 const AdminCustomersPage = lazy(() => import('@/pages/admin/AdminCustomersPage'));
 const AdminOrdersPage = lazy(() => import('@/pages/admin/AdminOrdersPage'));
+const AdminApprovalsPage = lazy(() => import('@/pages/admin/AdminApprovalsPage'));
+const AdminProductsPage = lazy(() => import('@/pages/admin/AdminProductsPage'));
 const AdminQueuePage = lazy(() => import('@/pages/admin/AdminQueuePage'));
 const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage'));
 const AdminCustomerDetailPage = lazy(
@@ -80,18 +82,34 @@ export const adminRoutes = [
             ),
           },
           {
-            path: '/admin/queue',
-            element: (
-              <Suspend>
-                <AdminQueuePage />
-              </Suspend>
-            ),
-          },
-          {
             path: '/admin/limits',
             element: (
               <Suspend>
                 <AdminSettingsPage />
+              </Suspend>
+            ),
+          },
+          {
+            path: '/admin/approvals',
+            element: (
+              <Suspend>
+                <AdminApprovalsPage />
+              </Suspend>
+            ),
+          },
+          {
+            path: '/admin/products',
+            element: (
+              <Suspend>
+                <AdminProductsPage />
+              </Suspend>
+            ),
+          },
+          {
+            path: '/admin/queue',
+            element: (
+              <Suspend>
+                <AdminQueuePage />
               </Suspend>
             ),
           },

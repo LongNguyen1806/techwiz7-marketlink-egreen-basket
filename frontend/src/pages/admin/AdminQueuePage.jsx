@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { FlagTargetCard } from '@/components/admin/FlagTargetCard';
 
@@ -9,7 +8,6 @@ import { toast } from 'sonner';
 
 import { ApiError } from '@/lib/ApiError';
 import { QUERY_KEYS } from '@/config/constants';
-import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
 import { EmptyState } from '@/components/common/feedback/EmptyState';
 import { FilterBar } from '@/components/common/table/FilterBar';
 import { PageHeader } from '@/components/common/layout/PageHeader';
@@ -54,7 +52,6 @@ const RESOLUTION_MIN_LENGTH = 5;
 
 export default function AdminQueuePage() {
   const [filters, setFilters] = useState({});
-  const [resolving, setResolving] = useState(null);
   // Read in a panel over the queue rather than on another screen: leaving the page throws
   // away the search and the filters, and this list is worked through one item at a time.
   const [reviewing, setReviewing] = useState(null);
@@ -74,7 +71,6 @@ export default function AdminQueuePage() {
       toast.success('Marked as dealt with');
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_FLAGS()[0]] });
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_DASHBOARD[0]] });
-      setResolving(null);
     },
     onError: (error) => toast.error(ApiError.fromUnknown(error).friendlyMessage),
   });
@@ -134,9 +130,12 @@ export default function AdminQueuePage() {
                   size="sm"
                   variant="ghost"
                   className="admin-queue-page__link"
-                  onClick={() => setReviewing(flag)}
+                  onClick={() => {
+                    setReviewing(flag);
+                    setResolution('');
+                  }}
                 >
-                  Take a look
+                  Open
                 </Button>
                 {flag.resolved_at ? (
                   <p className="page-primitive__muted-sm">
@@ -150,7 +149,7 @@ export default function AdminQueuePage() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    setResolving(flag);
+                    setReviewing(flag);
                     setResolution('');
                   }}
                 >
@@ -173,53 +172,58 @@ export default function AdminQueuePage() {
           </SheetHeader>
           <p className="admin-queue-page__panel-note">{reviewing?.note}</p>
           <FlagTargetCard flag={reviewing} />
-          <div className="admin-queue-page__panel-actions">
-            {reviewing?.target_url ? (
-              <Link className="admin-queue-page__link" to={reviewing.target_url}>
-                Open the full screen
-                <ExternalLink className="page-primitive__icon-sm" />
-              </Link>
-            ) : null}
-            {reviewing?.resolved_at ? null : (
+
+          {reviewing?.target_url ? (
+            // A new tab, not this one: the queue keeps its search and its filters, and the
+            // admin comes back to the panel still open on the same item.
+            <a
+              className="admin-queue-page__link"
+              href={reviewing.target_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open the full screen
+              <ExternalLink className="page-primitive__icon-sm" />
+            </a>
+          ) : null}
+
+          {reviewing?.resolved_at ? (
+            <p className="page-primitive__muted-sm admin-queue-page__panel-resolved">
+              Dealt with by {reviewing.resolved_by?.email ?? 'someone'}:{' '}
+              {reviewing.resolution}
+            </p>
+          ) : (
+            // The whole decision happens here. Closing the panel to open a second dialog put
+            // the item being judged out of sight at the moment of judging it.
+            <form
+              className="admin-queue-page__panel-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!reviewing || resolution.trim().length < RESOLUTION_MIN_LENGTH) return;
+                resolve.mutate(
+                  { id: reviewing.id, text: resolution },
+                  { onSuccess: () => setReviewing(null) },
+                );
+              }}
+            >
+              <Textarea
+                className="admin-queue-page__resolution"
+                placeholder="What did you do about it?"
+                value={resolution}
+                onChange={(event) => setResolution(event.target.value)}
+              />
               <Button
-                size="sm"
-                onClick={() => {
-                  // Straight from the panel: having looked at it is exactly when the
-                  // decision gets made.
-                  setResolving(reviewing);
-                  setResolution('');
-                  setReviewing(null);
-                }}
+                type="submit"
+                loading={resolve.isPending}
+                disabled={resolution.trim().length < RESOLUTION_MIN_LENGTH}
               >
                 Mark as done
               </Button>
-            )}
-          </div>
+            </form>
+          )}
         </SheetContent>
       </Sheet>
 
-      <ConfirmDialog
-        open={Boolean(resolving)}
-        onOpenChange={(open) => {
-          if (!open) setResolving(null);
-        }}
-        title="Mark this as dealt with?"
-        description="Say what was done. It stays on the record so the next person can see why the item left the queue."
-        confirmLabel="Mark as done"
-        loading={resolve.isPending}
-        confirmDisabled={resolution.trim().length < RESOLUTION_MIN_LENGTH}
-        onConfirm={() => {
-          if (!resolving) return;
-          resolve.mutate({ id: resolving.id, text: resolution });
-        }}
-      >
-        <Textarea
-          className="admin-queue-page__resolution"
-          placeholder="What did you do about it?"
-          value={resolution}
-          onChange={(event) => setResolution(event.target.value)}
-        />
-      </ConfirmDialog>
     </div>
   );
 }

@@ -89,11 +89,20 @@
   color: var(--color-muted-foreground);
 }
 
-.admin-queue-page__panel-actions {
+
+/* The decision lives under the item it is about, so both are on screen at once. */
+.admin-queue-page__panel-form {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-end;
   gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.admin-queue-page__panel-form .admin-queue-page__resolution {
+  width: 100%;
+}
+
+.admin-queue-page__panel-resolved {
   margin-top: var(--space-4);
 }

@@ -200,6 +200,18 @@ export const adminApi = {
     return data;
   },
 
+  // A listing is written by a stall and shown to shoppers by an admin. Approving is one
+  // click; refusing has to say why, because the stall can only fix what it is told about.
+  approveProduct: async (id) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/approve/`);
+    return data;
+  },
+
+  rejectProduct: async (id, reason) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/reject/`, { reason });
+    return data;
+  },
+
   // AD-21b. A takedown, unlike a hide, also cancels the open orders, so the dialog asks what
   // that would cost before the admin commits to it.
   fetchProductBlockImpact: async (id) => {
@@ -317,6 +329,7 @@ export const adminApi = {
   },
 
   // Read only: these limits come from the environment, so changing one is a deploy.
+
   getSettings: async () => {
     const { data } = await axiosClient.get('/admin/settings/');
     return data;

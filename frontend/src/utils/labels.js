@@ -36,6 +36,14 @@ export function orderStatusLabel(status) {
   return ORDER_STATUS[status] ?? humanise(status);
 }
 
+// Only "Ready for pickup" is long enough to matter, and in a chart legend beside a number and
+// a percentage it was the one getting cut off mid-word.
+const ORDER_STATUS_SHORT = { READY_FOR_PICKUP: 'Ready' };
+
+export function orderStatusShortLabel(status) {
+  return ORDER_STATUS_SHORT[status] ?? orderStatusLabel(status);
+}
+
 export function farmerStatusLabel(status) {
   return FARMER_STATUS[status] ?? humanise(status);
 }

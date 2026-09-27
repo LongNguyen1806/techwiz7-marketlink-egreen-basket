@@ -25,7 +25,7 @@ import { PageHeader } from '@/components/common/layout/PageHeader';
 import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
 import { Button } from '@/components/common/forms/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cards/Card';
-import { orderStatusLabel } from '@/utils/labels';
+import { orderStatusLabel, orderStatusShortLabel } from '@/utils/labels';
 import { orderStatusColor } from '@/utils/statusColors';
 
 import './AdminDashboardPage.css';
@@ -36,11 +36,16 @@ const ATTENTION = [
   {
     key: 'stalls_awaiting_approval',
     label: 'Stalls awaiting approval',
-    to: '/admin/farmers?status=PENDING',
+    to: '/admin/approvals',
   },
   { key: 'flags_open', label: 'In the follow-up queue', to: '/admin/queue' },
   { key: 'customers_at_risk', label: 'Shoppers at risk', to: '/admin/customers' },
-  { key: 'hidden_products', label: 'Products hidden', to: '/admin/moderation' },
+  {
+    key: 'products_awaiting_approval',
+    label: 'Listings awaiting approval',
+    to: '/admin/approvals',
+  },
+  { key: 'hidden_products', label: 'Products hidden', to: '/admin/products' },
   { key: 'markets_closed', label: 'Markets closed', to: '/admin/markets' },
 ];
 
@@ -123,6 +128,8 @@ export default function AdminDashboardPage() {
     .map((row) => ({
       ...row,
       name: orderStatusLabel(row.status),
+      // The legend has a number and a percentage beside it, so it uses the short form.
+      shortName: orderStatusShortLabel(row.status),
       color: orderStatusColor(row.status),
     }))
     .sort((a, b) => b.count - a.count);
@@ -305,7 +312,7 @@ export default function AdminDashboardPage() {
                     className="admin-dashboard-page__swatch"
                     style={{ backgroundColor: row.color }}
                   />
-                  <span className="admin-dashboard-page__legend-name">{row.name}</span>
+                  <span className="admin-dashboard-page__legend-name">{row.shortName}</span>
                   <b>{row.count}</b>
                   <span className="admin-dashboard-page__legend-share">{share(row.count)}%</span>
                 </li>

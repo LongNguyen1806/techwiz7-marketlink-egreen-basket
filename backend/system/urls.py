@@ -3,8 +3,8 @@ from django.urls import path
 from system.views import (
     AdminChangeLogView,
     AdminFlagListView,
-    AdminSettingsView,
     AdminFlagResolveView,
+    AdminSettingsView,
     AuditLogDetailView,
     AuditLogListView,
     DashboardOrdersByMonthView,
