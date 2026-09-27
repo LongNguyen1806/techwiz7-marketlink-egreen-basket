@@ -1,6 +1,7 @@
 from django.urls import path
 
 from accounts.admin_portal.views_admin_customers import (
+    AdminCustomerExportView,
     AdminCustomerActivateView,
     AdminCustomerDeactivateView,
     AdminCustomerDeactivationImpactView,
@@ -8,6 +9,7 @@ from accounts.admin_portal.views_admin_customers import (
     AdminCustomerListView,
 )
 from accounts.admin_portal.views_admin_farmers import (
+    AdminFarmerExportView,
     AdminFarmerApproveView,
     AdminFarmerDetailView,
     AdminFarmerListView,
@@ -45,7 +47,17 @@ urlpatterns = [
         AdminFarmerReinstateView.as_view(),
         name="admin-farmer-reinstate",
     ),
+    path(
+        "admin/farmers/export/",
+        AdminFarmerExportView.as_view(),
+        name="admin-farmer-export",
+    ),
     path("admin/customers/", AdminCustomerListView.as_view(), name="admin-customer-list"),
+    path(
+        "admin/customers/export/",
+        AdminCustomerExportView.as_view(),
+        name="admin-customer-export",
+    ),
     path(
         "admin/customers/<int:id>/",
         AdminCustomerDetailView.as_view(),

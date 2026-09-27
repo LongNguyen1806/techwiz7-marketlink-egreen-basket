@@ -522,17 +522,32 @@ def test_the_phone_is_stored_in_its_canonical_form(admin_client, farmer):
 
 
 @pytest.mark.django_db
-def test_a_phone_belonging_to_another_account_is_a_field_error(admin_client, farmer, customer_user):
-    other = customer_user.customer_profile
+def test_a_phone_belonging_to_another_stall_is_a_field_error(admin_client, farmer, make_farmer):
+    other = make_farmer(email="rival@marketlink.test", stall_name="Rival Stall")
 
     response = admin_client.patch(
         reverse(DETAIL_URL, args=[farmer.user_id]), {"phone": other.phone}, format="json"
     )
 
-    # The UNIQUE index would raise an IntegrityError and surface as a 500; D-028 wants a 400
+    # The UNIQUE index would raise an IntegrityError and surface as a 500; this wants a 400
     # the form can show under the phone field.
     assert response.status_code == 400
     assert "phone" in response.data["errors"]
+
+
+@pytest.mark.django_db
+def test_a_phone_used_by_a_shopper_is_allowed_on_a_stall(admin_client, farmer, customer_user):
+    shopper_phone = customer_user.customer_profile.phone
+
+    response = admin_client.patch(
+        reverse(DETAIL_URL, args=[farmer.user_id]), {"phone": shopper_phone}, format="json"
+    )
+
+    # The UNIQUE indexes are per table, and registration only checks within a role, so the
+    # admin edit must not be stricter than the form that created the account.
+    assert response.status_code == 200
+    farmer.refresh_from_db()
+    assert farmer.phone == shopper_phone
 
 
 @pytest.mark.django_db
@@ -574,3 +589,76 @@ def test_the_edit_is_recorded_in_the_audit_trail_as_the_admin(admin_client, farm
 @pytest.mark.django_db
 def test_editing_an_unknown_stall_is_a_404(admin_client):
     assert admin_client.patch(reverse(DETAIL_URL, args=[9999]), {}, format="json").status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Paging a sorted list. Every allow-list entry carries a tiebreak for this reason: without
+# one, rows sharing a sort value come back in whatever order the database felt like, and a
+# row can appear on two pages or on none.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_paging_a_sorted_list_shows_every_row_exactly_once(admin_client, farmer, make_farmer):
+    # All the same status on purpose: sorting by it leaves the database free to order the
+    # ties however it likes, so only the tiebreak keeps the pages stable.
+    for index in range(7):
+        make_farmer(email=f"tie{index}@marketlink.test", stall_name=f"Stall {index}")
+
+    seen = []
+    for page in (1, 2):
+        response = admin_client.get(
+            reverse(LIST_URL), {"ordering": "status", "page": page, "page_size": 5}
+        )
+        assert response.status_code == 200
+        seen.extend(row["id"] for row in response.data["data"]["results"])
+
+    total = admin_client.get(reverse(LIST_URL)).data["data"]["count"]
+    assert len(seen) == len(set(seen)), "a row was served on two pages"
+    assert len(seen) == total, "a row was missed between pages"
+
+
+@pytest.mark.django_db
+def test_descending_reverses_the_whole_sort(admin_client, farmer, make_farmer):
+    make_farmer(email="aaa@marketlink.test", stall_name="Apple Stall")
+    make_farmer(email="zzz@marketlink.test", stall_name="Zucchini Stall")
+
+    def ids(ordering):
+        return [
+            row["id"]
+            for row in admin_client.get(reverse(LIST_URL), {"ordering": ordering})
+            .data["data"]["results"]
+        ]
+
+    # Not just the first column flipped: the two orders must be exact mirrors.
+    assert ids("-stall_name") == list(reversed(ids("stall_name")))
+
+
+@pytest.mark.django_db
+def test_the_stall_list_downloads_as_csv(admin_client, farmer, admin_user):
+    response = admin_client.get(reverse("admin-farmer-export"))
+
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith("text/csv")
+    assert "attachment" in response["Content-Disposition"]
+
+    body = b"".join(response.streaming_content).decode("utf-8")
+    # The byte-order mark keeps Excel from opening Vietnamese names as mojibake.
+    assert body.startswith("﻿")
+    assert "stall_name" in body
+    assert farmer.stall_name in body
+
+    entry = AuditLog.objects.get(action=AuditAction.EXPORT_DATA)
+    assert entry.details["export"] == "farmers"
+
+
+@pytest.mark.django_db
+def test_the_export_obeys_the_same_filters_as_the_list(admin_client, farmer, make_farmer):
+    make_farmer(email="other@marketlink.test", stall_name="Other Stall")
+
+    response = admin_client.get(reverse("admin-farmer-export"), {"q": "Other"})
+    body = b"".join(response.streaming_content).decode("utf-8")
+
+    # What downloads has to be what is on screen, or the file quietly says something else.
+    assert "Other Stall" in body
+    assert farmer.stall_name not in body

@@ -128,3 +128,16 @@ def test_audit_logs_sort_by_action_and_reject_unknown_columns(admin_client, admi
     assert actions("action") == sorted(actions("action"))
     assert actions("-action") == sorted(actions("action"), reverse=True)
     assert admin_client.get(reverse(LIST_URL_NAME), {"ordering": "user_agent"}).status_code == 400
+
+
+@pytest.mark.django_db
+def test_sorting_by_actor_tolerates_events_with_no_user(admin_client, admin_user):
+    # LOGIN_FAILED and ACCESS_DENIED are recorded with no user at all, so the actor column
+    # has NULLs in it and must not break the sort.
+    AuditLog.objects.create(user=None, action=AuditAction.LOGIN_FAILED, status_code=401)
+    AuditLog.objects.create(user=admin_user, action=AuditAction.LOGIN, status_code=200)
+
+    for ordering in ("user", "-user"):
+        response = admin_client.get(reverse(LIST_URL_NAME), {"ordering": ordering})
+        assert response.status_code == 200
+        assert response.data["data"]["count"] >= 2

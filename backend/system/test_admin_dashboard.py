@@ -1,4 +1,5 @@
-from datetime import timedelta
+from calendar import monthrange
+from datetime import datetime, time, timedelta
 
 import pytest
 from django.urls import reverse
@@ -126,3 +127,65 @@ def test_a_pending_farmer_row_carries_its_counts(admin_client, make_farmer, mark
 @pytest.mark.django_db
 def test_customer_cannot_reach_the_dashboard(customer_client):
     assert customer_client.get(reverse(URL_NAME)).status_code == 403
+
+
+# ------------------------------------------------- orders per calendar month
+# The dashboard chart steps month by month, so this endpoint has to give whole calendar
+# months, including the ones with nothing in them.
+
+MONTH_URL_NAME = "admin-dashboard-orders-by-day"
+
+
+@pytest.mark.django_db
+def test_month_defaults_to_the_current_one_and_has_a_bucket_per_day(admin_client):
+    today = timezone.localdate()
+    data = admin_client.get(reverse(MONTH_URL_NAME)).data["data"]
+
+    assert data["month"] == today.strftime("%Y-%m")
+    assert len(data["days"]) == monthrange(today.year, today.month)[1]
+    assert data["days"][0]["date"] == today.replace(day=1)
+
+
+@pytest.mark.django_db
+def test_february_of_a_leap_year_has_twenty_nine_buckets(admin_client):
+    data = admin_client.get(reverse(MONTH_URL_NAME), {"month": "2024-02"}).data["data"]
+
+    assert data["month"] == "2024-02"
+    assert len(data["days"]) == 29
+    assert data["total"] == 0
+
+
+@pytest.mark.django_db
+def test_a_month_counts_only_its_own_orders(admin_client, make_order):
+    today = timezone.localdate()
+    first_of_this_month = today.replace(day=1)
+    inside = make_order(pickup_date=today)
+    outside = make_order(pickup_date=today)
+    Order.objects.filter(pk=inside.pk).update(
+        created_at=timezone.make_aware(datetime.combine(first_of_this_month, time(9, 0)))
+    )
+    # One second before the month began: the boundary must exclude it.
+    Order.objects.filter(pk=outside.pk).update(
+        created_at=timezone.make_aware(datetime.combine(first_of_this_month, time.min))
+        - timedelta(seconds=1)
+    )
+
+    data = admin_client.get(
+        reverse(MONTH_URL_NAME), {"month": first_of_this_month.strftime("%Y-%m")}
+    ).data["data"]
+
+    assert data["total"] == 1
+    assert data["days"][0]["count"] == 1
+
+
+@pytest.mark.django_db
+def test_a_month_that_is_not_a_month_is_rejected(admin_client):
+    for value in ("2026-13", "September", "2026/09", "1999-01", "9999-01"):
+        response = admin_client.get(reverse(MONTH_URL_NAME), {"month": value})
+        assert response.status_code == 400, value
+        assert "month" in response.data["errors"]
+
+
+@pytest.mark.django_db
+def test_customer_cannot_read_the_month_chart(customer_client):
+    assert customer_client.get(reverse(MONTH_URL_NAME)).status_code == 403

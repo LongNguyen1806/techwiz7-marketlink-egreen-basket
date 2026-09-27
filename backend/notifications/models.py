@@ -27,6 +27,8 @@ class NotificationType(models.TextChoices):
     MARKET_SCHEDULE_CHANGED = "MARKET_SCHEDULE_CHANGED", "Market Schedule Changed"
     # Sent to both sides when Admin closes a market (AD-17), carrying the reason they gave.
     MARKET_CLOSED = "MARKET_CLOSED", "Market Closed"
+    # Sent to the stall when Admin takes one of its products down (AD-21b).
+    PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Product Blocked by Admin"
 
 
 

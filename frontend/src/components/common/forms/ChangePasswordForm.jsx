@@ -4,7 +4,7 @@ import { Button } from '../../ui/Button';
 import { FormAlert } from './FormAlert';
 import { FormField } from './FormField';
 import { useServerErrors } from './useServerErrors';
-import { useAuth } from '../../../hooks/authentication/useAuth';
+import { useChangePassword } from '../../../hooks/authentication/useAuth';
 import { changePasswordSchema } from '../../../services/common/auth.schemas';
 import './ChangePasswordForm.css';
 
@@ -12,7 +12,8 @@ const FIELDS = ['current_password', 'new_password', 'confirm_password'];
 
 
 export function ChangePasswordForm() {
-  const { changePassword, changePasswordPending } = useAuth();
+  // The form shows its own errors (FormAlert + fields), so the global toast is off.
+  const changePassword = useChangePassword({ silent: true });
   const { formError, report, clear } = useServerErrors(FIELDS);
   const {
     register,
@@ -28,7 +29,7 @@ export function ChangePasswordForm() {
   const onSubmit = handleSubmit(async (values) => {
     clear();
     try {
-      await changePassword(values);
+      await changePassword.mutateAsync(values);
       reset();
     } catch (error) {
       report(error, setError);
@@ -64,7 +65,7 @@ export function ChangePasswordForm() {
         {...register('confirm_password')}
       />
 
-      <Button type="submit" loading={changePasswordPending}>
+      <Button type="submit" loading={changePassword.isPending}>
         Change password
       </Button>
     </form>

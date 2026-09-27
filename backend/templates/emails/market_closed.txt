@@ -1,0 +1,12 @@
+{{ title }}
+
+{{ message }}
+{% if admin_message %}
+A note from the MarketLink team:
+
+{{ admin_message }}
+{% endif %}
+You can review what this affects here: {{ action_url }}
+
+--
+MarketLink

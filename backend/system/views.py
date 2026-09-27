@@ -16,9 +16,9 @@ from marketlink_core.constants import (
 from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
-from system.dashboard import dashboard_snapshot
+from system.dashboard import dashboard_snapshot, month_bounds, orders_per_month
 from system.excel import XLSX_CONTENT_TYPE, build_report_workbook, report_filename
-from system.models import AuditAction
+from system.models import AuditAction, FlagTarget
 from system.reports import parse_report_range, report_summary
 from system.selectors import (
     AUDIT_LOG_ORDERING,
@@ -26,10 +26,22 @@ from system.selectors import (
     build_change_log,
     list_audit_logs,
 )
+from marketlink_core.constants import (
+    BOOKING_HORIZON_DAYS,
+    MAX_PLACED_ORDERS_PER_CUSTOMER,
+    MAX_UPLOAD_MB,
+)
+from orders.admin_selectors import at_risk_threshold, at_risk_window_days
+from system.flags import list_flags, raise_flag, resolve_flag, target_previews
 from system.serializers import (
+    AdminSettingsSerializer,
     AuditLogReadSerializer,
+    FlagResolutionSerializer,
+    ModerationFlagReadSerializer,
+    ModerationFlagWriteSerializer,
     ChangeLogEntrySerializer,
     DashboardSerializer,
+    OrdersByMonthSerializer,
     ReportSummarySerializer,
 )
 from system.services import log_request_event
@@ -94,6 +106,29 @@ class DashboardView(APIView):
     def get(self, request) -> Response:
         serializer = DashboardSerializer(dashboard_snapshot())
         return api_response(message="OK", request=request, data=serializer.data)
+
+
+class DashboardOrdersByMonthView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "month",
+                str,
+                description="Calendar month as YYYY-MM. Defaults to the current month.",
+            )
+        ],
+        responses={200: OrdersByMonthSerializer},
+        summary="Orders per day for one calendar month",
+    )
+    def get(self, request) -> Response:
+        # Its own endpoint rather than a parameter on the dashboard: stepping through months
+        # would otherwise refetch the totals, the queue and the pending stalls every click.
+        first_day = month_bounds(request.query_params.get("month"))
+        return api_response(
+            message="OK", request=request, data=orders_per_month(first_day=first_day)
+        )
 
 
 class ReportSummaryView(APIView):
@@ -201,13 +236,137 @@ class AdminChangeLogView(APIView):
                 "Unknown record type.",
                 errors={"model": [f"Choose one of: {', '.join(sorted(TRACKED_MODELS))}."]},
             )
-        if not tracked.objects.filter(pk=id).exists():
-            # Without this an id that never existed would look like a record with no history.
-            raise ResourceNotFoundError("Record not found.")
+        # The record itself is not required to still exist: history rows outlive it, and a
+        # slot deleted by FA-10 or an item removed by FA-34 still has a story worth reading.
+        # An id that never existed has no history either, which is the 404 below.
+        entries = build_change_log(tracked, id, limit=CHANGE_LOG_LIMIT)
+        if not entries:
+            raise ResourceNotFoundError("No history for this record.")
 
-        # build_change_log returns oldest first because that is how a history reads; the
-        # screen wants the most recent change at the top.
-        entries = list(reversed(build_change_log(tracked, id)))[:CHANGE_LOG_LIMIT]
+        # build_change_log reads oldest first because that is how a history is worked out;
+        # the screen wants the most recent change at the top.
+        entries = list(reversed(entries))
         return api_response(
             message="OK", request=request, data=ChangeLogEntrySerializer(entries, many=True).data
+        )
+
+
+class AdminFlagListView(ListAPIView):
+    """The follow-up queue, oldest first."""
+
+    permission_classes = [IsAdmin]
+    serializer_class = ModerationFlagReadSerializer
+
+    def get_queryset(self):
+        raw = self.request.query_params.get("resolved")
+        resolved = {"true": True, "false": False}.get((raw or "").lower(), False)
+        return list_flags(
+            resolved=resolved,
+            target_type=self.request.query_params.get("target_type"),
+            q=self.request.query_params.get("q"),
+        )
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(
+            page, many=True, context={"target_previews": target_previews(page)}
+        )
+        return self.paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "resolved", bool, description="Default false: the open queue."
+            ),
+            # Unpacked rather than list(...): this class now defines a method called `list`,
+            # which shadows the builtin inside the class body.
+            OpenApiParameter("target_type", str, enum=[*FlagTarget.values]),
+            OpenApiParameter(
+                "q", str, description="Matches the note, the resolution, or the target id."
+            ),
+        ],
+        summary="Content waiting for a decision",
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=ModerationFlagWriteSerializer,
+        responses={201: ModerationFlagReadSerializer, 400: None},
+        summary="Add something to the queue",
+    )
+    def post(self, request) -> Response:
+        serializer = ModerationFlagWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        flag = raise_flag(**serializer.validated_data, actor=request.user)
+        log_request_event(
+            request,
+            action=AuditAction.CONTENT_FLAGGED,
+            status_code=201,
+            details={
+                "target_type": flag.target_type,
+                "target_id": flag.target_id,
+                "note": flag.note,
+            },
+        )
+        return api_response(
+            message="Added to the queue.",
+            request=request,
+            data=ModerationFlagReadSerializer(flag).data,
+            status_code=201,
+        )
+
+
+class AdminFlagResolveView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        request=FlagResolutionSerializer,
+        responses={200: ModerationFlagReadSerializer, 400: None, 404: None},
+        summary="Mark a queue item as dealt with",
+    )
+    def post(self, request, id: int) -> Response:
+        serializer = FlagResolutionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        flag = resolve_flag(
+            flag_id=id, resolution=serializer.validated_data["resolution"], actor=request.user
+        )
+        log_request_event(
+            request,
+            action=AuditAction.CONTENT_FLAG_RESOLVED,
+            status_code=200,
+            details={
+                "target_type": flag.target_type,
+                "target_id": flag.target_id,
+                "resolution": flag.resolution,
+            },
+        )
+        return api_response(
+            message="Marked as dealt with.",
+            request=request,
+            data=ModerationFlagReadSerializer(flag).data,
+        )
+
+
+class AdminSettingsView(APIView):
+    """What limits are in force right now.
+
+    Read only on purpose: these come from the environment, so changing one is a deploy, not a
+    form submission. The screen exists because an admin otherwise has no way to find out what
+    the platform is enforcing.
+    """
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(responses={200: AdminSettingsSerializer}, summary="Limits in force")
+    def get(self, request) -> Response:
+        data = {
+            "booking_horizon_days": BOOKING_HORIZON_DAYS,
+            "max_placed_orders_per_customer": MAX_PLACED_ORDERS_PER_CUSTOMER,
+            "max_upload_mb": MAX_UPLOAD_MB,
+            "at_risk_threshold": at_risk_threshold(),
+            "at_risk_window_days": at_risk_window_days(),
+        }
+        return api_response(
+            message="OK", request=request, data=AdminSettingsSerializer(data).data
         )

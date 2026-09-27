@@ -76,7 +76,15 @@ def list_pending_farmers(*, limit: int) -> list[FarmerProfile]:
     return list(list_farmers_for_admin(status=FarmerStatus.PENDING)[:limit])
 
 
+ORDER_WEIGHT = 2
+REVIEW_WEIGHT = 1
+
 FARMER_ORDERING = {
+    "popular": (
+        "-popularity",
+        F("rating_avg").desc(nulls_last=True),
+        "stall_name",
+    ),
     "rating": (F("rating_avg").desc(nulls_last=True), "-rating_count", "stall_name"),
     "in_stock": ("-in_stock_product_count", "stall_name"),
     "name": ("stall_name",),
@@ -115,7 +123,20 @@ def public_farmer_base() -> QuerySet[FarmerProfile]:
         .annotate(
             rating_avg=Avg("orders__farmer_review__rating", filter=visible_review),
             rating_count=Count("orders__farmer_review", filter=visible_review, distinct=True),
+            completed_order_count=Count(
+                "orders",
+                filter=Q(orders__status=OrderStatus.COMPLETED),
+                distinct=True,
+            ),
             in_stock_product_count=_in_stock_subquery(),
+        )
+        .annotate(
+            # Annotated separately: it reads the two counts above, which do not exist yet in
+            # the same annotate() call.
+            popularity=(
+                F("completed_order_count") * ORDER_WEIGHT
+                + F("rating_count") * REVIEW_WEIGHT
+            )
         )
     )
 
@@ -146,7 +167,8 @@ def public_farmers(
             distance=distance_km(lat=lat, lng=lng, lat_field="latitude", lng_field="longitude")
         )
     # ordering=distance needs coordinates; without them it falls back to name.
-    key = ordering if ordering in FARMER_ORDERING else "name"
+    # No explicit sort means the home page, which wants the busiest stalls first.
+    key = ordering if ordering in FARMER_ORDERING else "popular"
     if key == "distance" and coordinates is None:
         key = "name"
     return queryset.distinct().order_by(*FARMER_ORDERING[key])

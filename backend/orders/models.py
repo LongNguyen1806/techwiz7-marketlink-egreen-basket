@@ -54,6 +54,7 @@ class ChangeReason:
     FARMER_SUSPENDED_BY_ADMIN = "FARMER_SUSPENDED_BY_ADMIN"
     CUSTOMER_LOCKED_BY_ADMIN = "CUSTOMER_LOCKED_BY_ADMIN"
     MARKET_CLOSED_BY_ADMIN = "MARKET_CLOSED_BY_ADMIN"
+    PRODUCT_BLOCKED_BY_ADMIN = "PRODUCT_BLOCKED_BY_ADMIN"
 
 
 MONEY_FIELD_KWARGS = {"max_digits": 10, "decimal_places": 2}
@@ -109,6 +110,7 @@ class Order(BaseModel):
             models.Index(
                 fields=["market", "status", "pickup_date"], name="ord_market_status_date_idx"
             ),
+            models.Index(fields=["pickup_date"], name="ord_pickup_date_idx"),
             models.Index(fields=["created_at"], name="ord_created_idx"),
         ]
         constraints = [

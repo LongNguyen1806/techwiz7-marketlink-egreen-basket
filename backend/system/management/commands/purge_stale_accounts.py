@@ -15,7 +15,9 @@ from django.utils import timezone
 
 from accounts.models import FarmerStatus
 from marketlink_core.policies.roles import RoleCode
+from favorites.models import FavoriteFarmer, FavoriteProduct
 from orders.models import Order
+from reviews.models import ProductReview
 from system.models import AuditAction
 from system.services import log_security_event
 
@@ -24,16 +26,24 @@ User = get_user_model()
 
 
 def stale_accounts(*, months: int = DEFAULT_MONTHS):
-    """Accounts with no sign-in for `months` and no order ever placed or received.
+    """Accounts showing no sign of use for `months`: no sign-in, no order, nothing saved.
 
     Kept deliberately narrow: shoppers, and stalls that were never approved. An approved
     stall is left alone even with no orders yet - it may have listed produce and be waiting
     for its first customer. Admins are never touched.
+
+    An idle sign-in date is not enough on its own. Until sign-ins began to be recorded,
+    last_login was NULL for everybody, so a shopper who visits daily to browse and save
+    favourites - but has never ordered - would have looked exactly like an abandoned
+    sign-up. Favourites and reviews are checked too, as the other traces of a real person.
     """
     cutoff = timezone.now() - timedelta(days=months * 30)
 
     placed = Order.objects.filter(customer_id=OuterRef("pk"))
     received = Order.objects.filter(farmer_id=OuterRef("pk"))
+    saved_farmers = FavoriteFarmer.objects.filter(customer_id=OuterRef("pk"))
+    saved_products = FavoriteProduct.objects.filter(customer_id=OuterRef("pk"))
+    reviewed = ProductReview.objects.filter(order_item__order__customer_id=OuterRef("pk"))
 
     return (
         User.objects.filter(
@@ -49,8 +59,20 @@ def stale_accounts(*, months: int = DEFAULT_MONTHS):
         )
         .exclude(is_superuser=True)
         .exclude(is_staff=True)
-        .annotate(has_placed=Exists(placed), has_received=Exists(received))
-        .filter(has_placed=False, has_received=False)
+        .annotate(
+            has_placed=Exists(placed),
+            has_received=Exists(received),
+            has_saved_farmers=Exists(saved_farmers),
+            has_saved_products=Exists(saved_products),
+            has_reviews=Exists(reviewed),
+        )
+        .filter(
+            has_placed=False,
+            has_received=False,
+            has_saved_farmers=False,
+            has_saved_products=False,
+            has_reviews=False,
+        )
         .select_related("role")
         .order_by("id")
     )

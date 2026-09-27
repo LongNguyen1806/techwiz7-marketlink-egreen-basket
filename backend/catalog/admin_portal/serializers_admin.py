@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from accounts.admin_portal.serializers_admin import OpenOrderBreakdownSerializer
 from accounts.models import FarmerStatus
 from catalog.models import Category, Product
 
@@ -65,6 +66,8 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     rating_avg = serializers.FloatField(read_only=True)
     rating_count = serializers.IntegerField(read_only=True, default=0)
     is_favorite = serializers.SerializerMethodField()
+    hidden_by_email = serializers.EmailField(source="hidden_by.email", read_only=True, default=None)
+    open_order_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -83,7 +86,11 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "availability",
             "is_archived",
             "is_hidden_by_admin",
+            "moderation_action",
             "hidden_reason",
+            "hidden_at",
+            "hidden_by_email",
+            "open_order_count",
             "category",
             "farmer",
             "markets",
@@ -94,6 +101,9 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_open_order_count(self, product) -> int:
+        return self.context.get("open_order_counts", {}).get(product.pk, 0)
 
     @property
     def _context_maps(self) -> tuple[dict, dict]:
@@ -130,3 +140,15 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.BooleanField(allow_null=True))
     def get_is_favorite(self, product):
         return None
+
+
+class ProductBlockImpactSerializer(serializers.Serializer):
+    """What a takedown would cost.
+
+    The breakdown component is the one AD-04 already publishes, not a copy of it: two
+    identically named components with different identities make drf-spectacular emit a
+    warning and then pick one of them at random for both.
+    """
+
+    open_orders = OpenOrderBreakdownSerializer()
+    affected_customers = serializers.IntegerField()

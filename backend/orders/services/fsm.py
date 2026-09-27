@@ -38,12 +38,17 @@ SYSTEM_REASON_TEXT = {
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN: "The farmer's stall has been suspended by an administrator.",
     ChangeReason.CUSTOMER_LOCKED_BY_ADMIN: "The customer's account has been locked by an administrator.",
     ChangeReason.MARKET_CLOSED_BY_ADMIN: "The market has been closed by an administrator.",
+    ChangeReason.PRODUCT_BLOCKED_BY_ADMIN: "An item in this order was removed by an administrator.",
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
 
 # Admin never types a reason into an order (D-033): each admin cascade stamps a fixed system
 # code. The first code of each group is the default, so AD-07 / AD-12 need not pass one.
-ADMIN_DECLINE_REASONS = (ChangeReason.FARMER_SUSPENDED_BY_ADMIN, ChangeReason.MARKET_CLOSED_BY_ADMIN)
+ADMIN_DECLINE_REASONS = (
+    ChangeReason.FARMER_SUSPENDED_BY_ADMIN,
+    ChangeReason.MARKET_CLOSED_BY_ADMIN,
+    ChangeReason.PRODUCT_BLOCKED_BY_ADMIN,
+)
 ADMIN_CANCEL_REASONS = (ChangeReason.CUSTOMER_LOCKED_BY_ADMIN,)
 
 

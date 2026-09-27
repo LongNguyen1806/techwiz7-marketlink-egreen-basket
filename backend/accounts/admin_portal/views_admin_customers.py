@@ -24,6 +24,10 @@ from orders.admin_selectors import recent_order_ids
 from orders.customer.serializers_customer import OrderSummaryReadSerializer
 from orders.selectors import order_summary_queryset
 from system.models import AuditAction
+from django.http import StreamingHttpResponse
+from drf_spectacular.types import OpenApiTypes
+
+from system.csv_export import CSV_CONTENT_TYPE, stream_csv
 from system.services import log_request_event
 from accounts.selectors import ADMIN_CUSTOMER_ORDERING
 from accounts.services.profile_admin_service import update_customer_profile
@@ -180,3 +184,41 @@ class AdminCustomerActivateView(_CustomerActionView):
         activate_customer(customer_id=_require_customer(id))
         self._audit(request, action=AuditAction.CUSTOMER_ACTIVATED, customer_id=id, details={})
         return self._row(request, id, message="Customer activated.")
+
+
+class AdminCustomerExportView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        responses={(200, CSV_CONTENT_TYPE): OpenApiTypes.BINARY},
+        summary="Download the customer list as CSV",
+    )
+    def get(self, request) -> StreamingHttpResponse:
+        params = request.query_params
+        customers = list_customers_for_admin(
+            is_active=_flag(params.get("is_active")),
+            q=params.get("q"),
+            at_risk=_flag(params.get("at_risk")),
+            ordering=params.get("ordering"),
+        ).select_related("user")
+
+        log_request_event(
+            request,
+            action=AuditAction.EXPORT_DATA,
+            status_code=200,
+            details={"export": "customers", "row_count": customers.count()},
+        )
+        return stream_csv(
+            filename="customers",
+            headers=[
+                "id", "full_name", "phone", "email", "date_joined", "is_active",
+                "total_orders", "open_orders", "no_show_count", "at_risk",
+            ],
+            rows=(
+                [
+                    c.user_id, c.full_name, c.phone, c.user.email, c.user.date_joined.date(),
+                    c.user.is_active, c.total_orders, c.open_orders, c.no_show_count, c.at_risk,
+                ]
+                for c in customers
+            ),
+        )

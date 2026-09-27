@@ -15,16 +15,18 @@ FARMER_FIELDS = ("stall_name", "contact_person", "phone", "description", "order_
 CUSTOMER_FIELDS = ("full_name", "phone", "address")
 
 
-def _check_phone_is_free(*, phone: str, exclude_user_id: int) -> None:
-    """D-028: one phone number, one account - across both profile tables.
+def _check_phone_is_free(*, phone: str, exclude_user_id: int, model) -> None:
+    """One phone number per account, checked the same way registration checks it.
 
-    The database UNIQUE index would also catch this, but as an IntegrityError that surfaces
-    as a 500. Checking first turns it into a field error on the form.
+    Scoped to the one profile table, because that is where the UNIQUE index lives and what
+    AU-01 / AU-02 enforce. Checking both tables here was stricter than the form that created
+    the account: a number could be registered in each role, yet the admin could not correct
+    a profile to it.
+
+    The index would catch a duplicate anyway, but as an IntegrityError surfacing as a 500.
+    Checking first turns it into a field error on the form.
     """
-    taken = (
-        FarmerProfile.objects.filter(phone=phone).exclude(user_id=exclude_user_id).exists()
-        or CustomerProfile.objects.filter(phone=phone).exclude(user_id=exclude_user_id).exists()
-    )
+    taken = model.objects.filter(phone=phone).exclude(user_id=exclude_user_id).exists()
     if taken:
         raise BusinessValidationError(
             "That phone number already belongs to another account.",
@@ -40,7 +42,9 @@ def _apply(profile, *, validated: dict, allowed: tuple[str, ...], actor) -> list
         value = validated[field]
         if field == "phone":
             value = normalize_phone(value)
-            _check_phone_is_free(phone=value, exclude_user_id=profile.user_id)
+            _check_phone_is_free(
+                phone=value, exclude_user_id=profile.user_id, model=type(profile)
+            )
         if getattr(profile, field) == value:
             continue
         setattr(profile, field, value)

@@ -1,3 +1,4 @@
+from django.contrib.auth.models import update_last_login
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -59,6 +60,7 @@ class LoginView(RecordableThrottleViewMixin, APIView):
             raise
         log_request_event(request, action=AuditAction.LOGIN, status_code=200, user=user,
                            details=self.audit_details or None)
+        update_last_login(None, user)
         return api_response(message="Login successful", data=build_auth_payload(user), request=request)
 
 

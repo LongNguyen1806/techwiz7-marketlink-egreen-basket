@@ -13,8 +13,18 @@ class ReviewType(models.TextChoices):
     FARMER = "FARMER", "Farmer"
 
 
-def _index(model, review_type: str, rating: int | None, is_hidden: bool | None) -> QuerySet:
+def _index(
+    model,
+    review_type: str,
+    rating: int | None,
+    is_hidden: bool | None,
+    review_id: int | None = None,
+) -> QuerySet:
     queryset = model.objects.all()
+    # The two tables have separate id spaces, so an id is only meaningful together with the
+    # kind; the caller always passes both or neither.
+    if review_id is not None:
+        queryset = queryset.filter(pk=review_id)
     if rating is not None:
         queryset = queryset.filter(rating=rating)
     if is_hidden is not None:
@@ -38,17 +48,22 @@ ADMIN_REVIEW_ORDERING["newest"] = ("-created_at", "-id")
 def list_reviews_for_admin(
     *,
     review_type: str | None = None,
+    review_id: int | None = None,
     rating: int | None = None,
     is_hidden: bool | None = None,
     ordering: str | None = None,
 ) -> QuerySet:
     # The two review kinds live in separate tables, so AD-22 pages over a UNION of their
     # ids and lets hydrate_reviews() load the rows for the page only.
+    # An id without a kind would match a row in each table, so asking for one by id narrows
+    # to that kind as well.
+    if review_id is not None and review_type is None:
+        review_id = None
     parts = []
     if review_type in (None, ReviewType.PRODUCT):
-        parts.append(_index(ProductReview, ReviewType.PRODUCT, rating, is_hidden))
+        parts.append(_index(ProductReview, ReviewType.PRODUCT, rating, is_hidden, review_id))
     if review_type in (None, ReviewType.FARMER):
-        parts.append(_index(FarmerReview, ReviewType.FARMER, rating, is_hidden))
+        parts.append(_index(FarmerReview, ReviewType.FARMER, rating, is_hidden, review_id))
     combined = parts[0] if len(parts) == 1 else parts[0].union(*parts[1:])
     return combined.order_by(
         *resolve_ordering(ordering, allowed=ADMIN_REVIEW_ORDERING, default="newest")

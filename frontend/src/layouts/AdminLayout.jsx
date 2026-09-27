@@ -33,13 +33,15 @@ const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/farmers', label: 'Farmers', icon: Warehouse, end: false },
   { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
+  { to: '/admin/orders', label: 'Orders', icon: ClipboardList, end: false },
+  { to: '/admin/queue', label: 'Queue', icon: ShieldAlert, end: false },
   { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree, end: false },
   { to: '/admin/moderation', label: 'Moderation', icon: ShieldAlert, end: false },
   { to: '/admin/reports', label: 'Reports', icon: FileBarChart, end: false },
   { to: '/admin/announcements', label: 'Announcements', icon: Megaphone, end: false },
   { to: '/admin/audit-logs', label: 'System log', icon: ScrollText, end: false },
-  { to: '/admin/settings', label: 'Settings', icon: Settings, end: false },
+  { to: '/admin/limits', label: 'Limits', icon: Settings, end: false },
 ];
 
 function SideNav({ collapsed }                        ) {

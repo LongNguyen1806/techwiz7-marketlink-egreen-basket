@@ -122,6 +122,16 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         # Both sides read this one, so the link goes to the list each role actually has.
         target_url="{target_url}",
         required=("market_name", "order_count", "reason", "target_url"),
+        email_template="market_closed",
+    ),
+    NotificationType.PRODUCT_BLOCKED: NotificationSpec(
+        title="{product_name} was taken down",
+        message=(
+            "An administrator took down {product_name} because it violated platform policy. "
+            "Any open orders containing this item were cancelled."
+        ),
+        target_url="{target_url}",
+        required=("product_name", "target_url"),
     ),
     NotificationType.MARKET_SCHEDULE_CHANGED: NotificationSpec(
         title="{market_name} changed its schedule",

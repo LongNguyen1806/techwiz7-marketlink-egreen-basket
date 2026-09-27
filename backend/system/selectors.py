@@ -13,7 +13,7 @@ from django.utils.dateparse import parse_date
 
 from rest_framework import serializers
 
-from accounts.models import FarmerProfile
+from accounts.models import CustomerProfile, FarmerProfile
 from catalog.models import Product
 from marketlink_core.ordering import both_directions, resolve_ordering
 from markets.models import FarmerClosure, FarmerMarket, PickupSlot
@@ -73,6 +73,7 @@ def list_audit_logs(
 # Key used by the Admin API / UI -> tracked model.
 TRACKED_MODELS: dict[str, type[Model]] = {
     "farmer_profile": FarmerProfile,
+    "customer_profile": CustomerProfile,
     "product": Product,
     "order": Order,
     "order_item": OrderItem,
@@ -108,13 +109,25 @@ def _json_safe(value: Any) -> Any:
     return str(value)
 
 
-def build_change_log(model: type[Model], object_id: int) -> list[dict[str, Any]]:
-    """Every change of one record, oldest first, with the changed fields (old -> new)."""
-    records = list(
+def build_change_log(
+    model: type[Model], object_id: int, *, limit: int | None = None
+) -> list[dict[str, Any]]:
+    """Every change of one record, oldest first, with the changed fields (old -> new).
+
+    With a limit, only the newest `limit` revisions are returned - but one extra row is read
+    behind them, because a revision's changes are worked out by diffing against the one
+    before it. Reading the lot and slicing afterwards would load every stock adjustment a
+    long-lived product ever had.
+    """
+    queryset = (
         model.history.filter(**{model._meta.pk.attname: object_id})
         .select_related("history_user")
-        .order_by("history_date", "history_id")
     )
+    if limit is None:
+        records = list(queryset.order_by("history_date", "history_id"))
+    else:
+        newest = list(queryset.order_by("-history_date", "-history_id")[: limit + 1])
+        records = list(reversed(newest))
     entries: list[dict[str, Any]] = []
     previous = None
     for record in records:
@@ -142,4 +155,5 @@ def build_change_log(model: type[Model], object_id: int) -> list[dict[str, Any]]
             }
         )
         previous = record
-    return entries
+    # The extra row was read only to diff against; it is not part of the answer.
+    return entries[-limit:] if limit is not None else entries

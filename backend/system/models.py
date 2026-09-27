@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
-from marketlink_core.models import CreatedAtModel
+from marketlink_core.models import BaseModel, CreatedAtModel
 
 
 class AuditAction(models.TextChoices):
@@ -21,6 +21,10 @@ class AuditAction(models.TextChoices):
     CUSTOMER_ACTIVATED = "CUSTOMER_ACTIVATED", "Activate Customer"
     PRODUCT_HIDDEN = "PRODUCT_HIDDEN", "Hide Product"
     PRODUCT_RESTORED = "PRODUCT_RESTORED", "Restore Product"
+    # A legal takedown, which also cancels orders - kept apart from a plain hide so the
+    # security log shows which of the two an admin actually did.
+    PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Block Product"
+    PRODUCT_UNBLOCKED = "PRODUCT_UNBLOCKED", "Unblock Product"
     REVIEW_HIDDEN = "REVIEW_HIDDEN", "Hide Review"
     REVIEW_RESTORED = "REVIEW_RESTORED", "Restore Review"
     # v1.8: market management by Admin (AD-15, AD-16, AD-17)
@@ -33,6 +37,8 @@ class AuditAction(models.TextChoices):
     CUSTOMER_UPDATED = "CUSTOMER_UPDATED", "Update Customer Profile"
     # Housekeeping: unused sign-ups removed by the purge command.
     ACCOUNT_PURGED = "ACCOUNT_PURGED", "Purge Stale Accounts"
+    CONTENT_FLAGGED = "CONTENT_FLAGGED", "Flag Content For Review"
+    CONTENT_FLAG_RESOLVED = "CONTENT_FLAG_RESOLVED", "Resolve Flagged Content"
 
 
 class AuditLog(CreatedAtModel):
@@ -63,3 +69,49 @@ class AuditLog(CreatedAtModel):
 
     def __str__(self) -> str:
         return f"{self.action} ({self.user_id})"
+
+
+class FlagTarget(models.TextChoices):
+    PRODUCT = "PRODUCT", "Product"
+    FARMER_REVIEW = "FARMER_REVIEW", "Farmer Review"
+    PRODUCT_REVIEW = "PRODUCT_REVIEW", "Product Review"
+    FARMER = "FARMER", "Farmer"
+    CUSTOMER = "CUSTOMER", "Customer"
+
+
+class ModerationFlag(BaseModel):
+    """Something an admin wants to come back to.
+
+    Deliberately separate from hiding: hiding is a decision already taken, this is a note that
+    a decision still has to be made. Without it the only way to work through the catalogue is
+    to read all of it every time.
+    """
+
+    target_type = models.CharField(max_length=20, choices=FlagTarget.choices)
+    # A plain integer rather than a generic relation: the three id spaces never mix, and this
+    # stays a simple indexed lookup.
+    target_id = models.PositiveBigIntegerField()
+    note = models.CharField(max_length=500)
+    raised_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="flags_raised",
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="flags_resolved",
+    )
+    resolution = models.CharField(max_length=500, null=True, blank=True)
+
+    class Meta:
+        db_table = "moderation_flags"
+        indexes = [
+            models.Index(fields=["target_type", "target_id"], name="flag_target_idx"),
+            models.Index(fields=["resolved_at"], name="flag_resolved_idx"),
+        ]
+        # No conditional unique constraint here: MySQL has no partial indexes, so Django
+        # would skip it silently and leave a rule nobody enforces. "One open flag per thing"
+        # is checked in system.flags.raise_flag instead.
+
+    def __str__(self) -> str:
+        return f"{self.target_type} #{self.target_id}"

@@ -120,6 +120,13 @@ class CustomerProfile(BaseModel):
     )
     deactivation_reason = models.CharField(max_length=500, null=True, blank=True)
 
+    # An admin can now correct these details (AD-10 PATCH), so the record needs the same
+    # before/after trail the stall profile has.
+    history = HistoricalRecords(
+        table_name="customer_profile_histories",
+        bases=[HistoryRequestMeta],
+    )
+
     class Meta:
         db_table = "customer_profiles"
 

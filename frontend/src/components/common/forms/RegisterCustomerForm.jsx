@@ -6,7 +6,7 @@ import { Button } from '../../ui/Button';
 import { FormAlert } from './FormAlert';
 import { FormField } from './FormField';
 import { useServerErrors } from './useServerErrors';
-import { useAuth } from '../../../hooks/authentication/useAuth';
+import { useRegisterCustomer } from '../../../hooks/authentication/useAuth';
 import { registerCustomerSchema } from '../../../services/common/auth.schemas';
 import './RegisterForms.css';
 
@@ -14,7 +14,8 @@ const FIELDS = ['email', 'full_name', 'phone', 'address', 'password', 'confirm_p
 
 
 export function RegisterCustomerForm() {
-  const { registerCustomer, registerCustomerPending } = useAuth();
+  // The form shows its own errors (FormAlert + fields), so the global toast is off.
+  const registerCustomer = useRegisterCustomer({ silent: true });
   const { formError, report, clear } = useServerErrors(FIELDS);
   const {
     register,
@@ -31,7 +32,7 @@ export function RegisterCustomerForm() {
   const onSubmit = handleSubmit(async (values) => {
     clear();
     try {
-      await registerCustomer(values);
+      await registerCustomer.mutateAsync(values);
     } catch (error) {
       report(error, setError);
     }
@@ -105,7 +106,7 @@ export function RegisterCustomerForm() {
           type="submit"
           size="lg"
           className="register-form__submit"
-          loading={registerCustomerPending}
+          loading={registerCustomer.isPending}
         >
           Create my account
         </Button>

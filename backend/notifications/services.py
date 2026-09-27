@@ -8,6 +8,7 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
+from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from rest_framework import serializers
 
@@ -114,15 +115,27 @@ def _absolute_url(path: str | None) -> str | None:
 
 
 def _send_email(to_email: str, subject: str, template: str, context: dict[str, Any]) -> None:
-    text_body = render_to_string(f"emails/{template}.txt", context)
-    html_body = render_to_string(f"emails/{template}.html", context)
+    try:
+        text_body = render_to_string(f"emails/{template}.txt", context)
+    except TemplateDoesNotExist:
+        text_body = None
+    try:
+        html_body = render_to_string(f"emails/{template}.html", context)
+    except TemplateDoesNotExist:
+        html_body = None
+
+    if not text_body and not html_body:
+        logger.warning("No email template found for %s", template)
+        return
+
     email = EmailMultiAlternatives(
         subject=f"[MarketLink] {subject}",
-        body=text_body,
+        body=text_body or "",
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[to_email],
     )
-    email.attach_alternative(html_body, "text/html")
+    if html_body:
+        email.attach_alternative(html_body, "text/html")
     if getattr(settings, "EMAIL_ASYNC", True):
         _email_pool.submit(_deliver, email)
     else:

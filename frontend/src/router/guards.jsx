@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { PageSkeleton } from '../components/feedback/PageSkeleton';
 import { ROUTES, homePathForRole } from '../constants/routes';
-import { useAuth } from '../hooks/authentication/useAuth';
+import { loginPathFor, useAuth, usePortal } from '../hooks/authentication/useAuth';
 
 
 function AccountLoadError({ onRetry }) {
@@ -31,10 +31,12 @@ export function GuestOnly() {
 }
 
 
+// A guest is sent to the sign-in page of the portal they tried to open.
 export function RequireAuth() {
   const location = useLocation();
+  const portal = usePortal();
   const { isAuthenticated, isLoading, isError, refetch } = useAuth();
-  if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  if (!isAuthenticated) return <Navigate to={loginPathFor(portal)} replace state={{ from: location }} />;
   if (isLoading) return <PageSkeleton />;
   if (isError) return <AccountLoadError onRetry={refetch} />;
   return <Outlet />;

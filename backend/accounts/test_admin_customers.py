@@ -432,16 +432,18 @@ def test_admin_corrects_a_shoppers_details(admin_client, customer_user, admin_us
 
 
 @pytest.mark.django_db
-def test_a_shoppers_phone_cannot_collide_with_a_stall(admin_client, customer_user, farmer_user):
+def test_a_shoppers_phone_may_match_a_stall(admin_client, customer_user, farmer_user):
+    stall_phone = farmer_user.farmer_profile.phone
+
     response = admin_client.patch(
         reverse(DETAIL_URL, args=[customer_user.customer_profile.user_id]),
-        {"phone": farmer_user.farmer_profile.phone},
+        {"phone": stall_phone},
         format="json",
     )
 
-    # D-028 is one number per account across both tables, not per table.
-    assert response.status_code == 400
-    assert "phone" in response.data["errors"]
+    # customer_profiles and farmer_profiles carry their own UNIQUE index, and registration
+    # checks only within a role; the admin edit follows the same rule.
+    assert response.status_code == 200
 
 
 @pytest.mark.django_db

@@ -36,6 +36,10 @@ from marketlink_core.exceptions import ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
 from system.models import AuditAction
+from django.http import StreamingHttpResponse
+from drf_spectacular.types import OpenApiTypes
+
+from system.csv_export import CSV_CONTENT_TYPE, stream_csv
 from system.services import log_request_event
 from accounts.selectors import ADMIN_FARMER_ORDERING
 
@@ -232,3 +236,43 @@ class AdminFarmerReinstateView(_FarmerActionView):
         reinstate_farmer(farmer_id=_require_farmer(id), actor=request.user)
         self._audit(request, action=AuditAction.FARMER_REINSTATED, farmer_id=id, details={})
         return self._row(request, id, message="Farmer reinstated.")
+
+
+class AdminFarmerExportView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        responses={(200, CSV_CONTENT_TYPE): OpenApiTypes.BINARY},
+        summary="Download the stall list as CSV",
+    )
+    def get(self, request) -> StreamingHttpResponse:
+        params = request.query_params
+        # Same filters as the list, so what downloads is what is on screen.
+        farmers = list_farmers_for_admin(
+            status=params.get("status"),
+            q=params.get("q"),
+            market_id=_optional_int(params.get("market_id")),
+            ordering=params.get("ordering"),
+        ).select_related("user")
+
+        log_request_event(
+            request,
+            action=AuditAction.EXPORT_DATA,
+            status_code=200,
+            details={"export": "farmers", "row_count": farmers.count()},
+        )
+        return stream_csv(
+            filename="stalls",
+            headers=[
+                "id", "stall_name", "contact_person", "phone", "email",
+                "status", "date_joined", "product_count", "open_order_count",
+            ],
+            rows=(
+                [
+                    farmer.user_id, farmer.stall_name, farmer.contact_person, farmer.phone,
+                    farmer.user.email, farmer.status, farmer.user.date_joined.date(),
+                    farmer.product_count, farmer.open_order_count,
+                ]
+                for farmer in farmers
+            ),
+        )

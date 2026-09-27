@@ -1,0 +1,15 @@
+@import '../../styles/common/page-primitives.css';
+
+.admin-customers-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.admin-customers-page__dialog-field {
+  margin-top: var(--space-2);
+}
+
+.admin-customers-page__risk {
+  margin-left: 0.4rem;
+}

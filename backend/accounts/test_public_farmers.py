@@ -14,6 +14,40 @@ DETAIL_URL = "public-farmer-detail"
 
 
 @pytest.fixture
+def make_completed_order(market, customer_user, category):
+    """A completed order, optionally with a stall review, for testing the ranking."""
+    from datetime import datetime, time, timedelta
+
+    from django.utils import timezone
+
+    from catalog.models import Product, Unit
+    from orders.models import Order, OrderItem, OrderStatus
+    from reviews.models import FarmerReview
+
+    def _make(*, farmer, with_review=False):
+        pickup_date = timezone.localdate() - timedelta(days=1)
+        start = timezone.make_aware(datetime.combine(pickup_date, time(8, 0)))
+        order = Order.objects.create(
+            customer=customer_user, farmer=farmer, market=market,
+            pickup_date=pickup_date, pickup_start_at=start,
+            pickup_end_at=start + timedelta(hours=2), cutoff_at=start - timedelta(hours=12),
+            status=OrderStatus.COMPLETED, total_amount="5.00",
+        )
+        product = Product.objects.create(
+            farmer=farmer, category=category, name=f"Produce {order.pk}",
+            price="2.50", unit=Unit.KG, stock_quantity=5,
+        )
+        OrderItem.objects.create(
+            order=order, product=product, product_name=product.name,
+            unit_price=product.price, unit=product.unit, quantity=2, line_total="5.00",
+        )
+        if with_review:
+            FarmerReview.objects.create(order=order, rating=5, comment="Good stall.")
+        return order
+
+    return _make
+
+@pytest.fixture
 def market(db):
     return Market.objects.create(
         name="Central Market",
@@ -262,3 +296,85 @@ def test_is_favorite_is_filled_in_for_a_signed_in_customer(
 @pytest.mark.django_db
 def test_an_unknown_farmer_is_a_404(api_client):
     assert api_client.get(reverse(DETAIL_URL, args=[9999])).status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# The guest home page ranking. A completed order counts double a review: somebody paid and
+# collected, which is a stronger signal than a free-to-leave comment.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_the_busiest_stall_comes_first_by_default(
+    api_client, approved_farmer, make_farmer, market, make_completed_order
+):
+    quiet = make_farmer(email="quiet@marketlink.test", stall_name="Quiet Stall")
+    quiet.status = FarmerStatus.APPROVED
+    quiet.save(update_fields=["status"])
+    for _ in range(3):
+        make_completed_order(farmer=approved_farmer)
+
+    response = api_client.get(reverse("public-farmer-list"))
+
+    names = [row["stall_name"] for row in response.data["data"]["results"]]
+    assert names[0] == approved_farmer.stall_name
+    assert quiet.stall_name in names
+
+
+@pytest.mark.django_db
+def test_a_sale_counts_double_a_review(
+    api_client, approved_farmer, make_farmer, make_completed_order
+):
+    # Two sales, no reviews: 2x2 = 4.
+    make_completed_order(farmer=approved_farmer)
+    make_completed_order(farmer=approved_farmer)
+
+    # One sale with a review: 1x2 + 1 = 3. Fewer points, so it ranks below.
+    smaller = make_farmer(email="small@marketlink.test", stall_name="Small Stall")
+    smaller.status = FarmerStatus.APPROVED
+    smaller.save(update_fields=["status"])
+    make_completed_order(farmer=smaller, with_review=True)
+
+    names = [
+        row["stall_name"]
+        for row in api_client.get(reverse("public-farmer-list")).data["data"]["results"]
+    ]
+    assert names.index(approved_farmer.stall_name) < names.index("Small Stall")
+
+
+@pytest.mark.django_db
+def test_enough_reviews_can_overturn_a_one_sale_lead(
+    api_client, approved_farmer, make_farmer, make_completed_order
+):
+    # Four sales, nobody reviewed: 4x2 = 8.
+    for _ in range(4):
+        make_completed_order(farmer=approved_farmer)
+
+    # Three sales, every one reviewed: 3x2 + 3 = 9. One fewer sale, but ahead overall -
+    # reviews count for less than a sale, not for nothing.
+    talked_about = make_farmer(email="talked@marketlink.test", stall_name="Talked About")
+    talked_about.status = FarmerStatus.APPROVED
+    talked_about.save(update_fields=["status"])
+    for _ in range(3):
+        make_completed_order(farmer=talked_about, with_review=True)
+
+    names = [
+        row["stall_name"]
+        for row in api_client.get(reverse("public-farmer-list")).data["data"]["results"]
+    ]
+    assert names.index("Talked About") < names.index(approved_farmer.stall_name)
+
+
+@pytest.mark.django_db
+def test_an_explicit_sort_still_wins(api_client, approved_farmer, make_farmer):
+    make_farmer(email="aaa@marketlink.test", stall_name="Aardvark Stall").__class__.objects.filter(
+        stall_name="Aardvark Stall"
+    ).update(status=FarmerStatus.APPROVED)
+
+    names = [
+        row["stall_name"]
+        for row in api_client.get(
+            reverse("public-farmer-list"), {"ordering": "name"}
+        ).data["data"]["results"]
+    ]
+    assert names == sorted(names)

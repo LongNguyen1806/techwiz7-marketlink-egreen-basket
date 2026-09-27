@@ -15,6 +15,20 @@ class Unit(models.TextChoices):
     PACK = "PACK", "Pack"
 
 
+class ModerationAction(models.TextChoices):
+    """Why a product is hidden, which decides what else the action did.
+
+    HIDE is an investigation: the listing goes dark, every order placed against it stands.
+    BLOCK is a takedown: the listing goes dark *and* every open order containing it is
+    declined and restocked. Both write the same `is_hidden_by_admin` flag, so no public
+    query has to learn about this column; it only records which of the two happened, and
+    therefore whether Restore or Unblock is the way back.
+    """
+
+    HIDE = "HIDE", "Hidden for investigation"
+    BLOCK = "BLOCK", "Blocked for legal violation"
+
+
 class Category(BaseModel):
     name = models.CharField(max_length=50, unique=True, db_collation="utf8mb4_0900_as_ci")
     icon = models.CharField(max_length=50, null=True, blank=True)
@@ -49,6 +63,10 @@ class Product(BaseModel):
     is_archived = models.BooleanField(default=False)
 
     is_hidden_by_admin = models.BooleanField(default=False)
+    # NULL whenever is_hidden_by_admin is False; the two are cleared together.
+    moderation_action = models.CharField(
+        max_length=10, choices=ModerationAction.choices, null=True, blank=True
+    )
     hidden_reason = models.CharField(max_length=500, null=True, blank=True)
     hidden_at = models.DateTimeField(null=True, blank=True)
     hidden_by = models.ForeignKey(

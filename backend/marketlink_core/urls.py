@@ -45,6 +45,7 @@ urlpatterns = [
     path("api/", include("catalog.urls")),
     path("api/", include("markets.urls")),
     path("api/", include("reviews.urls")),
+    path("api/", include("orders.admin_portal.urls_admin")),
     path("api/", include("system.urls")),
     path("api/", include("notifications.admin_portal.urls_admin")),
     path("api/", include("notifications.public_portal.urls_public")),

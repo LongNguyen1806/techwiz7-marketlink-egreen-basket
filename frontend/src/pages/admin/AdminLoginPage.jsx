@@ -4,14 +4,14 @@ import { Button } from "../../components/ui/Button";
 import { FormAlert } from "../../components/common/forms/FormAlert";
 import { FormField } from "../../components/common/forms/FormField";
 import { useServerErrors } from "../../components/common/forms/useServerErrors";
-import { useAuth } from "../../hooks/authentication/useAuth";
+import { useAdminLogin } from "../../hooks/authentication/useAuth";
 import { loginSchema } from "../../services/common/auth.schemas";
 import "../../styles/admin/AdminLoginPage.css";
 
 const FIELDS = ["email", "password"];
 
 export default function AdminLoginPage() {
-  const { adminLogin, adminLoginPending } = useAuth();
+  const adminLogin = useAdminLogin();
   const { formError, report, clear } = useServerErrors(FIELDS);
   const {
     register,
@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
   const onSubmit = handleSubmit(async (values) => {
     clear();
     try {
-      await adminLogin(values);
+      await adminLogin.mutateAsync(values);
     } catch (error) {
       report(error, setError);
     }
@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
         <FormField id='admin-email' label='Email' type='email' autoComplete='email' error={errors.email?.message} {...register("email")} />
         <FormField id='admin-password' label='Password' type='password' autoComplete='current-password' error={errors.password?.message} {...register("password")} />
 
-        <Button type='submit' size='lg' className='admin-login-page__submit' loading={adminLoginPending}>
+        <Button type='submit' size='lg' className='admin-login-page__submit' loading={adminLogin.isPending}>
           Sign in
         </Button>
       </form>

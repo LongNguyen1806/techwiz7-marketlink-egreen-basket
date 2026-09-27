@@ -3,7 +3,11 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from marketlink_core.exceptions import ErrorCode, UnprocessableEntityError
+from marketlink_core.exceptions import (
+    BusinessValidationError,
+    ErrorCode,
+    UnprocessableEntityError,
+)
 from marketlink_core.history import save_with_history
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from notifications.models import NotificationType
@@ -12,6 +16,10 @@ from orders.models import OPEN_STATUSES, ActorRole, ChangeReason, Order, OrderSt
 from orders.services.fsm import transition_order
 
 SCHEDULE_FIELDS = ("operating_days", "open_time", "close_time")
+
+# Stamped on every pickup slot a closure switches off, so reopening can tell those
+# apart from slots a farmer had already disabled themselves.
+CLOSURE_REASON = "Market #{market_id} closed by Admin (AD-17)"
 
 
 def _replace_operating_days(*, market: Market, days: list[int]) -> None:
@@ -103,10 +111,12 @@ def update_market(*, market_id: int, validated: dict[str, Any]) -> tuple[Market,
 # there are switched off. The stalls themselves are NOT suspended - a farmer may sell at several
 # markets, and closing one of them is no fault of theirs.
 @transaction.atomic
-def deactivate_market(*, market_id: int, reason: str, actor) -> tuple[Market, int]:
+def deactivate_market(
+    *, market_id: int, reason: str, actor, farmer_message: str = ""
+) -> tuple[Market, int]:
     market = Market.objects.select_for_update().get(pk=market_id)
     if not market.is_active:
-        raise UnprocessableEntityError(
+        raise BusinessValidationError(
             "This market is already closed.",
             code=ErrorCode.INVALID_STATUS_TRANSITION,
         )
@@ -120,8 +130,16 @@ def deactivate_market(*, market_id: int, reason: str, actor) -> tuple[Market, in
         .order_by("id")
         .values_list("id", flat=True)
     )
-    # A pending change request dies with the order it belonged to (§5.4 step 4).
-    Order.objects.filter(pk__in=order_ids).exclude(pending_change=None).update(pending_change=None)
+    # A pending change request dies with the order it belonged to (§5.4 step 4). Saved one by
+    # one: QuerySet.update() writes no history row, and the order trail has to show this.
+    for order in Order.objects.filter(pk__in=order_ids).exclude(pending_change=None).order_by("id"):
+        order.pending_change = None
+        save_with_history(
+            order,
+            update_fields=["pending_change", "updated_at"],
+            reason=CLOSURE_REASON.format(market_id=market_id),
+            user=actor,
+        )
 
     # Counted per recipient before the transitions run, because afterwards none of these
     # orders is open any more.
@@ -156,16 +174,29 @@ def deactivate_market(*, market_id: int, reason: str, actor) -> tuple[Market, in
         save_with_history(
             slot,
             update_fields=["is_active", "updated_at"],
-            reason=f"Market #{market_id} closed by Admin (AD-17)",
+            reason=CLOSURE_REASON.format(market_id=market_id),
         )
 
-    _notify_closure(market=market, reason=reason, per_customer=orders_per_customer,
-                    per_farmer=orders_per_farmer, market_id=market_id)
+    _notify_closure(
+        market=market,
+        reason=reason,
+        per_customer=orders_per_customer,
+        per_farmer=orders_per_farmer,
+        market_id=market_id,
+        farmer_message=farmer_message,
+    )
     return market, len(order_ids)
 
 
-def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int],
-                    per_farmer: dict[int, int], market_id: int) -> None:
+def _notify_closure(
+    *,
+    market: Market,
+    reason: str,
+    per_customer: dict[int, int],
+    per_farmer: dict[int, int],
+    market_id: int,
+    farmer_message: str = "",
+) -> None:
     """Tell everyone who had something at the market, with the reason the admin typed."""
     # Farmers with a stall here but no open order still need to know the market has gone.
     silent_farmers = set(
@@ -179,21 +210,59 @@ def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int]
         notify(
             recipient=users[recipient_id],
             event_type=NotificationType.MARKET_CLOSED,
-            context={"market_name": market.name, "order_count": count, "reason": reason,
-                     "target_url": "/customer/orders"},
+            context={
+                "market_name": market.name,
+                "order_count": count,
+                "reason": reason,
+                "target_url": "/customer/orders",
+                "admin_message": "",
+            },
         )
     for recipient_id, count in sorted(per_farmer.items()):
         notify(
             recipient=users[recipient_id],
             event_type=NotificationType.MARKET_CLOSED,
-            context={"market_name": market.name, "order_count": count, "reason": reason,
-                     "target_url": "/farmer/markets"},
+            # Only the stalls get the admin's note; it is written for them.
+            context={
+                "market_name": market.name,
+                "order_count": count,
+                "reason": reason,
+                "target_url": "/farmer/markets",
+                "admin_message": farmer_message,
+            },
         )
 
 
 @transaction.atomic
-def activate_market(*, market_id: int) -> Market:
+def activate_market(*, market_id: int) -> tuple[Market, int]:
     market = Market.objects.select_for_update().get(pk=market_id)
     market.is_active = True
     market.save(update_fields=["is_active", "updated_at"])
-    return market
+
+    reason = CLOSURE_REASON.format(market_id=market_id)
+    slots = list(
+        PickupSlot.objects.filter(farmer_market__market_id=market_id, is_active=False)
+        .order_by("id")
+        .select_for_update(of=("self",))
+    )
+    restored = 0
+    for slot in slots:
+        latest = (
+            PickupSlot.history.filter(id=slot.pk)
+            .order_by("history_date", "history_id")
+            .last()
+        )
+        # Only the ones this closure switched off. A slot the farmer turned off themselves,
+        # or one AD-16 disabled for falling outside the hours, stays off.
+        if latest is None or latest.history_change_reason != reason:
+            continue
+        slot.is_active = True
+        save_with_history(
+            slot,
+            update_fields=["is_active", "updated_at"],
+            reason=f"Market #{market_id} reopened by Admin (AD-17)",
+        )
+        restored += 1
+
+    return market, restored
+

@@ -490,7 +490,9 @@ def test_a_market_that_is_already_closed_cannot_be_closed_again(admin_client, ma
         reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
     )
 
-    assert response.status_code == 422
+    # 400, not 422: the error catalogue (§2.5) files INVALID_STATUS_TRANSITION as a 400 and
+    # AD-05 to AD-08 all answer with one.
+    assert response.status_code == 400
     assert response.data["code"] == "INVALID_STATUS_TRANSITION"
 
 
@@ -507,3 +509,150 @@ def test_a_finished_order_is_left_alone(admin_client, market, make_order):
     done.refresh_from_db()
     assert response.data["data"]["cancelled_orders"] == 0
     assert done.status == OrderStatus.COMPLETED
+
+
+@pytest.mark.django_db
+def test_reopening_switches_the_closure_slots_back_on(admin_client, market, make_slot):
+    slot = make_slot(day_of_week=MONDAY, start=time(7, 0), end=time(9, 0))
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    response = admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
+
+    slot.refresh_from_db()
+    # Otherwise every farmer has to switch each of their slots back on by hand.
+    assert slot.is_active is True
+    assert response.data["data"]["restored_slots"] == 1
+
+
+@pytest.mark.django_db
+def test_reopening_leaves_a_slot_the_farmer_had_already_turned_off(
+    admin_client, market, make_slot
+):
+    off_by_farmer = make_slot(day_of_week=MONDAY, start=time(7, 0), end=time(9, 0))
+    off_by_farmer.is_active = False
+    off_by_farmer.save(update_fields=["is_active"])
+
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+    response = admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
+
+    off_by_farmer.refresh_from_db()
+    # The closure never touched it, so reopening must not switch it on for them.
+    assert off_by_farmer.is_active is False
+    assert response.data["data"]["restored_slots"] == 0
+
+
+@pytest.mark.django_db
+def test_clearing_a_pending_change_is_kept_in_the_order_trail(
+    admin_client, market, make_order
+):
+    from orders.models import Order
+
+    order = make_order(pickup_date=timezone.localdate() + timedelta(days=1))
+    order.pending_change = {"items": []}
+    order.save(update_fields=["pending_change"])
+
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    order.refresh_from_db()
+    assert order.pending_change is None
+    # QuerySet.update() would have cleared it with no history row at all.
+    reasons = [
+        row.history_change_reason
+        for row in Order.history.filter(id=order.id).order_by("history_date", "history_id")
+    ]
+    assert any(r and "closed by Admin" in r for r in reasons)
+
+
+@pytest.mark.django_db
+def test_the_admin_note_reaches_the_stalls_by_email(
+    admin_client, market, farmer_market, farmer_user, mailoutbox, settings,
+    django_capture_on_commit_callbacks,
+):
+    # notify() defers the mail to on_commit, which a test transaction never reaches, and
+    # _send_email hands it to a thread pool. Both have to be unwound to see the message.
+    settings.EMAIL_ASYNC = False
+    with django_capture_on_commit_callbacks(execute=True):
+        admin_client.post(
+            reverse(DEACTIVATE_URL_NAME, args=[market.id]),
+            {"reason": REASON, "farmer_message": "Please collect your equipment by Friday."},
+            format="json",
+        )
+
+    sent = [m for m in mailoutbox if farmer_user.email in m.to]
+    assert len(sent) == 1
+    assert "collect your equipment" in sent[0].body
+
+
+@pytest.mark.django_db
+def test_the_note_is_for_the_stalls_only(
+    admin_client, market, make_order, customer_user, mailoutbox, settings,
+    django_capture_on_commit_callbacks,
+):
+    settings.EMAIL_ASYNC = False
+    make_order(pickup_date=timezone.localdate() + timedelta(days=1))
+
+    with django_capture_on_commit_callbacks(execute=True):
+        admin_client.post(
+            reverse(DEACTIVATE_URL_NAME, args=[market.id]),
+            {"reason": REASON, "farmer_message": "Please collect your equipment by Friday."},
+            format="json",
+        )
+
+    to_shopper = [m for m in mailoutbox if customer_user.email in m.to]
+    # The note is addressed to the stalls; a shopper reading it would only be confused.
+    assert all("collect your equipment" not in m.body for m in to_shopper)
+
+
+@pytest.mark.django_db
+def test_closing_without_a_note_still_works(admin_client, market, farmer_market, mailoutbox):
+    response = admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert response.data["data"]["cancelled_orders"] == 0
+
+
+@pytest.mark.django_db
+def test_a_stall_with_several_orders_is_told_once(
+    admin_client, market, make_order, farmer_user, customer_user
+):
+    for _ in range(3):
+        make_order(pickup_date=timezone.localdate() + timedelta(days=1))
+
+    admin_client.post(
+        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
+    )
+
+    for recipient in (farmer_user, customer_user):
+        sent = Notification.objects.filter(
+            recipient=recipient, type=NotificationType.MARKET_CLOSED
+        )
+        # One message naming the count, not one message per cancelled order.
+        assert sent.count() == 1, f"{recipient.email} got {sent.count()} notifications"
+        assert "3 of your orders" in sent.get().message
+
+
+@pytest.mark.django_db
+def test_an_empty_note_leaves_no_blank_section_in_the_email(
+    admin_client, market, farmer_market, farmer_user, mailoutbox, settings,
+    django_capture_on_commit_callbacks,
+):
+    settings.EMAIL_ASYNC = False
+    with django_capture_on_commit_callbacks(execute=True):
+        admin_client.post(
+            reverse(DEACTIVATE_URL_NAME, args=[market.id]),
+            {"reason": REASON, "farmer_message": "   "},
+            format="json",
+        )
+
+    sent = [m for m in mailoutbox if farmer_user.email in m.to]
+    assert len(sent) == 1
+    # Whitespace is not a note; the email must not carry an empty heading for it.
+    assert "note from the MarketLink team" not in sent[0].body

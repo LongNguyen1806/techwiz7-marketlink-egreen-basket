@@ -1,0 +1,42 @@
+@import '../../styles/common/page-primitives.css';
+
+.admin-orders-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Same floating-label treatment as Input, so the select lines up with the date fields. */
+.admin-orders-page__field {
+  position: relative;
+  height: 2.75rem;
+}
+
+.admin-orders-page__field .page-primitive__select {
+  height: 100%;
+}
+
+.admin-orders-page__field .page-primitive__label-xs {
+  position: absolute;
+  top: 0;
+  left: calc(var(--space-3) - var(--space-1));
+  padding: 0 var(--space-1);
+  background-color: var(--color-card);
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.admin-orders-page__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}

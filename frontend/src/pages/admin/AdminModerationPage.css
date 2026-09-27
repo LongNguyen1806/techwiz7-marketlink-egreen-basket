@@ -1,0 +1,94 @@
+@import '../../styles/common/page-primitives.css';
+
+/* One column at every width, on purpose. These lists are sorted, and a reader scans a
+   two-column grid straight down the left side - so the second item by rating showed up third
+   on screen and the sort looked broken. */
+.admin-moderation-page__list {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.admin-moderation-page__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-4);
+}
+
+.admin-moderation-page__info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.admin-moderation-page__thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-xl);
+  object-fit: cover;
+  background-color: var(--color-muted);
+}
+
+.admin-moderation-page__name {
+  font-weight: var(--weight-medium);
+  color: var(--color-foreground);
+}
+
+.admin-moderation-page__badge {
+  margin-top: var(--space-1);
+}
+
+.admin-moderation-page__review-card {
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-4);
+}
+
+.admin-moderation-page__review-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-moderation-page__comment {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.admin-moderation-page__reason {
+  margin-top: var(--space-2);
+}
+
+/* The takedown dialog says what the button does before the reason box, because "Take down"
+   and "Hide" sit next to each other and only one of them cancels other people's orders. */
+.admin-moderation-page__warning {
+  margin-bottom: var(--space-3);
+  border-left: 3px solid var(--color-danger);
+  background-color: var(--color-muted);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-foreground);
+}
+
+/* Says why the list has one row in it. Without this a deep link from the queue looks like a
+   broken filter. */
+.admin-moderation-page__pin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-muted);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}

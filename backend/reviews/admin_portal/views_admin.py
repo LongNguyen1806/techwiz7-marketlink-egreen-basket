@@ -45,6 +45,13 @@ def _rating(raw: str | None) -> int | None:
     return value if value in RATING_RANGE else None
 
 
+def _int(raw: str | None) -> int | None:
+    try:
+        return int(raw) if raw is not None else None
+    except ValueError:
+        return None
+
+
 def _review_type(raw: str | None) -> str | None:
     return raw if raw in ReviewType.values else None
 
@@ -57,6 +64,7 @@ class ReviewModerationListView(ListAPIView):
         params = self.request.query_params
         return list_reviews_for_admin(
             review_type=_review_type(params.get("type")),
+            review_id=_int(params.get("review_id")),
             rating=_rating(params.get("rating")),
             is_hidden=_flag(params.get("is_hidden")),
             ordering=params.get("ordering"),
@@ -65,6 +73,11 @@ class ReviewModerationListView(ListAPIView):
     @extend_schema(
         parameters=[
             OpenApiParameter("type", str, enum=ReviewType.values),
+            OpenApiParameter(
+                "review_id",
+                int,
+                description="A single review, used with type for a link straight to it.",
+            ),
             OpenApiParameter("rating", int, description="Exact star rating, 1 to 5."),
             OpenApiParameter("is_hidden", bool),
             OpenApiParameter(

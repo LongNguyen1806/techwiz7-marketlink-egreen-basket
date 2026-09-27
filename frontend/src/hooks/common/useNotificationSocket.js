@@ -7,7 +7,7 @@ import { env } from '../../config/env';
 import { queryKeysForNotification } from '../../constants/notificationEvents';
 import { authKeys } from '../../constants/queryKeys';
 import { notify } from '../../lib/toast';
-import { selectIsAuthenticated, useAuthStore } from '../../stores/auth.store';
+import { selectIsAuthenticated, useMarketAuthStore } from '../../stores/auth.store';
 import { useUiStore } from '../../stores/ui.store';
 
 
@@ -22,7 +22,8 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 export function useNotificationSocket({ enabled = true } = {}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  // Realtime notifications are for the market portal; the backend issues no ticket to admins.
+  const isAuthenticated = useMarketAuthStore(selectIsAuthenticated);
   const setRealtimeConnected = useUiStore((state) => state.setRealtimeConnected);
   const hasConnectedBefore = useRef(false);
 

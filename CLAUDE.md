@@ -27,3 +27,7 @@
      - KHÔNG tự ý chạy toàn bộ test suite trừ khi người dùng yêu cầu rõ ràng.
    - Luôn sử dụng cờ rút gọn output (`-q`) để tránh in hàng trăm dòng log làm tràn context window.
 
+6. **TUYỆT ĐỐI KHÔNG COMMIT / PUSH CODE**:
+   - AI KHÔNG được chạy bất kỳ lệnh git nào làm thay đổi lịch sử hoặc remote: `git commit`, `git push`, `git merge`, `git rebase`, `git reset`, `git tag`, `git stash`, tạo/xóa branch, mở pull request (`gh pr create`), ...
+   - Quy tắc này áp dụng **kể cả khi người dùng đã đồng ý sửa file** và kể cả khi skill/hướng dẫn khác có nhắc đến commit.
+   - Việc commit và push hoàn toàn do người dùng tự thực hiện. AI chỉ được dùng lệnh git chỉ đọc (`git status`, `git diff`, `git log`) để phân tích, và có thể gợi ý nội dung commit message trong ô chat.

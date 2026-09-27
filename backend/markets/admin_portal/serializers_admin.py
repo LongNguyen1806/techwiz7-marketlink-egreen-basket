@@ -158,3 +158,13 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
                 {"close_time": "The closing time must be later than the opening time."}
             )
         return attrs
+
+
+class MarketCloseSerializer(serializers.Serializer):
+    """AD-17. The reason is recorded and shown to everyone; the note is emailed to the stalls."""
+
+    reason = serializers.CharField(min_length=5, max_length=500)
+    farmer_message = serializers.CharField(
+        required=False, allow_blank=True, max_length=1000, trim_whitespace=True
+    )
+

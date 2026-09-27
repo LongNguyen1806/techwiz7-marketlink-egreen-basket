@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { env } from '../config/env';
-import { selectIsAuthenticated, useAuthStore } from '../stores/auth.store';
+import { authStoreFor, currentPortal, selectIsAuthenticated } from '../stores/auth.store';
 import { CLIENT_ERROR_CODES } from '../utils/errorMap';
 import { ApiError } from './ApiError';
 import { notifyError } from './toast';
@@ -71,33 +71,42 @@ async function toApiError(error) {
 
 
 
-function expireSession() {
-  if (!selectIsAuthenticated(useAuthStore.getState())) return;
-  useAuthStore.getState().clearSession();
+// Every request belongs to the portal of the page that sent it (market or admin), fixed at send
+// time so a navigation mid-request cannot refresh or expire the other portal's session.
+function sessionOf(config) {
+  return authStoreFor(config?._portal ?? currentPortal());
+}
+
+function expireSession(store) {
+  if (!selectIsAuthenticated(store.getState())) return;
+  store.getState().clearSession();
   notifyError(new ApiError({ status: 401, code: CLIENT_ERROR_CODES.SESSION_EXPIRED }));
 }
 
-let refreshPromise = null;
+// One shared refresh per portal: refresh tokens rotate.
+const refreshPromises = new Map();
 
-function refreshAccessToken() {
-  if (!refreshPromise) {
-    const { refreshToken } = useAuthStore.getState();
-    refreshPromise = axios
+function refreshAccessToken(store) {
+  if (!refreshPromises.has(store)) {
+    const { refreshToken } = store.getState();
+    const promise = axios
       .post(`${env.API_BASE_URL}/auth/refresh/`, { refresh: refreshToken })
       .then(({ data: envelope }) => {
         const { access, refresh } = envelope.data;
-        useAuthStore.getState().setTokens({ access, refresh });
+        store.getState().setTokens({ access, refresh });
         return access;
       })
       .finally(() => {
-        refreshPromise = null;
+        refreshPromises.delete(store);
       });
+    refreshPromises.set(store, promise);
   }
-  return refreshPromise;
+  return refreshPromises.get(store);
 }
 
 axiosClient.interceptors.request.use((config) => {
-  const { accessToken } = useAuthStore.getState();
+  config._portal ??= currentPortal();
+  const { accessToken } = sessionOf(config).getState();
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
@@ -122,28 +131,29 @@ axiosClient.interceptors.response.use(
     if (axios.isCancel(error)) throw error;
 
     const { config, response } = error;
+    const store = sessionOf(config);
     const canRefresh =
       response?.status === 401 &&
       config &&
       !config._retried &&
       !isNoRefreshPath(config.url) &&
-      useAuthStore.getState().refreshToken;
+      store.getState().refreshToken;
 
     if (canRefresh) {
       config._retried = true;
       try {
-        const access = await refreshAccessToken();
+        const access = await refreshAccessToken(store);
         config.headers.Authorization = `Bearer ${access}`;
         return axiosClient(config);
       } catch {
-        expireSession();
+        expireSession(store);
         throw new ApiError({ status: 401, code: CLIENT_ERROR_CODES.SESSION_EXPIRED });
       }
     }
 
     const apiError = await toApiError(error);
     if ((apiError.status === 401 && !isNoRefreshPath(config?.url)) || apiError.is('ACCOUNT_LOCKED')) {
-      expireSession();
+      expireSession(store);
     }
     throw apiError;
   },

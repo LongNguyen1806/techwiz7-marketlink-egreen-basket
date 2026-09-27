@@ -3,7 +3,8 @@ from rest_framework import serializers
 from accounts.admin_portal.serializers_admin import AdminFarmerRowSerializer
 from accounts.models import CustomUser
 from orders.models import OrderStatus
-from system.models import AuditLog
+from system.models import AuditLog, FlagTarget, ModerationFlag
+from system.flags import target_url
 
 
 class AuditLogActorSerializer(serializers.ModelSerializer):
@@ -47,13 +48,32 @@ class OrdersByDaySerializer(serializers.Serializer):
     count = serializers.IntegerField()
 
 
+class OrdersByMonthSerializer(serializers.Serializer):
+    """One calendar month of the orders chart, which the dashboard pages through."""
+
+    month = serializers.CharField()
+    total = serializers.IntegerField()
+    days = OrdersByDaySerializer(many=True)
+
+
 class OrdersByStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=OrderStatus.choices)
     count = serializers.IntegerField()
 
 
+class NeedsAttentionSerializer(serializers.Serializer):
+    """Counts an admin can act on, as opposed to counts that merely describe the platform."""
+
+    stalls_awaiting_approval = serializers.IntegerField()
+    flags_open = serializers.IntegerField()
+    customers_at_risk = serializers.IntegerField()
+    hidden_products = serializers.IntegerField()
+    markets_closed = serializers.IntegerField()
+
+
 class DashboardSerializer(serializers.Serializer):
     totals = DashboardTotalsSerializer()
+    needs_attention = NeedsAttentionSerializer()
     orders_by_day = OrdersByDaySerializer(many=True)
     orders_by_status = OrdersByStatusSerializer(many=True)
     pending_farmers = AdminFarmerRowSerializer(many=True)
@@ -107,3 +127,47 @@ class ChangeLogEntrySerializer(serializers.Serializer):
     reason = serializers.CharField(allow_null=True)
     request_id = serializers.CharField(allow_null=True)
     changes = ChangeSerializer(many=True)
+
+
+class ModerationFlagReadSerializer(serializers.ModelSerializer):
+    raised_by = AuditLogActorSerializer(read_only=True)
+    resolved_by = AuditLogActorSerializer(read_only=True)
+    # Where to go and look, and a line of what is there. A queue that only gives a number
+    # makes the admin hunt for the thing before every decision.
+    target_url = serializers.SerializerMethodField()
+    target_preview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ModerationFlag
+        fields = [
+            "id", "target_type", "target_id", "target_url", "target_preview", "note",
+            "raised_by", "created_at", "resolved_at", "resolved_by", "resolution",
+        ]
+        read_only_fields = fields
+
+    def get_target_url(self, flag) -> str | None:
+        return target_url(flag)
+
+    def get_target_preview(self, flag) -> str | None:
+        # Missing when the flagged row has since been deleted, which the screen says out loud.
+        return self.context.get("target_previews", {}).get((flag.target_type, flag.target_id))
+
+
+class ModerationFlagWriteSerializer(serializers.Serializer):
+    target_type = serializers.ChoiceField(choices=FlagTarget.choices)
+    target_id = serializers.IntegerField(min_value=1)
+    note = serializers.CharField(min_length=5, max_length=500)
+
+
+class FlagResolutionSerializer(serializers.Serializer):
+    resolution = serializers.CharField(min_length=5, max_length=500)
+
+
+class AdminSettingsSerializer(serializers.Serializer):
+    """The operating limits, with the plain-language name each one goes by on screen."""
+
+    booking_horizon_days = serializers.IntegerField()
+    max_placed_orders_per_customer = serializers.IntegerField()
+    max_upload_mb = serializers.IntegerField()
+    at_risk_threshold = serializers.IntegerField()
+    at_risk_window_days = serializers.IntegerField()

@@ -1,0 +1,7 @@
+@import '../../styles/common/page-primitives.css';
+
+.admin-reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
