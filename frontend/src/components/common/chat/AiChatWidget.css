@@ -12,12 +12,32 @@
   }
 }
 
+/* One fixed box holds both the launcher and the panel, so dragging moves them together and
+   the panel always opens from wherever the launcher was left. It is anchored to the corner
+   and shifted by a transform; see useDraggableDock for why it is not moved by left/top. */
+.ai-chat__dock {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-6);
+  z-index: 50;
+  width: var(--chat-fab-size);
+  height: var(--chat-fab-size);
+  /* Nothing here is clickable except the two children, so the empty corner of the box never
+     swallows a click meant for the page under it. */
+  pointer-events: none;
+  touch-action: none;
+}
+
+@media (min-width: 768px) {
+  .ai-chat__dock {
+    right: var(--space-6);
+    bottom: var(--space-8);
+  }
+}
+
 .ai-chat__panel {
   pointer-events: auto;
-  position: fixed;
-  bottom: var(--space-6);
-  right: var(--space-4);
-  z-index: 50;
+  position: absolute;
   display: flex;
   height: min(520px, 70vh);
   width: min(380px, calc(100vw - 2rem));
@@ -29,17 +49,33 @@
   box-shadow: var(--shadow-soft-lg);
 }
 
-@media (min-width: 768px) {
-  .ai-chat__panel {
-    bottom: var(--space-8);
-    right: var(--space-6);
-  }
+/* Which corner of the launcher the panel grows from. The component measures the launcher and
+   picks the side that has room, so a dock dragged to the top-left does not open a panel that
+   runs off the screen. */
+.ai-chat__panel--up-right,
+.ai-chat__panel--up-left {
+  bottom: calc(100% + var(--space-3));
+}
+
+.ai-chat__panel--down-right,
+.ai-chat__panel--down-left {
+  top: calc(100% + var(--space-3));
+}
+
+.ai-chat__panel--up-right,
+.ai-chat__panel--down-right {
+  right: 0;
+}
+
+.ai-chat__panel--up-left,
+.ai-chat__panel--down-left {
+  left: 0;
 }
 
 .ai-chat__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-primary-700);
   padding: var(--space-3) var(--space-4);
@@ -160,10 +196,8 @@
 
 .ai-chat__fab {
   pointer-events: auto;
-  position: fixed;
-  bottom: var(--space-6);
-  right: var(--space-4);
-  z-index: 50;
+  position: absolute;
+  inset: 0;
   display: flex;
   width: var(--chat-fab-size);
   height: var(--chat-fab-size);
@@ -186,14 +220,50 @@
   box-shadow: 0 0 0 2px var(--color-ring);
 }
 
-@media (min-width: 768px) {
-  .ai-chat__fab {
-    bottom: var(--space-8);
-    right: var(--space-6);
-  }
-}
-
 .ai-chat__fab-icon {
   width: 1.5rem;
   height: 1.5rem;
+}
+
+/* The header's drag handle. It is the only thing in the panel that starts a drag, so typing
+   a message and pressing Close both behave normally. */
+.ai-chat__grip {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-primary-100);
+  cursor: grab;
+  touch-action: none;
+}
+
+.ai-chat__grip:active {
+  cursor: grabbing;
+}
+
+.ai-chat__grip:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.ai-chat__grip-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Takes the space the grip and the close button leave, so a long subtitle wraps inside the
+   header instead of pushing the close button out of the panel. */
+.ai-chat__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-chat__fab {
+  cursor: grab;
+  touch-action: none;
+}
+
+.ai-chat__fab:active {
+  cursor: grabbing;
 }

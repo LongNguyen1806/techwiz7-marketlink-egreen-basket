@@ -1,9 +1,11 @@
-import { MessageCircle, Send, X } from 'lucide-react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { GripVertical, MessageCircle, Send, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { Button } from '@/components/common/forms/Button';
 import { Textarea } from '@/components/common/forms/Textarea';
 import { useAiChat } from '../../../hooks/queries/common/useAiChat';
+import { useDraggableDock } from '../../../hooks/useDraggableDock';
 import { cn } from '@/lib/cn';
 
 import './AiChatWidget.css';
@@ -21,26 +23,69 @@ const panelTransition = {
   mass: 0.85,
 };
 
+// Roughly what the panel takes up. Only used to decide which way to open it, so being a few
+// pixels out costs nothing.
+const PANEL_WIDTH = 380;
+const PANEL_HEIGHT = 520;
+
+// The panel hangs off the dock, and the dock can be anywhere. Opening it towards the far edge
+// of the screen would push most of it out of view, so it opens towards whichever side has
+// room.
+function placementFor(rect) {
+  if (!rect) return 'up-right';
+  const vertical = rect.top >= PANEL_HEIGHT + 16 ? 'up' : 'down';
+  const horizontal = rect.right >= PANEL_WIDTH + 16 ? 'right' : 'left';
+  return `${vertical}-${horizontal}`;
+}
+
 export function AiChatWidget() {
   const { open, setOpen, input, setInput, loading, messages, tools, bottomRef, send } =
     useAiChat();
+  const { dragProps, startDrag, wasDragged } = useDraggableDock();
+  const dockRef = useRef(null);
+  const [placement, setPlacement] = useState('up-right');
+
+  // Measured the moment the panel appears, and again if the window changes size while it is
+  // open, because either can turn a comfortable side into one that runs off the screen.
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const settle = () => setPlacement(placementFor(dockRef.current?.getBoundingClientRect()));
+    settle();
+    window.addEventListener('resize', settle);
+    return () => window.removeEventListener('resize', settle);
+  }, [open]);
 
   return (
-    <>
+    <motion.div
+      ref={dockRef}
+      className="ai-chat__dock"
+      // The whole dock moves, but only a handle starts the gesture: a pointer press inside
+      // the panel belongs to the text box and the buttons, not to a drag.
+      {...dragProps}
+    >
       <AnimatePresence>
         {open ? (
           <motion.div
             key="ai-panel"
-            initial={{ y: '110%', opacity: 0.85 }}
+            initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '110%', opacity: 0.85 }}
+            exit={{ y: 24, opacity: 0 }}
             transition={panelTransition}
-            className="ai-chat__panel"
+            className={cn('ai-chat__panel', `ai-chat__panel--${placement}`)}
             role="dialog"
             aria-label="MarketLink AI assistant"
           >
             <div className="ai-chat__header">
-              <div>
+              <button
+                type="button"
+                className="ai-chat__grip"
+                aria-label="Move the assistant"
+                title="Drag to move"
+                onPointerDown={startDrag}
+              >
+                <GripVertical className="ai-chat__grip-icon" />
+              </button>
+              <div className="ai-chat__header-text">
                 <p className="ai-chat__header-title">MarketLink assistant</p>
                 <p className="ai-chat__header-sub">
                   Ask about markets, produce, or how to get there
@@ -138,8 +183,15 @@ export function AiChatWidget() {
             exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.1 } }}
             transition={{ duration: 0.18 }}
             className="ai-chat__fab"
-            aria-label="Open AI assistant"
-            onClick={() => setOpen(true)}
+            aria-label="Open AI assistant. Drag to move it out of the way."
+            title="Drag to move"
+            onPointerDown={startDrag}
+            onClick={() => {
+              // A drop fires a click too. Without this, moving the button off a covered
+              // control would also open the panel on top of it.
+              if (wasDragged()) return;
+              setOpen(true);
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.96 }}
           >
@@ -147,6 +199,6 @@ export function AiChatWidget() {
           </motion.button>
         ) : null}
       </AnimatePresence>
-    </>
+    </motion.div>
   );
 }
