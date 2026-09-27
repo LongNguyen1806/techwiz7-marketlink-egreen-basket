@@ -20,11 +20,12 @@ import {
   useDashboardApproveFarmer,
   useDashboardRejectFarmer,
 } from '../../hooks/queries/admin/useAdminDashboard';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
-import { Button } from '@/components/common/forms/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cards/Card';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
+import { AIReviewSummaryCard } from '@/components/admin/AIReviewSummaryCard';
+import { PageSkeleton } from '@/components/feedback/PageSkeleton';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { orderStatusLabel, orderStatusShortLabel } from '@/utils/labels';
 import { orderStatusColor } from '@/utils/statusColors';
 
@@ -163,6 +164,8 @@ export default function AdminDashboardPage() {
           </div>
         </section>
       ) : null}
+
+      <AIReviewSummaryCard />
 
       <div className="page-primitive__stat-grid-5">
         {cards.map((item) => (

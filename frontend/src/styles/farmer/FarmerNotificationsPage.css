@@ -1,0 +1,72 @@
+@import '../common/page-primitives.css';
+
+.farmer-notifications-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.farmer-notifications-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.farmer-notifications-page__item {
+  width: 100%;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-4);
+  text-align: left;
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+  background-color: var(--color-card);
+  cursor: pointer;
+}
+
+.farmer-notifications-page__item:hover {
+  box-shadow: var(--shadow-soft);
+}
+
+.farmer-notifications-page__item--unread {
+  border-color: var(--color-primary-200);
+  background-color: color-mix(in srgb, var(--color-primary-50) 60%, transparent);
+}
+
+.dark .farmer-notifications-page__item--unread {
+  background-color: color-mix(in srgb, var(--color-primary-950) 30%, transparent);
+}
+
+.farmer-notifications-page__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.farmer-notifications-page__title {
+  font-weight: var(--weight-semibold);
+}
+
+.farmer-notifications-page__message {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-notifications-page__time {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-notifications-page__link {
+  display: inline-block;
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary-700);
+}
+
+.farmer-notifications-page__link:hover {
+  text-decoration: underline;
+}

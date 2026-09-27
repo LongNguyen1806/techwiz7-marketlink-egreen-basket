@@ -6,8 +6,8 @@ import { toast } from 'sonner';
 import { authApi } from '../../../api/common/authApi';
 import { adaptNotification } from '@/lib/adapters/notification.adapter';
 import { QUERY_KEYS } from '@/config/constants';
-import { env, wsUrl } from '@/config/env';
-import { authStoreFor, currentPortal, portalForPath } from '@/stores/auth.store';
+import { env } from '@/config/env';
+import { authStoreFor, portalForPath } from '@/stores/auth.store';
 
 function isWsEnvelope(value) {
   if (!value || typeof value !== 'object') return false;
@@ -19,17 +19,6 @@ function isBeNotification(value) {
   if (!value || typeof value !== 'object') return false;
   if (!('id' in value)) return false;
   return typeof value.id === 'number';
-}
-
-async function pushMockNotification(item) {
-  const role = authStoreFor(currentPortal()).getState().role;
-  if (role === 'FARMER') {
-    const { farmerNotifications } = await import('@/mocks/farmerData');
-    farmerNotifications.unshift(item);
-    return;
-  }
-  const { customerNotifications } = await import('@/mocks/orders');
-  customerNotifications.unshift(item);
 }
 
 /**
@@ -50,7 +39,6 @@ export function useNotificationSocket(enabled) {
     if (!enabled || !accessToken) return;
 
     let cancelled = false;
-    let mockTimer;
     let pollTimer;
     let socket = null;
     let polling = false;
@@ -80,27 +68,6 @@ export function useNotificationSocket(enabled) {
     async function connect() {
       if (polling || cancelled) return;
 
-      if (env.USE_MOCK) {
-        invalidate();
-        mockTimer = setInterval(() => {
-          if (cancelled) return;
-          const item = {
-            id: Date.now(),
-            type: 'ORDER_PLACED',
-            title: 'Order update',
-            message: 'There is a new change on your order (mock realtime).',
-            target_url: null,
-            is_read: false,
-            read_at: null,
-            created_at: new Date().toISOString(),
-          };
-          void pushMockNotification(item).then(() => {
-            if (!cancelled) handleNotification(item);
-          });
-        }, 45_000);
-        return;
-      }
-
       try {
         const ticketResponse = await authApi.wsTicket();
         if (cancelled) return;
@@ -110,9 +77,7 @@ export function useNotificationSocket(enabled) {
           return;
         }
 
-        const url = wsUrl(
-          `/notifications/?ticket=${encodeURIComponent(ticketResponse.ticket)}`,
-        );
+        const url = `${env.WS_BASE_URL}/notifications/?ticket=${encodeURIComponent(ticketResponse.ticket)}`;
         socket = new WebSocket(url);
 
         socket.onopen = () => {
@@ -153,7 +118,6 @@ export function useNotificationSocket(enabled) {
 
     return () => {
       cancelled = true;
-      if (mockTimer) clearInterval(mockTimer);
       if (pollTimer) clearInterval(pollTimer);
       if (socket) {
         socket.onclose = null;

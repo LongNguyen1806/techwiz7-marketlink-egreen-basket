@@ -1,33 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
+import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
-import { QUERY_KEYS } from '@/config/constants';
 
 function invalidateFarmers(queryClient) {
   void queryClient.invalidateQueries({
-    queryKey: [QUERY_KEYS.ADMIN_FARMERS()[0]],
+    queryKey: ['admin', 'farmers'],
   });
-  void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_DASHBOARD });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
 }
 
 export function useAdminFarmers(params = {}) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_FARMERS(params),
+    queryKey: ['admin', 'farmers', params],
     queryFn: () => adminApi.getFarmers(params),
-    // The client defaults to a 30s staleTime, which is wrong for a list being searched and
-    // moderated: the answer has to be what the server holds now.
+    // A list being searched and moderated: always ask the server (staleTime 0), and keep the
+    // previous rows on screen while the next query runs, so the table does not blink empty
+    // between keystrokes. The typing itself is debounced by the page.
     staleTime: 0,
-    // Keeps the previous results on screen while the next query runs, so the table does not
-    // blink empty between keystrokes.
     placeholderData: (previous) => previous,
   });
 }
 
 export function useAdminFarmer(id, enabled = true) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_FARMER(id),
+    queryKey: ['admin', 'farmer', id],
     queryFn: () => adminApi.getFarmer(id),
     enabled: enabled && Number.isFinite(id),
   });
@@ -35,7 +33,7 @@ export function useAdminFarmer(id, enabled = true) {
 
 export function useAdminFarmerImpact(id, enabled = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_FARMER_IMPACT(id),
+    queryKey: ['admin', 'farmer-impact', id],
     queryFn: () => adminApi.getFarmerImpact(id),
     enabled: enabled && Number.isFinite(id),
   });
@@ -99,8 +97,8 @@ export function useUpdateFarmer(id) {
     mutationFn: (payload) => adminApi.updateFarmer(id, payload),
     onSuccess: () => {
       toast.success('Stall updated');
-      void invalidateFarmers(queryClient);
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_FARMER(id) });
+      invalidateFarmers(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'farmer', id] });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
   });

@@ -8,14 +8,14 @@ import { toast } from 'sonner';
 
 import { ApiError } from '@/lib/ApiError';
 import { QUERY_KEYS } from '@/config/constants';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
+import { EmptyState } from '@/components/feedback/EmptyState';
 import { FilterBar } from '@/components/common/table/FilterBar';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
-import { Badge } from '@/components/common/badges/Badge';
-import { Button } from '@/components/common/forms/Button';
-import { Textarea } from '@/components/common/forms/Textarea';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/common/drawer/Sheet';
+import { PageHeader } from '@/components/common/PageHeader';
+import { PageSkeleton } from '@/components/feedback/PageSkeleton';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Textarea';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/Sheet';
 import { formatDateTime } from '@/utils/formatters';
 
 import './AdminQueuePage.css';

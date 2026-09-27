@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { adminApi } from '@/api/admin/adminApi';
 import { QUERY_KEYS } from '@/config/constants';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
+import { PageSkeleton } from '@/components/feedback/PageSkeleton';
 
 import './AdminSettingsPage.css';
 

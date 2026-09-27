@@ -1,26 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
+import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
-import { QUERY_KEYS } from '@/config/constants';
 
 function invalidateMarkets(queryClient) {
   return queryClient.invalidateQueries({
-    queryKey: [QUERY_KEYS.ADMIN_MARKETS()[0]],
+    queryKey: ['admin', 'markets'],
   });
 }
 
 export function useAdminMarkets(params = {}) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_MARKETS(params),
+    queryKey: ['admin', 'markets', params],
     queryFn: () => adminApi.getMarkets(params),
   });
 }
 
 export function useAdminMarket(id, enabled = true) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_MARKET(id),
+    queryKey: ['admin', 'market', id],
     queryFn: () => adminApi.getMarket(id),
     enabled: enabled && Number.isFinite(id),
   });
@@ -37,7 +36,7 @@ export function useToggleAdminMarket() {
       if (vars.active) {
         toast.success('Market reopened');
       } else {
-        const cancelled = data.cancelled_orders ?? 0;
+        const cancelled = data?.cancelled_orders ?? 0;
         toast.success(
           cancelled
             ? `Market closed. ${cancelled} open order${cancelled === 1 ? '' : 's'} cancelled.`
@@ -69,12 +68,11 @@ export function useSaveAdminMarket(marketId) {
   });
 }
 
-// AD-31 to AD-33. Closures hang off one market, so they get their own query key.
 export function useMarketClosures(marketId, enabled) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_MARKET_CLOSURES(marketId),
+    queryKey: ['admin', 'market-closures', marketId],
     queryFn: () => adminApi.getMarketClosures(marketId),
-    enabled,
+    enabled: Boolean(enabled),
   });
 }
 
@@ -85,10 +83,9 @@ export function useCreateMarketClosure(marketId) {
     onSuccess: () => {
       toast.success('Closure period added');
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_MARKET_CLOSURES(marketId),
+        queryKey: ['admin', 'market-closures', marketId],
       });
     },
-    // A 422 RESOURCE_IN_USE lists the open orders that block the period; the message says so.
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
   });
 }
@@ -100,7 +97,7 @@ export function useDeleteMarketClosure(marketId) {
     onSuccess: () => {
       toast.success('Closure period removed');
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_MARKET_CLOSURES(marketId),
+        queryKey: ['admin', 'market-closures', marketId],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),

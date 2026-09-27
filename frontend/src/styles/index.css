@@ -1,5 +1,4 @@
-/**
- * App stylesheet entry — delegates to the vanilla CSS system.
- * Component/page styles are co-located as *.css next to their TSX (Step 3).
- */
+
 @import './common/global.css';
+
+@import './common/page-primitives.css';

@@ -1,0 +1,343 @@
+@import '../common/page-primitives.css';
+
+.farmer-detail-page__empty-wrap {
+  max-width: var(--container-xl);
+  margin-inline: auto;
+  padding: var(--space-8) var(--space-4);
+}
+
+.farmer-detail-page__cover {
+  position: relative;
+  height: 12rem;
+  background-color: var(--color-muted);
+}
+
+@media (min-width: 768px) {
+  .farmer-detail-page__cover {
+    height: 16rem;
+  }
+}
+
+.farmer-detail-page__cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.farmer-detail-page__cover-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+}
+
+.farmer-detail-page__container {
+  max-width: var(--container-xl);
+  margin-inline: auto;
+  padding: 0 var(--space-4) var(--space-12);
+}
+
+@media (min-width: 768px) {
+  .farmer-detail-page__container {
+    padding-bottom: var(--space-16);
+  }
+}
+
+.farmer-detail-page__profile-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: -3rem;
+}
+
+@media (min-width: 640px) {
+  .farmer-detail-page__profile-row {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.farmer-detail-page__profile-main {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.farmer-detail-page__avatar {
+  width: 6rem;
+  height: 6rem;
+  border: 4px solid var(--color-background);
+  box-shadow: var(--shadow-soft);
+}
+
+.farmer-detail-page__avatar-fallback {
+  font-size: var(--text-xl);
+}
+
+.farmer-detail-page__profile-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+
+.farmer-detail-page__name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.025em;
+  line-height: var(--leading-tight);
+}
+
+@media (min-width: 768px) {
+  .farmer-detail-page__name {
+    font-size: var(--text-3xl);
+  }
+}
+
+.farmer-detail-page__contact {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-detail-page__rating-wrap {
+  margin-top: var(--space-1);
+}
+
+.farmer-detail-page__fav {
+  background-color: var(--color-card);
+}
+
+.farmer-detail-page__badges {
+  margin-top: var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.farmer-detail-page__tabs {
+  margin-top: var(--space-8);
+}
+
+.farmer-detail-page__tabs .tabs-content {
+  margin-top: var(--space-6);
+}
+
+.farmer-detail-page__products-grid {
+  display: grid;
+  gap: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .farmer-detail-page__products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .farmer-detail-page__products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.farmer-detail-page__product-skeleton {
+  height: 18rem;
+}
+
+.farmer-detail-page__reviews-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.farmer-detail-page__review {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+}
+
+.farmer-detail-page__review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.farmer-detail-page__review-author {
+  font-weight: var(--weight-semibold);
+}
+
+.farmer-detail-page__review-body {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.farmer-detail-page__review-date {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-detail-page__reply {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.farmer-detail-page__reply-title {
+  font-weight: var(--weight-medium);
+}
+
+.farmer-detail-page__reply-body {
+  color: var(--color-muted-foreground);
+}
+
+.farmer-detail-page__no-reviews {
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-detail-page__about-layout {
+  display: grid;
+  gap: var(--space-8);
+}
+
+@media (min-width: 1024px) {
+  .farmer-detail-page__about-layout {
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-10);
+  }
+
+  .farmer-detail-page__about-copy {
+    grid-column: span 3;
+  }
+
+  .farmer-detail-page__about-map {
+    grid-column: span 2;
+  }
+}
+
+.farmer-detail-page__about-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.farmer-detail-page__bio {
+  line-height: var(--leading-relaxed);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-detail-page__phone {
+  font-size: var(--text-sm);
+}
+
+.farmer-detail-page__phone-link {
+  font-weight: var(--weight-medium);
+  color: var(--color-primary-700);
+}
+
+.farmer-detail-page__market-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.farmer-detail-page__map {
+  height: 14rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+}
+
+.farmer-detail-page__map-skeleton {
+  height: 14rem;
+}
+
+.farmer-detail-page__directions {
+  margin-top: var(--space-3);
+  width: 100%;
+}
+
+.farmer-detail-page__directions-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.farmer-detail-page__schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.farmer-detail-page__schedule-card {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.farmer-detail-page__schedule-market {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: var(--weight-semibold);
+}
+
+.farmer-detail-page__schedule-stall {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-detail-page__schedule-dates {
+  margin-top: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.farmer-detail-page__date-label {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.farmer-detail-page__slots {
+  display: grid;
+  gap: var(--space-2);
+}
+
+@media (min-width: 640px) {
+  .farmer-detail-page__slots {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .farmer-detail-page__slots {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.farmer-detail-page__slot {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: color-mix(in srgb, var(--color-muted) 50%, transparent);
+  font-size: var(--text-sm);
+}
+
+.farmer-detail-page__slot-time {
+  font-weight: var(--weight-semibold);
+}
+
+.farmer-detail-page__slot-cutoff {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}

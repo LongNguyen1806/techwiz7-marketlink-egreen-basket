@@ -10,7 +10,10 @@ import {
   registerCustomerSchema,
   registerFarmerSchema,
 } from '../../../schemas/auth/auth.schemas';
-import { useAuth } from '../../../hooks/authentication/useAuth';
+import {
+  useRegisterCustomer,
+  useRegisterFarmer,
+} from '../../../hooks/authentication/useAuth';
 import { ApiError } from '@/lib/ApiError';
 import { cn } from '@/lib/cn';
 import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
@@ -29,7 +32,8 @@ function AuthFooter({ prompt, linkTo, linkLabel }) {
 }
 
 export function RegisterCustomerForm() {
-  const { registerCustomer, registerCustomerPending } = useAuth();
+  const { mutateAsync: registerCustomer, isPending: registerCustomerPending } =
+    useRegisterCustomer();
   const {
     register,
     handleSubmit,
@@ -129,7 +133,8 @@ export function RegisterCustomerForm() {
 }
 
 export function RegisterFarmerForm() {
-  const { registerFarmer, registerFarmerPending } = useAuth();
+  const { mutateAsync: registerFarmer, isPending: registerFarmerPending } =
+    useRegisterFarmer();
   const [step, setStep] = useState(1);
   const {
     register,

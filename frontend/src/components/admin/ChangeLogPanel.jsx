@@ -1,8 +1,7 @@
 import { useAdminChangeLog } from '../../hooks/queries/admin/useAdminChangeLog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cards/Card';
-import { formatDateTime } from '@/utils/formatters';
-
-import './ChangeLogPanel.css';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { formatDateTime } from '../../utils/formatters';
+import '../../styles/admin/ChangeLogPanel.css';
 
 const TYPE_LABEL = {
   CREATED: 'Created',
@@ -11,7 +10,7 @@ const TYPE_LABEL = {
 };
 
 function fieldName(field) {
-  const words = field.replaceAll('_', ' ').toLowerCase();
+  const words = (field || '').replaceAll('_', ' ').toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
@@ -22,8 +21,7 @@ function shown(value) {
   return String(value);
 }
 
-/** The audit trail: how this one record changed over time. Separate from the System log,
- *  which records admin actions across the platform and has no before/after to show. */
+
 export function ChangeLogPanel({ model, id }) {
   const query = useAdminChangeLog(model, id);
 
@@ -42,7 +40,7 @@ export function ChangeLogPanel({ model, id }) {
             <div key={entry.history_id} className="change-log__entry">
               <p className="change-log__head">
                 <span className="page-primitive__font-medium">
-                  {TYPE_LABEL[entry.change_type]}
+                  {TYPE_LABEL[entry.change_type] || entry.change_type}
                 </span>
                 <span className="page-primitive__muted-sm">
                   {formatDateTime(entry.date)} · {entry.user?.email ?? 'System'}
@@ -51,7 +49,7 @@ export function ChangeLogPanel({ model, id }) {
               {entry.reason ? (
                 <p className="page-primitive__muted-sm">{entry.reason}</p>
               ) : null}
-              {entry.changes.length ? (
+              {entry.changes?.length ? (
                 <ul className="change-log__changes">
                   {entry.changes.map((change) => (
                     <li key={change.field} className="change-log__change">

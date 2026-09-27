@@ -1,0 +1,77 @@
+@import '../common/page-primitives.css';
+
+.farmer-profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+}
+
+.farmer-profile-page__banner {
+  height: 12rem;
+  width: 100%;
+  border-radius: var(--radius-2xl);
+  object-fit: cover;
+}
+
+@media (min-width: 1024px) {
+  .farmer-profile-page__banner {
+    height: 14rem;
+  }
+}
+
+.farmer-profile-page__card {
+  width: 100%;
+}
+
+.farmer-profile-page__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.farmer-profile-page__avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.farmer-profile-page__identity {
+  min-width: 0;
+}
+
+.farmer-profile-page__email {
+  margin-top: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-profile-page__title-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.farmer-profile-page__form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .farmer-profile-page__form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.farmer-profile-page__field--full {
+  grid-column: 1 / -1;
+}
+
+.farmer-profile-page__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}

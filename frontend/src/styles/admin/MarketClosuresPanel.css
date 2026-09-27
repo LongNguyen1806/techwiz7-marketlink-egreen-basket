@@ -1,0 +1,60 @@
+.market-closures {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.market-closures__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.market-closures__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.market-closures__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.market-closures__range {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.market-closures__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.market-closures__reason {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .market-closures__form {
+    grid-template-columns: 1fr;
+  }
+
+  .market-closures__reason {
+    grid-column: auto;
+  }
+}

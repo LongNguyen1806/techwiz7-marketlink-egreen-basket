@@ -1,22 +1,40 @@
 import { toast } from 'sonner';
+import { hasErrorMessage } from '../utils/errorMap';
+import { ApiError } from './ApiError';
 
-import { ApiError } from '@/lib/ApiError';
+const DURATION = {
+  success: 3000,
+  info: 4000,
+  warning: 5000,
+  error: 6000,
+};
 
-export { toast };
+export const notify = {
+  success: (title, options) => toast.success(title, { duration: DURATION.success, ...options }),
+  info: (title, options) => toast.info(title, { duration: DURATION.info, ...options }),
+  warning: (title, options) => toast.warning(title, { duration: DURATION.warning, ...options }),
+  error: (title, options) => toast.error(title, { duration: DURATION.error, ...options }),
+  dismiss: (id) => toast.dismiss(id),
+};
 
-export function notify(message, description) {
-  toast.success(message, description ? { description } : undefined);
-}
-
-/**
- * Report a failed request once, in words.
- *
- * Field errors are deliberately silent: a 400 that names its fields is already being drawn
- * next to those fields, and a toast saying the same thing is noise the form has to apologise
- * for twice.
- */
-export function notifyError(error, override) {
+export function notifyError(error, override = {}) {
   const apiError = ApiError.fromUnknown(error);
-  if (!override && Object.keys(apiError.fieldErrors).length > 0) return;
-  toast.error(override ?? apiError.friendlyMessage);
+  const friendly = apiError.friendly;
+
+  if (import.meta.env.DEV && !hasErrorMessage(apiError.code)) {
+    console.warn('[api] unmapped error', {
+      code: apiError.code,
+      status: apiError.status,
+      message: apiError.apiMessage,
+      requestId: apiError.requestId,
+    });
+  }
+
+  const description = override.description ?? friendly.description;
+  const reference = apiError.isServerError && apiError.requestId ? ` Reference: ${apiError.requestId}` : '';
+
+  return notify.error(override.title ?? friendly.title, {
+    id: `error:${apiError.code}`,
+    description: `${description}${reference}`,
+  });
 }

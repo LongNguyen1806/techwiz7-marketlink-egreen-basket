@@ -6,12 +6,12 @@ import {
   useDeleteMarketClosure,
   useMarketClosures,
 } from '../../hooks/queries/admin/useAdminMarkets';
-import { Button } from '@/components/common/forms/Button';
-import { Input } from '@/components/common/forms/Input';
-import { Label } from '@/components/common/forms/Label';
-import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
+import { Button } from '../ui/Button';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { Input } from '../ui/Input';
+import { Label } from '../ui/Label';
 
-import './MarketClosuresPanel.css';
+import '../../styles/admin/MarketClosuresPanel.css';
 
 const REASON_MAX_LENGTH = 200;
 
@@ -157,3 +157,5 @@ export function MarketClosuresPanel({ marketId }) {
     </>
   );
 }
+
+export default MarketClosuresPanel;

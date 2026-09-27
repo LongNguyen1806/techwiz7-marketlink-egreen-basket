@@ -1,0 +1,42 @@
+@import '../common/page-primitives.css';
+
+.farmer-markets-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.farmer-markets-page__market-btn {
+  width: 100%;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  padding: var(--space-4);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.farmer-markets-page__market-btn:hover {
+  box-shadow: var(--shadow-soft);
+}
+
+.farmer-markets-page__market-btn--selected {
+  border-color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+}
+
+.dark .farmer-markets-page__market-btn--selected {
+  background-color: color-mix(in srgb, var(--color-primary-950) 30%, transparent);
+}
+
+.farmer-markets-page__slots-head {
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.farmer-markets-page__slots-actions {
+  margin-bottom: var(--space-3);
+}

@@ -1,0 +1,47 @@
+@import '../common/page-primitives.css';
+
+.farmer-order-detail__countdown {
+  margin-top: var(--space-3);
+}
+
+.farmer-order-detail__countdown--sm {
+  margin-top: var(--space-2);
+}
+
+.farmer-order-detail__heading {
+  margin-bottom: var(--space-2);
+}
+
+.farmer-order-detail__items {
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+}
+
+.farmer-order-detail__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.farmer-order-detail__item:first-child {
+  border-top: none;
+}
+
+.farmer-order-detail__item-name {
+  font-weight: var(--weight-medium);
+}
+
+.farmer-order-detail__item-total {
+  font-weight: var(--weight-semibold);
+}
+
+.farmer-order-detail__total {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--weight-semibold);
+}

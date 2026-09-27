@@ -1,0 +1,28 @@
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.rating-stars__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: var(--color-accent-500);
+  color: var(--color-accent-500);
+}
+
+.rating-stars__icon--md {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rating-stars__value {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.rating-stars__count {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}

@@ -18,13 +18,13 @@ import {
   useAdminReports,
 } from '../../hooks/queries/admin/useAdminReports';
 import { useAdminMarkets } from '../../hooks/queries/admin/useAdminMarkets';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
-import { Button } from '@/components/common/forms/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/cards/Card';
-import { Input } from '@/components/common/forms/Input';
-import { Label } from '@/components/common/forms/Label';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
+import { PageSkeleton } from '@/components/feedback/PageSkeleton';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { formatVnd } from '@/utils/formatters';
 import { orderStatusLabel } from '@/utils/labels';
 import { orderStatusColor } from '@/utils/statusColors';

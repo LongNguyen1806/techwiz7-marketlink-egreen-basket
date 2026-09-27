@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/common/layout/DropdownMenu';
 import { DASHBOARD_PATH } from '@/config/constants';
-import { useAuth } from '../../../hooks/authentication/useAuth';
+import { useAuth, useLogout } from '../../../hooks/authentication/useAuth';
 
 import './UserMenu.css';
 
@@ -48,7 +48,8 @@ function linksForRole(role) {
 }
 
 export function UserMenu() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { mutate: logout } = useLogout();
 
   if (!user) return null;
 

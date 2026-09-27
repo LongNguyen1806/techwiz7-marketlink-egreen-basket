@@ -1,0 +1,10 @@
+.tooltip-content {
+  z-index: 50;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background-color: #0f172a;
+  padding: 0.375rem var(--space-3);
+  font-size: var(--text-xs);
+  color: #fff;
+  box-shadow: var(--shadow-soft);
+}

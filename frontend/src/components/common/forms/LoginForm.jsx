@@ -5,7 +5,7 @@ import { ArrowRight, ShieldCheck, Store, UserRound } from 'lucide-react';
 
 import { Button } from '@/components/common/forms/Button';
 import { Input } from '@/components/common/forms/Input';
-import { useAuth } from '../../../hooks/authentication/useAuth';
+import { useLogin } from '../../../hooks/authentication/useAuth';
 import { loginSchema } from '../../../schemas/auth/auth.schemas';
 import { ApiError } from '@/lib/ApiError';
 import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
@@ -31,7 +31,7 @@ const DEMO_ACCOUNTS = [
 ];
 
 export function LoginForm() {
-  const { login, loginPending } = useAuth();
+  const { mutateAsync: login, isPending: loginPending } = useLogin();
   const pending = loginPending;
   const {
     register,

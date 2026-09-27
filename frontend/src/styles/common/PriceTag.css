@@ -1,0 +1,12 @@
+.price-tag {
+  font-family: var(--font-heading);
+  font-weight: var(--weight-bold);
+  color: var(--color-accent-600);
+}
+
+.price-tag__unit {
+  margin-left: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-muted-foreground);
+}

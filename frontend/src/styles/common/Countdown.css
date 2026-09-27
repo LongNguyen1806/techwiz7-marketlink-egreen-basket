@@ -1,0 +1,12 @@
+.countdown {
+  font-size: var(--text-sm);
+}
+
+.countdown__label {
+  color: var(--color-muted-foreground);
+}
+
+.countdown__value {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}

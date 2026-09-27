@@ -1,0 +1,16 @@
+.lazy-image {
+  background-color: var(--color-muted);
+  transition: opacity 300ms ease;
+}
+
+.lazy-image--loading {
+  opacity: 0.4;
+}
+
+.lazy-image--loaded {
+  opacity: 1;
+}
+
+.lazy-image--placeholder {
+  background-color: var(--color-muted);
+}

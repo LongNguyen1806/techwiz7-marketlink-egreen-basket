@@ -17,44 +17,48 @@ import {
   Carrot,
   ListChecks,
   ReceiptText,
+  Scale,
 } from 'lucide-react';
 
-import { ThemeToggle } from '@/components/common/layout/ThemeToggle';
-import { Button } from '@/components/common/forms/Button';
+import { ThemeToggle } from '../components/layout/ThemeToggle';
+import { Button } from '../components/ui/Button';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/common/drawer/Sheet';
-import { UserMenu } from '@/components/common/forms/UserMenu';
-import { useUiStore } from '@/stores/ui.store';
-import { cn } from '@/lib/cn';
+} from '../components/ui/Sheet';
+import { UserMenu } from '../components/common/layout/UserMenu';
+import { useUiStore } from '../stores/ui.store';
+import { useAIReviewStats } from '../hooks/queries/admin/useAdminAIReview';
+import { cn } from '../lib/cn';
 
-import './AdminLayout.css';
+import '../styles/admin/AdminLayout.css';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/farmers', label: 'Farmers', icon: Warehouse, end: false },
   { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
   { to: '/admin/orders', label: 'Orders', icon: ReceiptText, end: false },
-  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false },
+  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'open_ai_flags' },
   { to: '/admin/queue', label: 'Follow-up queue', icon: ListChecks, end: false },
   { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree, end: false },
+  { to: '/admin/price-guidelines', label: 'Price guidelines', icon: Scale, end: false },
   { to: '/admin/products', label: 'Products', icon: Carrot, end: false },
   { to: '/admin/moderation', label: 'Reviews', icon: ShieldAlert, end: false },
   { to: '/admin/reports', label: 'Reports', icon: FileBarChart, end: false },
   { to: '/admin/announcements', label: 'Announcements', icon: Megaphone, end: false },
   { to: '/admin/audit-logs', label: 'System log', icon: ScrollText, end: false },
-  // Last on purpose: reference rather than work. It is where an admin new to the
-  // platform reads what the rules actually are, not somewhere anyone goes daily.
   { to: '/admin/limits', label: 'Platform limits', icon: SlidersHorizontal, end: false },
   { to: '/admin/password', label: 'My password', icon: KeyRound, end: false },
 ];
 
-function SideNav({ collapsed }) {
+function SideNav({ collapsed }                        ) {
+  // Open AI flags: listings the AI review wants an admin to look at.
+  const aiStats = useAIReviewStats(30);
+  const badges = { open_ai_flags: aiStats.data?.open_ai_flags ?? 0 };
   return (
     <nav className="admin-layout__nav">
       {navItems.map((item) => (
@@ -73,6 +77,11 @@ function SideNav({ collapsed }) {
         >
           <item.icon className="admin-layout__nav-icon" />
           {!collapsed ? <span>{item.label}</span> : null}
+          {item.badge && badges[item.badge] ? (
+            <span className="admin-layout__nav-badge" title={`${badges[item.badge]} open AI flags`}>
+              {badges[item.badge]}
+            </span>
+          ) : null}
         </NavLink>
       ))}
     </nav>

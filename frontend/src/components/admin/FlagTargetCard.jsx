@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { adminApi } from '@/api/admin/adminApi';
 import { QUERY_KEYS } from '@/config/constants';
-import { Badge } from '@/components/common/badges/Badge';
-import { LazyImage } from '@/components/common/cards/LazyImage';
-import { RatingStars } from '@/components/common/badges/RatingStars';
+import { Badge } from '@/components/ui/Badge';
+import { LazyImage } from '@/components/common/LazyImage';
+import { RatingStars } from '@/components/common/RatingStars';
 import { farmerStatusLabel, farmerStatusVariant } from '@/utils/labels';
 import { formatVnd } from '@/utils/formatters';
 

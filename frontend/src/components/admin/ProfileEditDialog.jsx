@@ -6,16 +6,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/common/modal/Dialog';
-import { Button } from '@/components/common/forms/Button';
-import { Input } from '@/components/common/forms/Input';
-import { Textarea } from '@/components/common/forms/Textarea';
-import { ApiError } from '@/lib/ApiError';
+} from '../ui/Dialog';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Textarea } from '../ui/Textarea';
+import { ApiError } from '../../lib/ApiError';
+import '../../styles/admin/ProfileEditDialog.css';
 
-import './ProfileEditDialog.css';
-
-/** The admin's version of a profile form: contact details only. Whatever it cannot edit is
- *  explained by `note` rather than shown as a disabled box the admin would keep clicking. */
 export function ProfileEditDialog({
   open,
   onOpenChange,
@@ -24,15 +21,13 @@ export function ProfileEditDialog({
   // Shown but never editable: the email is what the account signs in with, and there is no
   // endpoint for changing someone else's.
   signInEmail,
-  fields,
-  pending,
+  fields = [],
+  pending = false,
   onSave,
 }) {
   const [values, setValues] = useState({});
   const [errors, setErrors] = useState({});
 
-  // Re-seed from the record every time the dialog opens, so re-opening after a cancel does
-  // not keep the abandoned edits.
   const [seededFor, setSeededFor] = useState(null);
   if (open !== seededFor) {
     setSeededFor(open);
@@ -45,8 +40,6 @@ export function ProfileEditDialog({
   const submit = async (event) => {
     event.preventDefault();
     setErrors({});
-    // Only what actually changed: an untouched field must not be sent, or a phone number the
-    // admin never looked at would be revalidated against D-028 for no reason.
     const changed = Object.fromEntries(
       fields
         .filter((field) => values[field.name] !== field.value)
@@ -60,7 +53,7 @@ export function ProfileEditDialog({
       await onSave(changed);
       onOpenChange(false);
     } catch (error) {
-      const fieldErrors = ApiError.fromUnknown(error).fieldErrors;
+      const fieldErrors = ApiError.fromUnknown(error).fieldErrors || {};
       setErrors(
         Object.fromEntries(
           Object.entries(fieldErrors).map(([key, messages]) => [
@@ -82,13 +75,7 @@ export function ProfileEditDialog({
         <form className="profile-edit-dialog__form" onSubmit={submit}>
           {signInEmail ? (
             <div className="profile-edit-dialog__field">
-              <Input
-                id="edit-email"
-                label="Email"
-                value={signInEmail}
-                readOnly
-                disabled
-              />
+              <Input id="edit-email" label="Email" value={signInEmail} readOnly disabled />
               <p className="page-primitive__muted-xs">
                 This is the sign-in address and cannot be changed here.
               </p>

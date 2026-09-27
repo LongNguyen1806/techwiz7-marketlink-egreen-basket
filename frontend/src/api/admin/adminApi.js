@@ -200,8 +200,6 @@ export const adminApi = {
     return data;
   },
 
-  // A listing is written by a stall and shown to shoppers by an admin. Approving is one
-  // click; refusing has to say why, because the stall can only fix what it is told about.
   approveProduct: async (id) => {
     const { data } = await axiosClient.post(`/admin/products/${id}/approve/`);
     return data;
@@ -210,6 +208,36 @@ export const adminApi = {
   rejectProduct: async (id, reason) => {
     const { data } = await axiosClient.post(`/admin/products/${id}/reject/`, { reason });
     return data;
+  },
+
+  // AI-assisted listing review. The AI advises; these never approve or refuse anything.
+  recheckProductWithAI: async (id) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/ai-recheck/`);
+    return data;
+  },
+
+  getAIReviewStats: async (days = 30, { signal } = {}) => {
+    const { data } = await axiosClient.get('/admin/ai-review/stats/', { params: { days }, signal });
+    return data;
+  },
+
+  getPriceGuidelines: async ({ signal } = {}) => {
+    const { data } = await axiosClient.get('/admin/price-guidelines/', { signal });
+    return Array.isArray(data) ? data : [];
+  },
+
+  createPriceGuideline: async (payload) => {
+    const { data } = await axiosClient.post('/admin/price-guidelines/', payload);
+    return data;
+  },
+
+  updatePriceGuideline: async (id, payload) => {
+    const { data } = await axiosClient.patch(`/admin/price-guidelines/${id}/`, payload);
+    return data;
+  },
+
+  deletePriceGuideline: async (id) => {
+    await axiosClient.delete(`/admin/price-guidelines/${id}/`);
   },
 
   // AD-21b. A takedown, unlike a hide, also cancels the open orders, so the dialog asks what
@@ -329,7 +357,6 @@ export const adminApi = {
   },
 
   // Read only: these limits come from the environment, so changing one is a deploy.
-
   getSettings: async () => {
     const { data } = await axiosClient.get('/admin/settings/');
     return data;

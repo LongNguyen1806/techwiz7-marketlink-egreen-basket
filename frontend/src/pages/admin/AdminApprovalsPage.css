@@ -117,3 +117,57 @@ a.admin-approvals-page__name:hover {
 .admin-approvals-page__reason {
   margin-top: var(--space-2);
 }
+
+
+/* AI triage bar (AI-assisted listing review). */
+.admin-approvals-page__ai-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-block: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-card);
+  padding: var(--space-2) var(--space-3);
+}
+
+.admin-approvals-page__ai-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.admin-approvals-page__ai-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-primary-600);
+}
+
+.admin-approvals-page__ai-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.admin-approvals-page__ai-approve {
+  margin-left: auto;
+}
+
+.admin-approvals-page__linked {
+  margin-bottom: var(--space-3);
+}
+
+.admin-approvals-page__ai-fill {
+  margin-top: var(--space-2);
+}
+
+.admin-approvals-page__ai-list {
+  max-height: 12rem;
+  overflow-y: auto;
+  padding-left: var(--space-4);
+  list-style: disc;
+  font-size: var(--text-sm);
+}

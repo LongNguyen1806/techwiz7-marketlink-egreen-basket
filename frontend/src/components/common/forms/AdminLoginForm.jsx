@@ -6,7 +6,7 @@ import { ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/common/forms/Button';
 import { Input } from '@/components/common/forms/Input';
 import { DASHBOARD_PATH } from '@/config/constants';
-import { useAuth } from '../../../hooks/authentication/useAuth';
+import { useAdminLogin } from '../../../hooks/authentication/useAuth';
 import { loginSchema } from '../../../schemas/auth/auth.schemas';
 import { ApiError } from '@/lib/ApiError';
 import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
@@ -26,7 +26,7 @@ function resumePath(from) {
 // A-00 (D-027). No register or password-reset link: admin accounts are issued by IT, and a
 // wrong portal reads exactly like a wrong password so nobody can probe for admin emails.
 export function AdminLoginForm() {
-  const { adminLogin, adminLoginPending } = useAuth();
+  const { mutateAsync: adminLogin, isPending: adminLoginPending } = useAdminLogin();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -58,7 +58,7 @@ export function AdminLoginForm() {
         onSubmit={handleSubmit(async (values) => {
           try {
             await adminLogin(values);
-            // useAuth already sent us to /admin; go deeper only if that is where we came from.
+            // useAdminLogin already sent us to /admin; go deeper only if that is where we came from.
             const resume = resumePath(location.state?.from);
             if (resume) navigate(resume, { replace: true });
           } catch (error) {

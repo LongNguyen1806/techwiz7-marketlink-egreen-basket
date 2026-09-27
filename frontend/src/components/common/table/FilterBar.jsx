@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import { Button } from '@/components/common/forms/Button';
-import { Input } from '@/components/common/forms/Input';
-import { Label } from '@/components/common/forms/Label';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { useDebouncedValue } from '@/hooks/common/useDebouncedValue';
 
 import './FilterBar.css';
 

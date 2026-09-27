@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
+import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
-import { QUERY_KEYS } from '@/config/constants';
 
 export function useAdminCategories() {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_CATEGORIES,
+    queryKey: ['admin', 'categories'],
     queryFn: adminApi.getCategories,
   });
 }
@@ -21,7 +20,7 @@ export function useReorderCategories() {
     onSuccess: () => {
       toast.success('Category order saved');
       return queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_CATEGORIES,
+        queryKey: ['admin', 'categories'],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
@@ -35,7 +34,7 @@ export function useCreateCategory() {
     onSuccess: () => {
       toast.success('Category added');
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_CATEGORIES,
+        queryKey: ['admin', 'categories'],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
@@ -49,7 +48,7 @@ export function useDeleteCategory() {
     onSuccess: () => {
       toast.success('Category removed');
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ADMIN_CATEGORIES,
+        queryKey: ['admin', 'categories'],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),

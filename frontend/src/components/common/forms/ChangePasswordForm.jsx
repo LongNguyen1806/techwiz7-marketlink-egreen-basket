@@ -1,78 +1,71 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-import { Button } from '@/components/common/forms/Button';
-import { Input } from '@/components/common/forms/Input';
-import { useAuth } from '../../../hooks/authentication/useAuth';
-import { changePasswordSchema } from '../../../schemas/auth/auth.schemas';
-import { ApiError } from '@/lib/ApiError';
-import { mapServerErrorsToForm } from '@/utils/mapServerErrors';
-
+import { Button } from '../../ui/Button';
+import { FormAlert } from './FormAlert';
+import { FormField } from './FormField';
+import { useServerErrors } from './useServerErrors';
+import { useChangePassword } from '../../../hooks/authentication/useAuth';
+import { changePasswordSchema } from '../../../services/common/auth.schemas';
 import './ChangePasswordForm.css';
 
+const FIELDS = ['current_password', 'new_password', 'confirm_password'];
+
+
 export function ChangePasswordForm() {
-  const { changePassword, changePasswordPending } = useAuth();
+  // The form shows its own errors (FormAlert + fields), so the global toast is off.
+  const changePassword = useChangePassword({ silent: true });
+  const { formError, report, clear } = useServerErrors(FIELDS);
   const {
     register,
     handleSubmit,
+    reset,
     setError,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(changePasswordSchema),
+    defaultValues: { current_password: '', new_password: '', confirm_password: '' },
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    clear();
+    try {
+      await changePassword.mutateAsync(values);
+      reset();
+    } catch (error) {
+      report(error, setError);
+    }
   });
 
   return (
-    <form
-      className="change-password-form"
-      onSubmit={handleSubmit(async (values) => {
-        try {
-          await changePassword({
-            current_password: values.current_password,
-            new_password: values.new_password,
-            confirm_password: values.confirm_password,
-          });
-        } catch (error) {
-          mapServerErrorsToForm(ApiError.fromUnknown(error).fieldErrors, setError);
-        }
-      })}
-    >
-      <div className="change-password-form__field">
-        <Input
-          id="current_password"
-          type="password"
-          label="Current password"
-          autoComplete="current-password"
-          {...register('current_password')}
-        />
-        {errors.current_password ? (
-          <p className="change-password-form__error">{errors.current_password.message}</p>
-        ) : null}
-      </div>
-      <div className="change-password-form__field">
-        <Input
-          id="new_password"
-          type="password"
-          label="New password"
-          autoComplete="new-password"
-          {...register('new_password')}
-        />
-        {errors.new_password ? (
-          <p className="change-password-form__error">{errors.new_password.message}</p>
-        ) : null}
-      </div>
-      <div className="change-password-form__field">
-        <Input
-          id="confirm_password"
-          type="password"
-          label="Confirm new password"
-          autoComplete="new-password"
-          {...register('confirm_password')}
-        />
-        {errors.confirm_password ? (
-          <p className="change-password-form__error">{errors.confirm_password.message}</p>
-        ) : null}
-      </div>
-      <Button type="submit" loading={changePasswordPending}>
+    <form className="change-password-form" onSubmit={onSubmit} noValidate>
+      <FormAlert message={formError} />
+
+      <FormField
+        id="current-password"
+        label="Current password"
+        type="password"
+        autoComplete="current-password"
+        error={errors.current_password?.message}
+        {...register('current_password')}
+      />
+      <FormField
+        id="new-password"
+        label="New password"
+        type="password"
+        autoComplete="new-password"
+        error={errors.new_password?.message}
+        {...register('new_password')}
+      />
+      <FormField
+        id="confirm-new-password"
+        label="Confirm new password"
+        type="password"
+        autoComplete="new-password"
+        error={errors.confirm_password?.message}
+        {...register('confirm_password')}
+      />
+
+      <Button type="submit" loading={changePassword.isPending}>
         Change password
       </Button>
     </form>

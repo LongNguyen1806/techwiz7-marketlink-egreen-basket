@@ -1,25 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
+import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
-import { QUERY_KEYS } from '@/config/constants';
 
 function invalidateCustomers(queryClient) {
   return queryClient.invalidateQueries({
-    queryKey: [QUERY_KEYS.ADMIN_CUSTOMERS()[0]],
+    queryKey: ['admin', 'customers'],
   });
 }
 
 export function useAdminCustomers(params = {}) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_CUSTOMERS(params),
+    queryKey: ['admin', 'customers', params],
     queryFn: () => adminApi.getCustomers(params),
-    // The client defaults to a 30s staleTime, which is wrong for a list being searched and
-    // moderated: the answer has to be what the server holds now.
+    // A list being searched and moderated: always ask the server (staleTime 0), and keep the
+    // previous rows on screen while the next query runs, so the table does not blink empty
+    // between keystrokes. The typing itself is debounced by the page.
     staleTime: 0,
-    // Keeps the previous results on screen while the next query runs, so the table does not
-    // blink empty between keystrokes.
     placeholderData: (previous) => previous,
   });
 }
@@ -52,12 +50,11 @@ export function fetchCustomerImpact(id) {
   return adminApi.getCustomerImpact(id);
 }
 
-// AD-10, behind /admin/customers/:id. id is null on any route without one.
 export function useAdminCustomer(id) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_CUSTOMER(id ?? 0),
+    queryKey: ['admin', 'customer', id],
     queryFn: () => adminApi.getCustomer(id),
-    enabled: id !== null,
+    enabled: Boolean(id) && Number.isFinite(id),
   });
 }
 
@@ -68,7 +65,7 @@ export function useUpdateCustomer(id) {
     onSuccess: () => {
       toast.success('Customer updated');
       void invalidateCustomers(queryClient);
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_CUSTOMER(id) });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'customer', id] });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
   });

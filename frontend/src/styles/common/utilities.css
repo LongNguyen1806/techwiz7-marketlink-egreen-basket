@@ -1,6 +1,4 @@
-/**
- * Cross-cutting utilities (not Tailwind). Prefer component classes in Step 3.
- */
+
 
 .glass {
   border: 1px solid rgb(255 255 255 / 0.2);

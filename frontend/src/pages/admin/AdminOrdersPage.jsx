@@ -1,15 +1,15 @@
 import { useState } from 'react';
 
 import { useAdminOrders } from '../../hooks/queries/admin/useAdminOrders';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
-import { StatusBadge } from '@/components/common/badges/StatusBadge';
-import { Button } from '@/components/common/forms/Button';
-import { Input } from '@/components/common/forms/Input';
-import { Label } from '@/components/common/forms/Label';
-import { SortableTh } from '@/components/common/table/SortableTh';
+import { useDebouncedValue } from '@/hooks/common/useDebouncedValue';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
+import { PageSkeleton } from '@/components/feedback/PageSkeleton';
+import { StatusBadge } from '@/components/common/StatusBadge';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { SortableTh } from '@/components/common/SortableTh';
 import { formatDate, formatDateTime, formatMoney } from '@/utils/formatters';
 import { orderStatusLabel } from '@/utils/labels';
 

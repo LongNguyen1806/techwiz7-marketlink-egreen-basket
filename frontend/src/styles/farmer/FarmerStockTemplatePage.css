@@ -1,0 +1,7 @@
+@import '../common/page-primitives.css';
+
+.farmer-stock-template-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}

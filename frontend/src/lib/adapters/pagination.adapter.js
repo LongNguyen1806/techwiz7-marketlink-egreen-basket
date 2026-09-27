@@ -1,5 +1,3 @@
-/** DRF PageNumberPagination default shape. */
-
 function pageFromUrl(url) {
   if (!url) return null;
   try {
@@ -13,28 +11,6 @@ function pageFromUrl(url) {
   }
 }
 
-function isRecord(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function readNullableString(value) {
-  if (value === null) return null;
-  if (typeof value === 'string') return value;
-  return null;
-}
-
-function isPaginatedData(value) {
-  return (
-    typeof value.page === 'number' &&
-    typeof value.page_size === 'number' &&
-    typeof value.total_pages === 'number' &&
-    Array.isArray(value.results)
-  );
-}
-
-/**
- * Normalize DRF pagination (or a bare array) into the FE PaginatedData contract.
- */
 export function adaptPaginated(raw, fallbackPageSize = 20) {
   if (!raw) {
     return {
@@ -56,11 +32,11 @@ export function adaptPaginated(raw, fallbackPageSize = 20) {
       total_pages: raw.length > 0 ? 1 : 0,
       next: null,
       previous: null,
-      results: raw.filter((_item) => true),
+      results: raw,
     };
   }
 
-  if (!isRecord(raw)) {
+  if (typeof raw !== 'object') {
     return {
       count: 0,
       page: 1,
@@ -72,7 +48,12 @@ export function adaptPaginated(raw, fallbackPageSize = 20) {
     };
   }
 
-  if (isPaginatedData(raw)) {
+  if (
+    typeof raw.page === 'number' &&
+    typeof raw.page_size === 'number' &&
+    typeof raw.total_pages === 'number' &&
+    Array.isArray(raw.results)
+  ) {
     return {
       count: typeof raw.count === 'number' ? raw.count : raw.results.length,
       page: raw.page,
@@ -85,15 +66,15 @@ export function adaptPaginated(raw, fallbackPageSize = 20) {
     };
   }
 
-  const results = Array.isArray(raw.results) ? raw.results.filter((_item) => true) : [];
+  const results = Array.isArray(raw.results) ? raw.results : [];
   const count = typeof raw.count === 'number' ? raw.count : results.length;
   const pageSize =
     results.length > 0 && count > results.length
       ? results.length
       : results.length || fallbackPageSize;
   const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(count / pageSize)) : 0;
-  const nextPage = pageFromUrl(readNullableString(raw.next));
-  const prevPage = pageFromUrl(readNullableString(raw.previous));
+  const nextPage = pageFromUrl(raw.next);
+  const prevPage = pageFromUrl(raw.previous);
   const currentPage =
     prevPage !== null ? prevPage + 1 : nextPage !== null ? nextPage - 1 : 1;
 

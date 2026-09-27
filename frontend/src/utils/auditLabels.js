@@ -1,6 +1,3 @@
-// A-11 shows security events. The wording is what an administrator would say out loud, not
-// the enum value the database stores, and never the API path behind it.
-
 const ACTIONS = {
   LOGIN: { label: 'Signed in', tone: 'neutral' },
   LOGIN_FAILED: { label: 'Failed sign-in', tone: 'warning' },
@@ -36,8 +33,7 @@ export const AUDIT_ACTION_OPTIONS = Object.entries(ACTIONS)
 export function auditActionLabel(action) {
   const known = ACTIONS[action];
   if (known) return known.label;
-  // An action the UI has not been taught yet still has to read as words, not SCREAMING_SNAKE.
-  const words = action.replaceAll('_', ' ').toLowerCase();
+  const words = (action || '').replaceAll('_', ' ').toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
@@ -52,7 +48,6 @@ function text(details, key) {
   return null;
 }
 
-/** The sentence that answers "what was this done to?", built from the stored details. */
 export function auditSubject(log) {
   const d = log.details ?? {};
   const parts = [];
@@ -64,7 +59,7 @@ export function auditSubject(log) {
   const review = text(d, 'review_id');
   const email = text(d, 'email');
 
-  if (log.action.startsWith('MARKET_') && market) parts.push(`Market ${market}`);
+  if (log.action?.startsWith('MARKET_') && market) parts.push(`Market ${market}`);
   const stall = text(d, 'stall_name');
   if (farmer) parts.push(stall ? `${stall} (stall #${farmer})` : `Stall #${farmer}`);
   if (customer) parts.push(`Customer #${customer}`);
@@ -83,7 +78,9 @@ export function auditSubject(log) {
 
   const fields = d['changed_fields'];
   if (Array.isArray(fields) && fields.length) {
-    parts.push(`changed ${fields.map((f) => String(f).replaceAll('_', ' ')).join(', ')}`);
+    parts.push(
+      `changed ${fields.map((f) => String(f).replaceAll('_', ' ')).join(', ')}`,
+    );
   }
 
   const affected = text(d, 'affected_orders');
@@ -100,12 +97,11 @@ export function auditSubject(log) {
   return parts.join(' · ') || '—';
 }
 
-/** Free-text reason the admin typed, when the action asked for one. */
 export function auditReason(log) {
   return text(log.details ?? {}, 'reason');
 }
 
 export function auditOutcome(log) {
-  if (log.status_code === null) return 'unknown';
+  if (log.status_code === null || log.status_code === undefined) return 'unknown';
   return log.status_code < 400 ? 'ok' : 'refused';
 }

@@ -1,0 +1,25 @@
+@import '../common/page-primitives.css';
+
+.farmer-orders-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.farmer-orders-page__picking {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.farmer-orders-page__tab-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.farmer-orders-page__print-icon {
+  width: 1rem;
+  height: 1rem;
+}

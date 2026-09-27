@@ -15,9 +15,9 @@ export const marketSchema = z.object({
   address: z.string().min(1, 'Enter address'),
   latitude: z.number(),
   longitude: z.number(),
-  image: z.string(),
+  image: z.string().optional().nullable(),
   open_time: z.string().min(1, 'Select open time'),
   close_time: z.string().min(1, 'Select close time'),
   operating_days: z.array(dayOfWeekSchema).min(1, 'Select at least one day'),
-  description: z.string(),
+  description: z.string().optional().nullable(),
 });

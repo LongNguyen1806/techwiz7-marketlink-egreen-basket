@@ -7,17 +7,18 @@ import {
   useModerationReviews,
   useRestoreModerationReview,
 } from '../../hooks/queries/admin/useAdminModeration';
-import { useRaiseFlag } from '../../hooks/queries/admin/useAdminFlags';
-import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
-import { RatingStars } from '@/components/common/badges/RatingStars';
-import { Badge } from '@/components/common/badges/Badge';
-import { Button } from '@/components/common/forms/Button';
-import { Textarea } from '@/components/common/forms/Textarea';
-import { SortSelect } from '@/components/common/table/SortSelect';
+
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
+import { PageSkeleton } from '@/components/feedback/PageSkeleton';
+import { RatingStars } from '@/components/common/RatingStars';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { SortSelect } from '@/components/common/SortSelect';
 import { FilterBar } from '@/components/common/table/FilterBar';
+import { useRaiseFlag } from '../../hooks/queries/admin/useAdminFlags';
+import { Textarea } from '@/components/ui/Textarea';
 
 import './AdminModerationPage.css';
 

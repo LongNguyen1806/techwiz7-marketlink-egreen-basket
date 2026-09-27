@@ -1,8 +1,6 @@
-import { CategoryIcon } from '@/components/common/badges/CategoryIcon';
-import { CATEGORY_ICON_NAMES, categoryIconLabel } from '@/utils/categoryIcon';
-
-import './IconPicker.css';
-
+import { CategoryIcon } from '../common/badges/CategoryIcon';
+import { CATEGORY_ICON_NAMES, categoryIconLabel } from '../../utils/categoryIcon';
+import '../../styles/admin/IconPicker.css';
 /**
  * A category stores its icon by name, and that name has to be one of a known set and one no
  * other category already wears.

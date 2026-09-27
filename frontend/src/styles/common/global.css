@@ -1,30 +1,4 @@
-/**
- * MarketLink — global stylesheet entry
- *
- * Import order: tokens → reset → base → utilities
- * Fonts load from index.html (Google Fonts: Inter + Plus Jakarta Sans).
- *
- * ─────────────────────────────────────────────────────────────
- * Naming (BEM + semantic block)
- * ─────────────────────────────────────────────────────────────
- * Block:          .btn  .card  .app-header  .market-card
- * Element:        .btn__icon  .card__title  .app-header__nav
- * Modifier:       .btn--primary  .btn--sm  .card--elevated
- * State:          .is-active  .is-loading  .is-disabled  .has-error
- *
- * Rules:
- * - One CSS file per component/page, co-located next to the TSX:
- *     Button.tsx  +  Button.css
- *     HomePage.tsx  +  HomePage.css
- * - Import in the component:  import './Button.css';
- * - Class names are semantic (no utility soup). Prefer tokens:
- *     color: var(--color-primary-600);
- *     padding: var(--space-4);
- * - Use cn() only to combine semantic classes conditionally.
- * - Do not invent new global utilities for spacing/color — use tokens
- *   inside component CSS.
- * ─────────────────────────────────────────────────────────────
- */
+
 
 @import './tokens.css';
 @import './reset.css';

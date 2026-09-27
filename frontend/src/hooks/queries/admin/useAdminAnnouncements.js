@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/lib/ApiError';
+import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
-import { QUERY_KEYS } from '@/config/constants';
 
 export function useAdminAnnouncements(params = {}) {
   return useQuery({
-    queryKey: QUERY_KEYS.ADMIN_ANNOUNCEMENTS(params),
+    // The filters are part of the key, so each combination is cached on its own; staleTime 0
+    // and the placeholder keep a filtered list fresh without blanking it between changes.
+    queryKey: ['admin', 'announcements', params],
     queryFn: () => adminApi.getAnnouncements(params),
     staleTime: 0,
     placeholderData: (previous) => previous,
@@ -21,7 +22,7 @@ export function useCreateAnnouncement() {
     onSuccess: () => {
       toast.success('Announcement created');
       void queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.ADMIN_ANNOUNCEMENTS()[0]],
+        queryKey: ['admin', 'announcements'],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
@@ -35,7 +36,7 @@ export function useDeleteAnnouncement() {
     onSuccess: () => {
       toast.success('Announcement removed');
       void queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.ADMIN_ANNOUNCEMENTS()[0]],
+        queryKey: ['admin', 'announcements'],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
@@ -45,10 +46,11 @@ export function useDeleteAnnouncement() {
 export function useToggleAnnouncement() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, is_active }) => adminApi.updateAnnouncement(id, { is_active }),
+    mutationFn: ({ id, is_active }) =>
+      adminApi.updateAnnouncement(id, { is_active }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.ADMIN_ANNOUNCEMENTS()[0]],
+        queryKey: ['admin', 'announcements'],
       });
     },
     onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),

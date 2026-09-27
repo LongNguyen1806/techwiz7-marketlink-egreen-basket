@@ -5,20 +5,18 @@ import {
   useAdminMarkets,
   useToggleAdminMarket,
 } from '../../hooks/queries/admin/useAdminMarkets';
-import { EmptyState } from '@/components/common/feedback/EmptyState';
-import { PageHeader } from '@/components/common/layout/PageHeader';
-import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
-import { Badge } from '@/components/common/badges/Badge';
-import { Button } from '@/components/common/forms/Button';
-import { SortSelect } from '@/components/common/table/SortSelect';
-import { FilterBar } from '@/components/common/table/FilterBar';
-import { ConfirmDialog } from '@/components/common/modal/ConfirmDialog';
-import { Textarea } from '@/components/common/forms/Textarea';
-import { Input } from '@/components/common/forms/Input';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { FilterBar } from '../../components/common/table/FilterBar';
+import { Input } from '../../components/ui/Input';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { SortSelect } from '../../components/common/SortSelect';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { Textarea } from '../../components/ui/Textarea';
+import '../../styles/admin/AdminMarketsPage.css';
 
-import './AdminMarketsPage.css';
-
-// AD-17 shares the 5-500 character reason with AD-06 and AD-07.
 const REASON_MIN_LENGTH = 5;
 
 const MARKET_FILTERS = [
@@ -82,7 +80,7 @@ export default function AdminMarketsPage() {
 
       {query.isLoading ? (
         <PageSkeleton />
-      ) : !query.data?.results.length ? (
+      ) : !query.data?.results?.length ? (
         <EmptyState
           title="No markets yet"
           description="Add your first market so stalls and shoppers have a place to meet."
@@ -123,8 +121,6 @@ export default function AdminMarketsPage() {
                     }
                     setClosing(m);
                     setReason('');
-                    setFarmerMessage('');
-                    setTyped('');
                   }}
                 >
                   {m.is_active ? 'Close' : 'Reopen'}
@@ -142,8 +138,10 @@ export default function AdminMarketsPage() {
         }}
         title={`Close ${closing?.name ?? 'this market'}?`}
         description={
+          // A stall trades at exactly one market, so closing the market also suspends every
+          // stall at it until the market reopens. The dialog has to say so before the click.
           'Every order still open at this market will be cancelled and the stock returned. ' +
-          'Stalls keep their accounts and can carry on selling at their other markets.'
+          'Each stall here is suspended until the market reopens, and put back when it does.'
         }
         confirmLabel="Close market"
         destructive
