@@ -16,7 +16,15 @@ from marketlink_core.history import save_with_history
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from notifications.models import NotificationType
 from notifications.services import notify
-from orders.models import OPEN_STATUSES, ActorRole, ChangeReason, Order, OrderStatus
+from marketlink_core.context import get_request_id
+from orders.models import (
+    OPEN_STATUSES,
+    ActorRole,
+    ChangeReason,
+    Order,
+    OrderStatus,
+    OrderStatusHistory,
+)
 from orders.services.fsm import transition_order
 
 SCHEDULE_FIELDS = ("operating_days", "open_time", "close_time")
@@ -63,10 +71,11 @@ class MarketEditImpact:
     changed_fields: list[str]
     location_changed: bool
     schedule_changed: bool
-    # Open orders whose pickup no longer falls inside the new days and hours.
-    order_ids_to_cancel: list[int] = field(default_factory=list)
+    # Open orders whose pickup no longer falls inside the new days and hours. They are not
+    # cancelled: the shopper is asked to pick a new time.
+    order_ids_to_reschedule: list[int] = field(default_factory=list)
     slot_ids_to_disable: list[int] = field(default_factory=list)
-    # recipient user id -> orders of theirs this edit cancels (0 = told, nothing cancelled)
+    # recipient user id -> orders of theirs needing a new time (0 = told, nothing to redo)
     customers: dict[int, int] = field(default_factory=dict)
     farmers: dict[int, int] = field(default_factory=dict)
     # farmer user id -> pickup slots of theirs this edit switches off
@@ -77,7 +86,7 @@ class MarketEditImpact:
             "changed_fields": self.changed_fields,
             "location_changed": self.location_changed,
             "schedule_changed": self.schedule_changed,
-            "orders_to_cancel": len(self.order_ids_to_cancel),
+            "orders_to_reschedule": len(self.order_ids_to_reschedule),
             "slots_to_disable": len(self.slot_ids_to_disable),
             "customers_to_notify": len(self.customers),
             "stalls_to_notify": len(self.farmers),
@@ -133,16 +142,20 @@ def preview_market_update(*, market: Market, validated: dict[str, Any]) -> Marke
                 impact.slots_per_farmer[farmer_id] = impact.slots_per_farmer.get(farmer_id, 0) + 1
 
         # Only pickups still ahead. One whose time has already come went ahead under the old
-        # schedule; the expiry sweep and the stall close those out as usual.
+        # schedule; the expiry sweep and the stall close those out as usual. An order already
+        # waiting for a new time was told once and is not counted or told again.
         upcoming = Order.objects.filter(
-            market=market, status__in=OPEN_STATUSES, pickup_start_at__gt=timezone.now()
+            market=market,
+            status__in=OPEN_STATUSES,
+            pickup_start_at__gt=timezone.now(),
+            reschedule_requested_at__isnull=True,
         ).order_by("id")
         for order in upcoming:
             start = timezone.localtime(order.pickup_start_at)
             end = timezone.localtime(order.pickup_end_at)
             if _outside(days, open_time, close_time,
                         day=order.pickup_date.isoweekday(), start=start.time(), end=end.time()):
-                impact.order_ids_to_cancel.append(order.pk)
+                impact.order_ids_to_reschedule.append(order.pk)
                 impact.customers[order.customer_id] = impact.customers.get(order.customer_id, 0) + 1
                 impact.farmers[order.farmer_id] = impact.farmers.get(order.farmer_id, 0) + 1
         for farmer_id in impact.slots_per_farmer:
@@ -184,7 +197,7 @@ def _notify_update(*, market: Market, old_name: str, impact: MarketEditImpact) -
     changes = _change_lines(old_name=old_name, market=market, impact=impact)
     users = get_user_model().objects.in_bulk(sorted(set(impact.customers) | set(impact.farmers)))
 
-    for customer_id, cancelled in sorted(impact.customers.items()):
+    for customer_id, moved in sorted(impact.customers.items()):
         notify(
             recipient=users[customer_id],
             event_type=NotificationType.MARKET_UPDATED,
@@ -192,15 +205,16 @@ def _notify_update(*, market: Market, old_name: str, impact: MarketEditImpact) -
                 "market_name": market.name,
                 "changes": changes,
                 "order_note": (
-                    f"{cancelled} of your orders there no longer fit the new schedule and "
-                    "were cancelled."
-                    if cancelled
+                    f"{moved} of your orders there no longer fit the new schedule. Please "
+                    "choose a new pickup time, or cancel; if nothing is chosen by the old "
+                    "pickup time, the order is cancelled."
+                    if moved
                     else "Your orders there still stand."
                 ),
                 "target_url": "/customer/orders",
             },
         )
-    for farmer_id, cancelled in sorted(impact.farmers.items()):
+    for farmer_id, moved in sorted(impact.farmers.items()):
         slots = impact.slots_per_farmer.get(farmer_id, 0)
         notify(
             recipient=users[farmer_id],
@@ -209,9 +223,9 @@ def _notify_update(*, market: Market, old_name: str, impact: MarketEditImpact) -
                 "market_name": market.name,
                 "changes": changes,
                 "order_note": (
-                    f"{cancelled} of your orders there no longer fit and were cancelled; "
-                    "their stock is back in your listings."
-                    if cancelled
+                    f"{moved} of your orders there no longer fit; the shoppers have been "
+                    "asked to choose a new pickup time."
+                    if moved
                     else ""
                 ),
                 "slot_note": (
@@ -228,19 +242,20 @@ def _notify_update(*, market: Market, old_name: str, impact: MarketEditImpact) -
 # D-022 / AD-16. Moving a market or changing when it runs reaches the people due there:
 # - name, address, map position: everyone with an open order and every stall gets one notice;
 # - days or hours: slots outside them switch off, and open orders whose pickup falls outside
-#   them are declined (stock back) - but only once the admin has seen the count and confirmed.
+#   them are kept but marked: the shopper picks a new time or cancels, and one left alone is
+#   declined when its old time comes (expiry sweep). The admin sees the count and confirms.
 # Each person gets a single notice that carries every change, never one per order.
 @transaction.atomic
 def update_market(
-    *, market_id: int, validated: dict[str, Any], actor=None, confirm_cancel: bool = False
+    *, market_id: int, validated: dict[str, Any], actor=None, confirm_affected: bool = False
 ) -> tuple[Market, MarketEditImpact]:
     # Lock order fixed by §5: markets, then pickup_slots by id, to stay deadlock-free.
     market = Market.objects.select_for_update().get(pk=market_id)
     impact = preview_market_update(market=market, validated=validated)
-    if impact.order_ids_to_cancel and not confirm_cancel:
+    if impact.order_ids_to_reschedule and not confirm_affected:
         raise UnprocessableEntityError(
-            f"This change cancels {len(impact.order_ids_to_cancel)} open orders. "
-            "Confirm to go ahead.",
+            f"{len(impact.order_ids_to_reschedule)} open orders no longer fit this "
+            "schedule and will need a new pickup time. Confirm to go ahead.",
             code=ErrorCode.FAILED_PRECONDITION,
             data=impact.summary(),
         )
@@ -264,25 +279,32 @@ def update_market(
         slot.is_active = False
         save_with_history(slot, update_fields=["is_active", "updated_at"], reason=marker)
 
-    # A pending change request dies with the order it belonged to (§5.4 step 4).
+    now = timezone.now()
     for order in (
-        Order.objects.filter(pk__in=impact.order_ids_to_cancel)
-        .exclude(pending_change=None)
+        Order.objects.filter(pk__in=impact.order_ids_to_reschedule)
         .order_by("id")
+        .select_for_update(of=("self",))
     ):
+        order.reschedule_requested_at = now
+        # A change request asked for against the old schedule is moot; the shopper picks
+        # again from the new one (§5.4 step 4).
         order.pending_change = None
+        order.version += 1
         save_with_history(
-            order, update_fields=["pending_change", "updated_at"], reason=marker, user=actor
+            order,
+            update_fields=["reschedule_requested_at", "pending_change", "version", "updated_at"],
+            reason=marker,
+            user=actor,
         )
-    for order_id in impact.order_ids_to_cancel:
-        transition_order(
-            order_id=order_id,
-            to_status=OrderStatus.DECLINED,
+        OrderStatusHistory.objects.create(
+            order=order,
+            from_status=order.status,
+            to_status=order.status,
+            transition=None,
             actor=actor,
             actor_role=ActorRole.ADMIN,
-            admin_change_reason=ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN,
-            # The shopper hears it once, in the market notice below.
-            notify_customer=False,
+            change_reason="The market changed its schedule; a new pickup time is needed.",
+            request_id=get_request_id(),
         )
 
     # notify() writes its row in this transaction and defers delivery to on_commit, so a

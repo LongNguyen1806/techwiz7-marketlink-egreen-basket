@@ -76,6 +76,8 @@ def _is_open_on(slot: PickupSlot, day: date, market_ranges, farmer_ranges, farme
     return (
         day.isoweekday() == slot.day_of_week
         and slot.day_of_week in operating_days
+        and market.open_time <= slot.start_time
+        and slot.end_time <= market.close_time
         and _farmer_operates_on(farmer, day)
         and not _covered(market_ranges.get(market.id, []), day)
         and not _covered(farmer_ranges, day)

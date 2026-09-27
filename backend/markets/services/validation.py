@@ -99,6 +99,15 @@ def validate_pickup_date(
             code=ErrorCode.SLOT_NOT_AVAILABLE,
         )
 
+    # (1c) inside the market's opening hours. Slots outside them are switched off when the
+    # hours change, but a slot is never offered on that alone.
+    market = Market.objects.only("open_time", "close_time").get(pk=market_id)
+    if slot.start_time < market.open_time or slot.end_time > market.close_time:
+        raise UnprocessableEntityError(
+            "The selected pickup time is outside the market's opening hours.",
+            code=ErrorCode.SLOT_NOT_AVAILABLE,
+        )
+
     # (1b) farmer operating day (D-031). Missing or broken data never lets a date through.
     farmer = slot.farmer_market.farmer
     operating_days = farmer.operating_days if isinstance(farmer.operating_days, list) else []

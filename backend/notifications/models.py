@@ -30,6 +30,8 @@ class NotificationType(models.TextChoices):
     # Sent to both sides when Admin changes where or when a market runs: one notice each,
     # carrying every change and any orders it cancelled.
     MARKET_UPDATED = "MARKET_UPDATED", "Market Details Changed"
+    # To both sides when an order that needed a new pickup time got none before the old one.
+    ORDER_RESCHEDULE_MISSED = "ORDER_RESCHEDULE_MISSED", "Order Cancelled, No New Pickup Time"
     # Sent to the stall when Admin takes one of its products down (AD-21b).
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Product Blocked by Admin"
     # The outcome of the review a new or edited listing goes through.

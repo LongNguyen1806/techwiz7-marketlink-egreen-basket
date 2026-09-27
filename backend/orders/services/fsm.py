@@ -331,7 +331,13 @@ def _check_preconditions(
         return reason
 
     if actor_role == _R.CUSTOMER:
-        if code in (Transition.T5, Transition.T6) and now >= order.cutoff_at:
+        # An order waiting for a new pickup time can always be dropped: the shopper is only
+        # past the cutoff because the market moved, not because they left it late.
+        if (
+            code in (Transition.T5, Transition.T6)
+            and now >= order.cutoff_at
+            and order.reschedule_requested_at is None
+        ):
             raise UnprocessableEntityError(
                 "The cutoff time for changing this order has passed.", code=ErrorCode.CUTOFF_PASSED
             )

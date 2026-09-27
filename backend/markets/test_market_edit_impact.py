@@ -1,8 +1,8 @@
-"""Editing a market reaches the people due there (P2 + P3).
+"""Editing a market reaches the people due there (P2 + P3, reschedule variant).
 
 - name, address, map position: one notice to every shopper with an open order and every stall;
-- days or hours: open orders whose pickup no longer fits are declined, but only after the admin
-  has seen the count and confirmed; each person still gets a single notice.
+- days or hours: open orders whose pickup no longer fits are kept but marked, and the shopper is
+  asked to pick a new time; the admin sees the count and confirms first. One notice per person.
 """
 
 from datetime import time, timedelta
@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from markets.conftest import MONDAY, WEDNESDAY
 from notifications.models import Notification, NotificationType
-from orders.models import ChangeReason, OrderStatus, OrderStatusHistory
+from orders.models import OrderStatus, OrderStatusHistory
 
 DETAIL_URL_NAME = "admin-market-detail"
 IMPACT_URL_NAME = "admin-market-impact"
@@ -30,7 +30,7 @@ def _patch(client, market, body):
 
 @pytest.mark.django_db
 class TestPreview:
-    def test_counts_the_orders_a_dropped_day_would_cancel(self, admin_client, market, make_order):
+    def test_counts_the_orders_a_dropped_day_would_move(self, admin_client, market, make_order):
         make_order(pickup_date=_next(WEDNESDAY))
         make_order(pickup_date=_next(MONDAY))
 
@@ -40,7 +40,7 @@ class TestPreview:
 
         assert response.status_code == 200
         data = response.data["data"]
-        assert data["orders_to_cancel"] == 1
+        assert data["orders_to_reschedule"] == 1
         assert data["customers_to_notify"] == 1
         assert data["schedule_changed"] is True
         assert data["location_changed"] is False
@@ -65,52 +65,57 @@ class TestPreview:
         )
 
         order.refresh_from_db()
-        assert order.status == OrderStatus.PLACED
+        assert order.reschedule_requested_at is None
         assert not Notification.objects.exists()
 
 
 @pytest.mark.django_db
 class TestScheduleChange:
-    def test_is_refused_until_confirmed_when_it_cancels_orders(self, admin_client, market, make_order):
+    def test_is_refused_until_confirmed_when_orders_no_longer_fit(
+        self, admin_client, market, make_order
+    ):
         order = make_order(pickup_date=_next(WEDNESDAY))
 
         response = _patch(admin_client, market, {"operating_days": [MONDAY]})
 
         assert response.status_code == 422
-        assert response.data["data"]["orders_to_cancel"] == 1
+        assert response.data["data"]["orders_to_reschedule"] == 1
         order.refresh_from_db()
         market.refresh_from_db()
-        assert order.status == OrderStatus.PLACED
+        assert order.reschedule_requested_at is None
         assert set(market.operating_days.values_list("day_of_week", flat=True)) == {MONDAY, WEDNESDAY}
 
-    def test_confirmed_declines_the_orders_that_no_longer_fit(
+    def test_confirmed_keeps_the_order_and_asks_for_a_new_time(
         self, admin_client, market, make_order
     ):
-        dropped = make_order(pickup_date=_next(WEDNESDAY))
-        kept = make_order(pickup_date=_next(MONDAY))
+        moved = make_order(pickup_date=_next(WEDNESDAY))
+        kept = make_order(pickup_date=_next(MONDAY), status=OrderStatus.ACCEPTED)
 
         response = _patch(
-            admin_client, market, {"operating_days": [MONDAY], "confirm_cancel_orders": True}
+            admin_client, market, {"operating_days": [MONDAY], "confirm_affected_orders": True}
         )
 
         assert response.status_code == 200
-        assert response.data["data"]["cancelled_orders"] == 1
-        dropped.refresh_from_db()
+        assert response.data["data"]["orders_to_reschedule"] == 1
+        moved.refresh_from_db()
         kept.refresh_from_db()
-        assert dropped.status == OrderStatus.DECLINED
-        assert kept.status == OrderStatus.PLACED
-        row = OrderStatusHistory.objects.get(order=dropped, to_status=OrderStatus.DECLINED)
-        assert row.change_reason == ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN
+        assert moved.status == OrderStatus.PLACED
+        assert moved.reschedule_requested_at is not None
+        assert kept.reschedule_requested_at is None
+        assert OrderStatusHistory.objects.filter(
+            order=moved, change_reason__contains="new pickup time"
+        ).exists()
 
-    def test_narrower_hours_cancel_a_pickup_outside_them(self, admin_client, market, make_order):
+    def test_an_accepted_order_is_marked_too(self, admin_client, market, make_order):
+        order = make_order(pickup_date=_next(MONDAY), status=OrderStatus.ACCEPTED)
+
         # make_order books 08:00-10:00.
-        order = make_order(pickup_date=_next(MONDAY))
-
         _patch(admin_client, market,
-               {"open_time": "09:00", "close_time": "12:00", "confirm_cancel_orders": "true"})
+               {"open_time": "09:00", "close_time": "12:00", "confirm_affected_orders": "true"})
 
         order.refresh_from_db()
-        assert order.status == OrderStatus.DECLINED
+        assert order.status == OrderStatus.ACCEPTED
+        assert order.reschedule_requested_at is not None
 
     def test_each_shopper_gets_one_notice_for_all_their_orders(
         self, admin_client, market, make_order, customer_user
@@ -118,11 +123,13 @@ class TestScheduleChange:
         make_order(pickup_date=_next(WEDNESDAY))
         make_order(pickup_date=_next(WEDNESDAY) + timedelta(days=7))
 
-        _patch(admin_client, market, {"operating_days": [MONDAY], "confirm_cancel_orders": True})
+        _patch(admin_client, market, {"operating_days": [MONDAY], "confirm_affected_orders": True})
 
         notices = Notification.objects.filter(recipient=customer_user)
         assert list(notices.values_list("type", flat=True)) == [NotificationType.MARKET_UPDATED]
-        assert "2 of your orders" in notices.get().message
+        message = notices.get().message
+        assert "2 of your orders" in message
+        assert "choose a new pickup time" in message
 
     def test_the_stall_hears_about_orders_and_slots_in_one_notice(
         self, admin_client, market, make_slot, make_order, farmer_user
@@ -130,12 +137,23 @@ class TestScheduleChange:
         make_slot(day_of_week=WEDNESDAY, start=time(7, 0), end=time(9, 0))
         make_order(pickup_date=_next(WEDNESDAY))
 
-        _patch(admin_client, market, {"operating_days": [MONDAY], "confirm_cancel_orders": True})
+        _patch(admin_client, market, {"operating_days": [MONDAY], "confirm_affected_orders": True})
 
         notice = Notification.objects.get(recipient=farmer_user)
         assert notice.type == NotificationType.MARKET_UPDATED
         assert "1 of your orders" in notice.message
         assert "1 of your pickup slots" in notice.message
+
+    def test_an_order_already_waiting_is_not_told_twice(
+        self, admin_client, market, make_order, customer_user
+    ):
+        make_order(pickup_date=_next(WEDNESDAY))
+        _patch(admin_client, market, {"operating_days": [MONDAY], "confirm_affected_orders": True})
+
+        response = _patch(admin_client, market, {"operating_days": [MONDAY, 2]})
+
+        assert response.status_code == 200
+        assert Notification.objects.filter(recipient=customer_user).count() == 1
 
     def test_a_pickup_already_under_way_is_left_alone(self, admin_client, market, make_order):
         order = make_order(pickup_date=timezone.localdate() - timedelta(days=1))
@@ -144,7 +162,7 @@ class TestScheduleChange:
 
         assert response.status_code == 200
         order.refresh_from_db()
-        assert order.status == OrderStatus.PLACED
+        assert order.reschedule_requested_at is None
 
 
 @pytest.mark.django_db

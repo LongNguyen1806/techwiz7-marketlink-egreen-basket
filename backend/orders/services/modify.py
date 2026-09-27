@@ -59,7 +59,26 @@ def modify_order(
             )
 
         now = timezone.now()
-        if now >= order.cutoff_at:
+        # The market changed its schedule under this order. The old cutoff no longer means
+        # anything, so it does not lock the shopper out; the new time still has to pass every
+        # rule (market day and hours, closures, the stall's own cutoff) in validate_pickup_date.
+        rescheduling = order.reschedule_requested_at is not None
+        if rescheduling:
+            if pickup_date is None or pickup_slot_id is None:
+                raise BusinessValidationError(
+                    "Please choose a new pickup date and time.",
+                    code=ErrorCode.VALIDATION_ERROR,
+                    errors={"pickup_slot_id": ["Please choose a new pickup time."]},
+                )
+            if items_data is not None and {
+                entry.get("product_id"): entry.get("quantity") for entry in items_data
+            } != {item.product_id: item.quantity for item in order.items.all()}:
+                raise BusinessValidationError(
+                    "Only the pickup time can change on this order.",
+                    code=ErrorCode.VALIDATION_ERROR,
+                )
+            items_data = None
+        elif now >= order.cutoff_at:
             raise UnprocessableEntityError(
                 "The cutoff time for modifying this order has passed.",
                 code=ErrorCode.CUTOFF_PASSED,
@@ -216,7 +235,9 @@ def modify_order(
 
         order.version += 1
 
-        if order.status == OrderStatus.ACCEPTED:
+        # An accepted order moved by the market's schedule change takes its new time straight
+        # away: the stall already agreed to the order, and the move was not the shopper's idea.
+        if order.status == OrderStatus.ACCEPTED and not rescheduling:
             # ACCEPTED orders preserve current state and store pending_change for farmer review (D-030)
             pending_items = None
             if new_items_dict is not None:
@@ -252,7 +273,8 @@ def modify_order(
                 request_id=get_request_id(),
             )
         else:
-            # PLACED orders apply changes directly to database
+            # PLACED orders (and rescheduled ones) apply changes directly to database
+            from_status = order.status
             if clean_note is not None:
                 order.note = clean_note
 
@@ -302,16 +324,23 @@ def modify_order(
                 "cutoff_at",
                 "stall_label",
             ]
+            if rescheduling:
+                order.reschedule_requested_at = None
+                update_fields.append("reschedule_requested_at")
             order.save(update_fields=update_fields)
 
             OrderStatusHistory.objects.create(
                 order=order,
-                from_status=OrderStatus.PLACED,
-                to_status=OrderStatus.PLACED,
+                from_status=from_status,
+                to_status=from_status,
                 transition=None,
                 actor=actor,
                 actor_role=ActorRole.CUSTOMER,
-                change_reason=f"Customer modified: {change_summary}",
+                change_reason=(
+                    f"Customer picked a new time after the market changed: {change_summary}"
+                    if rescheduling
+                    else f"Customer modified: {change_summary}"
+                ),
                 request_id=get_request_id(),
             )
 

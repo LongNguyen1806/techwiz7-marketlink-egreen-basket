@@ -166,7 +166,7 @@ class MarketEditImpactSerializer(serializers.Serializer):
     changed_fields = serializers.ListField(child=serializers.CharField())
     location_changed = serializers.BooleanField()
     schedule_changed = serializers.BooleanField()
-    orders_to_cancel = serializers.IntegerField()
+    orders_to_reschedule = serializers.IntegerField()
     slots_to_disable = serializers.IntegerField()
     customers_to_notify = serializers.IntegerField()
     stalls_to_notify = serializers.IntegerField()

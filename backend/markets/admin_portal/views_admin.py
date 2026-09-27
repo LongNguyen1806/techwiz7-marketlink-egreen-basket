@@ -132,13 +132,13 @@ class MarketDetailView(RetrieveUpdateAPIView):
         market = self.get_object()
         serializer = self.get_serializer(market, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        # A change that cancels orders is refused until the admin has seen the count in the
-        # preview and sent confirm_cancel_orders back with the save.
+        # A change that leaves orders outside the schedule is refused until the admin has seen
+        # the count in the preview and sent confirm_affected_orders back with the save.
         _, impact = update_market(
             market_id=market.pk,
             validated=dict(serializer.validated_data),
             actor=request.user,
-            confirm_cancel=_confirmed(request.data.get("confirm_cancel_orders")),
+            confirm_affected=_confirmed(request.data.get("confirm_affected_orders")),
         )
         summary = impact.summary()
         log_request_event(
@@ -149,14 +149,14 @@ class MarketDetailView(RetrieveUpdateAPIView):
                 "market_id": market.pk,
                 "changed_fields": summary["changed_fields"],
                 "deactivated_slot_count": summary["slots_to_disable"],
-                "cancelled_orders": summary["orders_to_cancel"],
+                "orders_to_reschedule": summary["orders_to_reschedule"],
                 "notified": summary["customers_to_notify"] + summary["stalls_to_notify"],
             },
         )
         # Re-read through the selector so the counts and prefetches are back in place.
         data = MarketAdminReadSerializer(get_market_for_admin(market_id=market.pk)).data
         data["deactivated_slot_count"] = summary["slots_to_disable"]
-        data["cancelled_orders"] = summary["orders_to_cancel"]
+        data["orders_to_reschedule"] = summary["orders_to_reschedule"]
         data["notified"] = summary["customers_to_notify"] + summary["stalls_to_notify"]
         return api_response(message="Market updated.", request=request, data=data)
 
