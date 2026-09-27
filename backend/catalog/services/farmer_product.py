@@ -132,9 +132,10 @@ def _reencode(content: bytes, image_format: str) -> bytes:
 def notify_restock_for_product(*, product: Product) -> int:
     """
     Sends in-app RESTOCK notification to customers who favorited this product (D-025, A-021).
-    Only triggered when product is public and stock moves from 0 to > 0.
+    Only triggered when product is public and stock moves from 0 to > 0. A listing waiting for
+    review is not public, so nobody is told about stock they cannot buy.
     """
-    if not product.is_available or product.is_archived or product.is_hidden_by_admin:
+    if not product.is_on_sale:
         return 0
 
     favorites = FavoriteProduct.objects.filter(product=product).select_related("customer")
@@ -304,7 +305,7 @@ def apply_weekly_template(*, farmer: FarmerProfile) -> dict[str, int]:
                 updated_count += 1
 
                 # D-025 trigger: stock moves from 0 to > 0
-                if old_stock == 0 and new_stock > 0 and p.is_available and not p.is_hidden_by_admin:
+                if old_stock == 0 and new_stock > 0 and p.is_on_sale:
                     total_restock_notified += notify_restock_for_product(product=p)
 
         return {"updated_count": updated_count, "restock_notified": total_restock_notified}

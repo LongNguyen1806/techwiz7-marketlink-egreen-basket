@@ -123,6 +123,12 @@ export const farmerApi = {
 
   
   
+  // Rule checks on the product form before saving (no AI, nothing stored): advice only.
+  precheckProduct: async (params, { signal } = {}) => {
+    const { data } = await axiosClient.get('/farmer/products/precheck/', { params, signal });
+    return data;
+  },
+
   getProducts: async (params, { signal } = {}) => {
     const { data } = await axiosClient.get('/farmer/products/', { params, signal });
     return adaptPaginated(data);

@@ -5,6 +5,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from catalog.services.stock import lock_products
+from orders.services.checkout_service import cap_message, minimum_message
 from marketlink_core.context import get_request_id
 from marketlink_core.exceptions import (
     BusinessValidationError,
@@ -138,10 +139,26 @@ def modify_order(
                         code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                     )
                 old_qty = old_items[pid].quantity if pid in old_items else 0
-                if new_qty > old_qty and (not prod.is_available or prod.is_archived or prod.is_hidden_by_admin):
+                # Keeping or lowering a line is always allowed, so an order whose product went back
+                # into review (or had its cap lowered) can still be edited down.
+                if new_qty > old_qty and not prod.is_on_sale:
                     raise UnprocessableEntityError(
                         f"Product {prod.name} is not available.",
                         code=ErrorCode.PRODUCT_NOT_AVAILABLE,
+                    )
+                # A line the customer adds or changes must sit in the stall's per-order window;
+                # an untouched line keeps its old quantity even if the window moved since.
+                if new_qty != old_qty and new_qty < prod.min_per_order:
+                    raise BusinessValidationError(
+                        minimum_message(prod),
+                        code=ErrorCode.VALIDATION_ERROR,
+                        errors={str(pid): [minimum_message(prod)]},
+                    )
+                if new_qty > old_qty and prod.max_per_order is not None and new_qty > prod.max_per_order:
+                    raise BusinessValidationError(
+                        cap_message(prod),
+                        code=ErrorCode.VALIDATION_ERROR,
+                        errors={str(pid): [cap_message(prod)]},
                     )
 
             # Check stock availability for increases without physical deduction

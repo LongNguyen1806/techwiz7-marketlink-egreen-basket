@@ -79,10 +79,15 @@ def reorder_items(order) -> tuple[list[tuple], list[dict]]:
         product = on_sale.get(item.product_id)
         if product is None or not product.is_available:
             reason = "UNAVAILABLE"
-        elif product.stock_quantity - held.get(product.pk, 0) <= 0:
+        elif product.stock_quantity - held.get(product.pk, 0) < product.min_per_order:
+            # Less left than the stall's minimum per order is as good as sold out for a new order.
             reason = "OUT_OF_STOCK"
         else:
-            kept.append((product, item.quantity))
+            # The stall may have moved its per-order window since; the cart gets a quantity inside it.
+            quantity = max(item.quantity, product.min_per_order)
+            if product.max_per_order:
+                quantity = min(quantity, product.max_per_order)
+            kept.append((product, quantity))
             continue
         skipped.append({"product_id": item.product_id, "product_name": item.product_name, "reason": reason})
     return kept, skipped

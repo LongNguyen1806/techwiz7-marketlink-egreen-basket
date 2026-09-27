@@ -111,7 +111,18 @@ export function useSaveFarmerProduct(productId) {
     mutationFn: (payload) => (isEdit ? farmerApi.updateProduct(productId, payload) : farmerApi.createProduct(payload)),
     onSuccess: (product) => {
       queryClient.setQueryData(farmerKeys.products.detail(product.id), product);
-      notify.success(isEdit ? 'Changes saved' : 'Produce listed');
+      // New listings and edits to what a listing is wait for an admin before shoppers see them.
+      if (!isEdit) {
+        notify.success('Produce submitted for review', {
+          description: 'Shoppers will see it once an administrator approves it.',
+        });
+      } else if (product.sent_for_review) {
+        notify.success('Changes saved and sent for review', {
+          description: 'It is hidden from shoppers until an administrator approves the changes. Open orders are not affected.',
+        });
+      } else {
+        notify.success('Changes saved');
+      }
       notifyRestock(product.restock_notified ?? 0);
     },
     onSettled: invalidate,
@@ -187,5 +198,22 @@ export function useApplyWeeklyTemplate() {
       notifyRestock(restocked ?? 0);
     },
     onSettled: invalidate,
+  });
+}
+
+
+/**
+ * The rule checks an admin's AI review will run, shown on the form while the farmer types, so
+ * obvious problems (an unusual price, contact details, words that will be refused) are fixed
+ * before the listing is sent. `params` is already debounced by the caller; null = not yet.
+ */
+export function useProductPrecheck(params) {
+  return useQuery({
+    queryKey: farmerKeys.products.precheck(params),
+    queryFn: ({ signal }) => farmerApi.precheckProduct(params, { signal }),
+    enabled: Boolean(params),
+    staleTime: STALE.MINUTE,
+    placeholderData: keepPreviousData,
+    meta: { silent: true },
   });
 }

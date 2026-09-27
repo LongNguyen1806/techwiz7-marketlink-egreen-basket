@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
@@ -5,7 +7,7 @@ from rest_framework.validators import UniqueValidator
 from accounts.admin_portal.serializers_admin import OpenOrderBreakdownSerializer
 from accounts.models import FarmerStatus
 from catalog.icons import canonical_icon
-from catalog.models import Category, Product
+from catalog.models import Category, PriceGuideline, Product, ProductAIReview
 
 NAME_MIN_LENGTH = 2
 NAME_MAX_LENGTH = 50
@@ -81,6 +83,61 @@ class ModerationReasonSerializer(serializers.Serializer):
     reason = serializers.CharField(min_length=REASON_MIN_LENGTH, max_length=REASON_MAX_LENGTH)
 
 
+class AIReviewSerializer(serializers.ModelSerializer):
+    """The AI's advice on a listing, as the approval queue shows it. Advice, not a decision."""
+
+    suggested_category = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductAIReview
+        fields = [
+            "id",
+            "kind",
+            "verdict",
+            "risk_score",
+            "summary",
+            "findings",
+            "suggested_category",
+            "ai_used",
+            "ai_error",
+            "model_name",
+            "admin_decision",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_suggested_category(self, review):
+        category = review.suggested_category
+        return {"id": category.pk, "name": category.name} if category else None
+
+
+class PriceGuidelineSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    min_price = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal("0.01"), max_value=Decimal("10000.00"))
+    max_price = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal("0.01"), max_value=Decimal("10000.00"))
+    max_stock = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+
+    class Meta:
+        model = PriceGuideline
+        fields = ["id", "category", "category_name", "unit", "min_price", "max_price", "max_stock", "updated_at"]
+        read_only_fields = ["id", "category_name", "updated_at"]
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=PriceGuideline.objects.all(),
+                fields=["category", "unit"],
+                message="This category and unit already have a guideline.",
+            )
+        ]
+
+    def validate(self, attrs):
+        low = attrs.get("min_price", getattr(self.instance, "min_price", None))
+        high = attrs.get("max_price", getattr(self.instance, "max_price", None))
+        if low is not None and high is not None and low > high:
+            raise serializers.ValidationError({"min_price": ["The lowest price cannot be above the highest."]})
+        return attrs
+
+
 class ProductAdminSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
     category = serializers.SerializerMethodField()
@@ -94,6 +151,8 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     is_favorite = serializers.SerializerMethodField()
     hidden_by_email = serializers.EmailField(source="hidden_by.email", read_only=True, default=None)
     open_order_count = serializers.SerializerMethodField()
+    ai_review = serializers.SerializerMethodField()
+    ai_photo_check = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -120,6 +179,8 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "hidden_at",
             "hidden_by_email",
             "open_order_count",
+            "ai_review",
+            "ai_photo_check",
             "category",
             "farmer",
             "markets",
@@ -133,6 +194,16 @@ class ProductAdminSerializer(serializers.ModelSerializer):
 
     def get_open_order_count(self, product) -> int:
         return self.context.get("open_order_counts", {}).get(product.pk, 0)
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_ai_review(self, product):
+        review = self.context.get("ai_reviews", {}).get(product.pk)
+        return AIReviewSerializer(review).data if review else None
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_ai_photo_check(self, product):
+        review = self.context.get("ai_photo_checks", {}).get(product.pk)
+        return AIReviewSerializer(review).data if review else None
 
     @property
     def _context_maps(self) -> tuple[dict, dict]:

@@ -21,6 +21,7 @@ import {
   useMarkProductSoldOut,
   useUpdateProductStock,
 } from '../../hooks/queries/farmer/useFarmerProducts';
+import { useCategories } from '../../hooks/queries/guest/usePublicCatalog';
 import { unitLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerProductsPage.css';
 
@@ -29,9 +30,17 @@ const STATE_OPTIONS = [
   { value: 'in_stock', label: 'In stock' },
   { value: 'out_of_stock', label: 'Out of stock' },
   { value: 'unavailable', label: 'Paused' },
+  { value: 'in_review', label: 'In review' },
+  { value: 'rejected', label: 'Rejected' },
   { value: 'hidden', label: 'Hidden by admin' },
   { value: 'archived', label: 'Archived' },
 ];
+
+// Admin review of a listing (catalog ReviewStatus). Only APPROVED listings reach shoppers.
+const REVIEW = {
+  PENDING: { label: 'In review', variant: 'warning' },
+  REJECTED: { label: 'Rejected', variant: 'danger' },
+};
 
 const AVAILABILITY = {
   IN_STOCK: { label: 'In stock', variant: 'success' },
@@ -43,9 +52,19 @@ const AVAILABILITY = {
 const STOCK_SAVE_DELAY_MS = 600;
 const MAX_STOCK = 99999;
 
+// "Min 2 · Max 10 kg per order"; only the ends the stall actually set.
+function orderWindowLabel(product) {
+  const unit = unitLabel(product.unit);
+  const parts = [];
+  if (product.min_per_order > 1) parts.push(`Min ${product.min_per_order}`);
+  if (product.max_per_order) parts.push(`Max ${product.max_per_order}`);
+  return `${parts.join(' · ')} ${unit} per order`;
+}
+
 function statusOf(product) {
   if (product.is_archived) return { label: 'Archived', variant: 'secondary' };
   if (product.is_hidden_by_admin) return { label: 'Hidden by admin', variant: 'danger' };
+  if (REVIEW[product.review_status]) return REVIEW[product.review_status];
   return AVAILABILITY[product.availability] ?? AVAILABILITY.UNAVAILABLE;
 }
 
@@ -109,11 +128,22 @@ function ProductRow({ product, onArchive }) {
               {product.name}
             </Link>
             <p className="page-primitive__muted-xs">{product.category?.name}</p>
+            {product.review_status === 'PENDING' ? (
+              <p className="page-primitive__muted-xs">Shoppers will see it once an administrator approves it.</p>
+            ) : null}
+            {product.review_status === 'REJECTED' ? (
+              <p className="page-primitive__danger-sm">
+                Not approved{product.review_note ? `: ${product.review_note}` : ''}. Edit it to send it for review again.
+              </p>
+            ) : null}
           </div>
         </div>
       </td>
       <td className="page-primitive__table-td">
         <PriceTag amount={product.price} unit={unitLabel(product.unit)} />
+        {product.min_per_order > 1 || product.max_per_order ? (
+          <p className="page-primitive__muted-xs">{orderWindowLabel(product)}</p>
+        ) : null}
       </td>
       <td className="page-primitive__table-td">
         <StockCell product={product} locked={locked} />
@@ -154,14 +184,19 @@ ProductRow.propTypes = {
 };
 
 export default function FarmerProductsPage() {
-  const { filters, setFilters } = useUrlFilters({ state: '' });
+  const { filters, setFilters } = useUrlFilters({ state: '', category: 0 });
   const search = useDebouncedSearchParam('q');
-  const query = useFarmerProductList({ q: search.term || undefined, state: filters.state || undefined });
+  const categoriesQuery = useCategories();
+  const query = useFarmerProductList({
+    q: search.term || undefined,
+    state: filters.state || undefined,
+    category_id: filters.category || undefined,
+  });
   const archive = useArchiveProduct();
   const [archiving, setArchiving] = useState(null);
 
   const products = query.data?.products ?? [];
-  const hasFilters = Boolean(search.term || filters.state);
+  const hasFilters = Boolean(search.term || filters.state || filters.category);
 
   let body;
   if (query.isPending) body = <PageSkeleton />;
@@ -171,11 +206,11 @@ export default function FarmerProductsPage() {
     body = hasFilters ? (
       <EmptyState
         title="No products match"
-        description="Try another search or status."
+        description="Try another search, category or status."
         actionLabel="Clear filters"
         onAction={() => {
           search.clear();
-          setFilters({ state: '' });
+          setFilters({ state: '', category: 0 });
         }}
       />
     ) : (
@@ -234,6 +269,19 @@ export default function FarmerProductsPage() {
           onKeyDown={search.onKeyDown}
           className="page-primitive__input-narrow"
         />
+        <select
+          className="page-primitive__select"
+          aria-label="Filter by category"
+          value={filters.category}
+          onChange={(event) => setFilters({ category: Number(event.target.value) })}
+        >
+          <option value={0}>All categories</option>
+          {(categoriesQuery.data ?? []).map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
         <select
           className="page-primitive__select"
           aria-label="Filter by status"

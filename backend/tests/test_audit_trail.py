@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import CustomUser, CustomerProfile, FarmerProfile, FarmerStatus, Role, RoleCode
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import FarmerClosure, FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import Order, OrderItem, OrderStatus
 from system.models import AuditAction, AuditLog
@@ -54,10 +54,12 @@ class AuditTrailTestCase(TestCase):
         )
         category = Category.objects.create(name="Greens")
         self.product = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer, category=category, name="Spinach", unit=Unit.KG,
             price=Decimal("2.00"), stock_quantity=10, weekly_default_quantity=20,
         )
         self.product_b = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer, category=category, name="Lettuce", unit=Unit.KG,
             price=Decimal("1.50"), stock_quantity=10,
         )

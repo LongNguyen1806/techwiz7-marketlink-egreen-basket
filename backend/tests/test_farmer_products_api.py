@@ -18,7 +18,7 @@ from accounts.models import (
     Role,
     RoleCode,
 )
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from favorites.models import FavoriteProduct
 from marketlink_core.exceptions import ErrorCode
 from markets.models import FarmerMarket, Market, PickupSlot
@@ -94,6 +94,7 @@ class FarmerProductsAPITestCase(TestCase):
 
         # Products for Farmer 1
         self.prod1 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer_profile,
             category=self.category,
             name="Organic Tomato",
@@ -104,6 +105,7 @@ class FarmerProductsAPITestCase(TestCase):
             is_available=True,
         )
         self.prod2 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer_profile,
             category=self.category,
             name="Fresh Carrot",
@@ -445,9 +447,13 @@ class FarmerProductsAPITestCase(TestCase):
         with mock.patch.object(Product, "save", autospec=True, side_effect=Product.save) as save:
             res = self.client.patch(f"/api/farmer/products/{self.prod1.id}/", {"name": "Heirloom Tomato"}, format="json")
         self.assertEqual(res.status_code, 200)
-        update_fields = save.call_args.kwargs["update_fields"]
+        # First save is the edit itself; a renamed approved listing then saves again to go back
+        # into review, which touches only the review columns.
+        update_fields = save.call_args_list[0].kwargs["update_fields"]
         self.assertIn("name", update_fields)
         self.assertNotIn("stock_quantity", update_fields)
+        for call in save.call_args_list:
+            self.assertNotIn("stock_quantity", call.kwargs["update_fields"])
 
     def test_restock_notification_failure_is_logged_not_raised(self):
         FavoriteProduct.objects.create(customer=self.customer_user, product=self.prod2)
@@ -542,3 +548,102 @@ class FarmerProductsAPITestCase(TestCase):
         res = self.client.post("/api/farmer/products/apply-weekly-template/", {})
         self.assertEqual(res.status_code, 403)
         self.assertEqual(res.data["code"], ErrorCode.FARMER_SUSPENDED)
+
+    # ---- Listing review after an edit, and the per-order cap ----
+
+    def test_renaming_an_approved_listing_sends_it_back_for_review_and_off_the_shelf(self):
+        self.client.force_authenticate(user=self.farmer_user)
+        res = self.client.patch(f"/api/farmer/products/{self.prod1.id}/", {"name": "Honda Wave"}, format="json")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data["data"]["sent_for_review"])
+        self.assertEqual(res.data["data"]["review_status"], ReviewStatus.PENDING)
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.get(f"/api/public/products/{self.prod1.id}/").status_code, 404)
+
+    def test_price_stock_cap_or_a_resent_name_keep_the_listing_approved(self):
+        self.client.force_authenticate(user=self.farmer_user)
+        res = self.client.patch(
+            f"/api/farmer/products/{self.prod1.id}/",
+            {"name": self.prod1.name, "price": "4.20", "stock_quantity": 7, "max_per_order": 3},
+            format="json",
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data["data"]["sent_for_review"])
+        self.prod1.refresh_from_db()
+        self.assertEqual(self.prod1.review_status, ReviewStatus.APPROVED)
+
+    def test_editing_a_rejected_listing_resubmits_it(self):
+        self.prod1.review_status = ReviewStatus.REJECTED
+        self.prod1.review_note = "Photo is not the product"
+        self.prod1.save(update_fields=["review_status", "review_note"])
+        self.client.force_authenticate(user=self.farmer_user)
+
+        res = self.client.patch(f"/api/farmer/products/{self.prod1.id}/", {"description": "Fresh from the farm"}, format="json")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"]["review_status"], ReviewStatus.PENDING)
+        self.assertIsNone(res.data["data"]["review_note"])
+
+    def test_orders_already_placed_keep_moving_while_the_listing_is_in_review(self):
+        order = self._order_for_prod1(
+            qty=2, start_offset=-timedelta(minutes=30), end_offset=timedelta(minutes=90),
+            status=OrderStatus.ACCEPTED,
+        )
+        self.client.force_authenticate(user=self.farmer_user)
+        self.client.patch(f"/api/farmer/products/{self.prod1.id}/", {"name": "Renamed tomato"}, format="json")
+        self.prod1.refresh_from_db()
+        self.assertEqual(self.prod1.review_status, ReviewStatus.PENDING)
+
+        ready = self.client.post(f"/api/farmer/orders/{order.id}/ready/", {}, format="json", HTTP_IF_MATCH=str(order.version))
+        self.assertEqual(ready.status_code, 200, ready.data)
+        done = self.client.post(
+            f"/api/farmer/orders/{order.id}/complete/", {}, format="json", HTTP_IF_MATCH=str(ready.data["data"]["version"])
+        )
+        self.assertEqual(done.status_code, 200, done.data)
+        self.assertEqual(done.data["data"]["status"], OrderStatus.COMPLETED)
+
+    def test_max_per_order_is_saved_validated_and_clearable(self):
+        self.client.force_authenticate(user=self.farmer_user)
+        url = f"/api/farmer/products/{self.prod1.id}/"
+
+        self.assertEqual(self.client.patch(url, {"max_per_order": 0}, format="json").status_code, 400)
+        self.assertEqual(self.client.patch(url, {"max_per_order": 1000}, format="json").status_code, 400)
+        self.assertEqual(self.client.patch(url, {"max_per_order": 10}, format="json").data["data"]["max_per_order"], 10)
+        self.assertIsNone(self.client.patch(url, {"max_per_order": None}, format="json").data["data"]["max_per_order"])
+
+    def test_state_filters_for_listings_in_review_and_rejected(self):
+        self.prod1.review_status = ReviewStatus.PENDING
+        self.prod1.save(update_fields=["review_status"])
+        self.prod2.review_status = ReviewStatus.REJECTED
+        self.prod2.save(update_fields=["review_status"])
+        self.client.force_authenticate(user=self.farmer_user)
+
+        def ids(state):
+            return [row["id"] for row in self.client.get(f"/api/farmer/products/?state={state}").data["data"]["results"]]
+
+        self.assertEqual(ids("in_review"), [self.prod1.id])
+        self.assertEqual(ids("rejected"), [self.prod2.id])
+        self.assertNotIn(self.prod1.id, ids("in_stock"))
+
+    def test_min_per_order_defaults_to_one_and_cannot_exceed_the_max(self):
+        self.client.force_authenticate(user=self.farmer_user)
+        url = f"/api/farmer/products/{self.prod1.id}/"
+        self.assertEqual(self.client.get(url).data["data"]["min_per_order"], 1)
+
+        created = self.client.post(
+            "/api/farmer/products/",
+            {"name": "Bulk rice", "category_id": self.category.id, "price": "2.00", "unit": "KG",
+             "stock_quantity": 50, "min_per_order": 5, "max_per_order": 3},
+            format="json",
+        )
+        self.assertEqual(created.status_code, 400)
+        self.assertIn("min_per_order", created.data["errors"])
+
+        self.assertEqual(self.client.patch(url, {"max_per_order": 4}, format="json").status_code, 200)
+        # Only one end changes, so the pair is checked against the saved row.
+        too_high = self.client.patch(url, {"min_per_order": 5}, format="json")
+        self.assertEqual(too_high.status_code, 400)
+        self.assertIn("min_per_order", too_high.data["errors"])
+        self.assertEqual(self.client.patch(url, {"min_per_order": 2}, format="json").data["data"]["min_per_order"], 2)

@@ -147,17 +147,33 @@ RelatedProducts.propTypes = {
 };
 
 function PurchaseBox({ product, onAddToCart }) {
-  const [quantity, setQuantity] = useState(1);
-  const canAdd = product.availability === 'IN_STOCK' && product.stock_quantity > 0;
-  const maxQuantity = Math.max(1, Math.min(product.stock_quantity, MAX_QUANTITY));
+  // The stall's per-order window: at least min_per_order, at most the smallest of stock, max_per_order, 999.
+  const minimum = product.min_per_order ?? 1;
+  const [quantity, setQuantity] = useState(minimum);
+  const enoughStock = product.stock_quantity >= minimum;
+  const canAdd = product.availability === 'IN_STOCK' && product.stock_quantity > 0 && enoughStock;
+  const maxQuantity = Math.max(minimum, Math.min(product.stock_quantity, product.max_per_order ?? MAX_QUANTITY, MAX_QUANTITY));
+  const unit = unitLabel(product.unit);
+  const windowParts = [minimum > 1 ? `Min ${minimum}` : null, product.max_per_order ? `Max ${product.max_per_order}` : null].filter(Boolean);
 
   return (
-    <div className="product-detail-page__actions">
-      <QuantityStepper value={quantity} min={1} max={maxQuantity} onChange={setQuantity} disabled={!canAdd} />
-      <Button disabled={!canAdd} onClick={() => onAddToCart(product, quantity)}>
-        <ShoppingCart className="product-detail-page__cart-icon" aria-hidden />
-        Reserve for pickup
-      </Button>
+    <div>
+      <div className="product-detail-page__actions">
+        <QuantityStepper value={quantity} min={minimum} max={maxQuantity} onChange={setQuantity} disabled={!canAdd} />
+        <Button disabled={!canAdd} onClick={() => onAddToCart(product, quantity)}>
+          <ShoppingCart className="product-detail-page__cart-icon" aria-hidden />
+          Reserve for pickup
+        </Button>
+      </div>
+      {product.availability === 'IN_STOCK' && !enoughStock ? (
+        <p className="page-primitive__muted-xs">
+          Only {product.stock_quantity} {unit} left, below the minimum of {minimum} {unit} per order.
+        </p>
+      ) : windowParts.length ? (
+        <p className="page-primitive__muted-xs">
+          {windowParts.join(' · ')} {unit} per order
+        </p>
+      ) : null}
     </div>
   );
 }

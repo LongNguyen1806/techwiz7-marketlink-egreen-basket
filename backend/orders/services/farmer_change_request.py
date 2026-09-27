@@ -107,9 +107,8 @@ def approve_change_request(
                             code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                         )
                     old_qty = old_items[product_id].quantity if product_id in old_items else 0
-                    if new_qty > old_qty and (
-                        not product.is_available or product.is_archived or product.is_hidden_by_admin
-                    ):
+                    # max_per_order is not re-checked here: the stall itself is approving the change.
+                    if new_qty > old_qty and not product.is_on_sale:
                         raise UnprocessableEntityError(
                             f"Product {product.name} is not available.",
                             code=ErrorCode.PRODUCT_NOT_AVAILABLE,

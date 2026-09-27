@@ -1,0 +1,264 @@
+"""Runs both layers over a listing, stores the advice, and tells admins about the risky ones.
+
+Nothing here changes a listing: no approve, reject, hide, block or account action. Those stay
+with an administrator (the endpoints in catalog/admin_portal).
+"""
+
+import hashlib
+import logging
+import mimetypes
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+
+from django.conf import settings
+from django.db import close_old_connections, transaction
+from django.utils import timezone
+
+from accounts.models import CustomUser, RoleCode
+from catalog.ai_review import gemini, rules
+from catalog.ai_review.types import Finding, ListingInput, risk_score, verdict_for
+from catalog.models import AIReviewKind, AIVerdict, Category, ProductAIReview, Product, ReviewStatus
+from notifications.models import NotificationType
+from notifications.services import notify
+from system.models import FlagTarget, ModerationFlag
+
+logger = logging.getLogger("marketlink")
+
+_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="marketlink-ai-review")
+# A review stuck as UNAVAILABLE is tried again by the sweep after this long.
+UNAVAILABLE_RETRY_AFTER = timedelta(minutes=10)
+FLAG_NOTE_PREFIX = "AI review:"
+
+
+# ---------------------------------------------------------------------------- inputs
+
+
+def _read_image(product: Product) -> tuple[bytes | None, str | None]:
+    if not product.image:
+        return None, None
+    try:
+        with product.image.open("rb") as handle:
+            data = handle.read()
+    except (OSError, ValueError):
+        logger.warning("AI review could not read the image of product %s", product.pk)
+        return None, None
+    mime = mimetypes.guess_type(product.image.name)[0] or "image/jpeg"
+    return data, mime
+
+
+def listing_from_product(product: Product, *, with_image: bool = True) -> ListingInput:
+    image, mime = _read_image(product) if with_image else (None, None)
+    return ListingInput(
+        name=product.name,
+        description=product.description or "",
+        category_id=product.category_id,
+        category_name=product.category.name if product.category_id else "",
+        unit=product.unit,
+        price=product.price,
+        stock_quantity=product.stock_quantity,
+        min_per_order=product.min_per_order,
+        max_per_order=product.max_per_order,
+        product_id=product.pk,
+        image_bytes=image,
+        image_mime=mime,
+    )
+
+
+def content_hash(listing: ListingInput, kind: str) -> str:
+    """What the advice is about. The same content is never reviewed (or paid for) twice."""
+    if kind == AIReviewKind.WEEKLY_IMAGE:
+        parts = [listing.name, str(listing.category_id), hashlib.sha256(listing.image_bytes or b"").hexdigest()]
+    else:
+        parts = [
+            listing.name, listing.description, str(listing.category_id), listing.unit, str(listing.price),
+            str(listing.stock_quantity), str(listing.min_per_order), str(listing.max_per_order),
+            hashlib.sha256(listing.image_bytes or b"").hexdigest(),
+        ]
+    return hashlib.sha256("\x1f".join(parts).encode("utf-8")).hexdigest()
+
+
+def _category_names() -> list[str]:
+    return list(Category.objects.filter(is_active=True).order_by("display_order", "name").values_list("name", flat=True))
+
+
+# ---------------------------------------------------------------------------- one review
+
+
+def evaluate(listing: ListingInput, *, kind: str = AIReviewKind.LISTING, use_ai: bool = True) -> dict:
+    """Both layers over one listing, without saving anything (used by review, precheck, eval)."""
+    started = time.monotonic()
+    findings: list[Finding] = [] if kind == AIReviewKind.WEEKLY_IMAGE else rules.run_rules(listing)
+    ai_error, ai_used, suggested, summary, model_name = None, False, None, "", ""
+    if use_ai and kind == AIReviewKind.LISTING and verdict_for(findings) == AIVerdict.LIKELY_VIOLATION:
+        # The rules already found a likely violation; asking the model cannot make it cleaner,
+        # and on the free tier every request counts.
+        use_ai = False
+        ai_error = "the rule checks already found a likely violation, so the AI was not asked (saves quota)"
+    if use_ai:
+        try:
+            result = gemini.ask_model(listing, _category_names(), image_only=kind == AIReviewKind.WEEKLY_IMAGE)
+            findings.extend(result.findings)
+            ai_used, suggested, summary, model_name = True, result.suggested_category, result.summary, result.model_name
+        except gemini.AIUnavailable as exc:
+            ai_error = str(exc)
+
+    verdict = verdict_for(findings)
+    # The rules found nothing but the model could not be asked: not a clean bill of health.
+    if not ai_used and use_ai and verdict == AIVerdict.PASS:
+        verdict = AIVerdict.UNAVAILABLE
+    if not summary:
+        summary = _summary(findings, verdict)
+    return {
+        "verdict": verdict,
+        "risk_score": risk_score(findings),
+        "findings": findings,
+        "summary": summary,
+        "suggested_category": suggested,
+        "ai_used": ai_used,
+        "ai_error": ai_error,
+        "model_name": model_name,
+        "duration_ms": int((time.monotonic() - started) * 1000),
+    }
+
+
+def _summary(findings: list[Finding], verdict: str) -> str:
+    if not findings:
+        return "No problems found by the rule checks." if verdict == AIVerdict.UNAVAILABLE else "No problems found."
+    worst = sorted(findings, key=lambda f: {"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(f.severity, 3))[0]
+    more = f" (+{len(findings) - 1} more)" if len(findings) > 1 else ""
+    return f"{worst.message}{more}"[:500]
+
+
+def latest_review(product_id: int, kind: str = AIReviewKind.LISTING) -> ProductAIReview | None:
+    return ProductAIReview.objects.filter(product_id=product_id, kind=kind).order_by("-created_at", "-id").first()
+
+
+def review_product(product_id: int, *, kind: str = AIReviewKind.LISTING, force: bool = False) -> ProductAIReview | None:
+    """Review one listing and store the advice. Returns None when there is nothing to review."""
+    product = Product.objects.select_related("category", "farmer").filter(pk=product_id).first()
+    if product is None or product.is_archived:
+        return None
+    listing = listing_from_product(product)
+    if kind == AIReviewKind.WEEKLY_IMAGE and not listing.image_bytes:
+        return None
+    digest = content_hash(listing, kind)
+
+    previous = latest_review(product_id, kind)
+    if not force and previous is not None and previous.content_hash == digest:
+        if previous.verdict != AIVerdict.UNAVAILABLE or previous.created_at > timezone.now() - UNAVAILABLE_RETRY_AFTER:
+            return previous
+
+    result = evaluate(listing, kind=kind)
+    suggested = None
+    if result["suggested_category"] and result["suggested_category"] != listing.category_name:
+        suggested = Category.objects.filter(name=result["suggested_category"]).first()
+    review = ProductAIReview.objects.create(
+        product=product,
+        kind=kind,
+        content_hash=digest,
+        verdict=result["verdict"],
+        risk_score=result["risk_score"],
+        findings=[finding.as_dict() for finding in result["findings"]],
+        summary=result["summary"],
+        suggested_category=suggested,
+        ai_used=result["ai_used"],
+        ai_error=result["ai_error"],
+        model_name=result["model_name"],
+        prompt_version=gemini.PROMPT_VERSION if result["ai_used"] else "",
+        rules_version=rules.RULES_VERSION if kind == AIReviewKind.LISTING else "",
+        duration_ms=result["duration_ms"],
+    )
+    _alert_admins(product, review)
+    return review
+
+
+def _alert_admins(product: Product, review: ProductAIReview) -> None:
+    """A likely violation, or anything the weekly photo check dislikes, goes to the admins' queue."""
+    worth_alert = review.verdict == AIVerdict.LIKELY_VIOLATION or (
+        review.kind == AIReviewKind.WEEKLY_IMAGE and review.verdict == AIVerdict.NEEDS_REVIEW
+    )
+    if not worth_alert:
+        return
+    already_open = ModerationFlag.objects.filter(
+        target_type=FlagTarget.PRODUCT, target_id=product.pk, resolved_at__isnull=True
+    ).exists()
+    if not already_open:
+        # raised_by stays empty: the system raised it, and the note says so.
+        ModerationFlag.objects.create(
+            target_type=FlagTarget.PRODUCT,
+            target_id=product.pk,
+            note=f"{FLAG_NOTE_PREFIX} {review.summary}"[:500],
+            raised_by=None,
+        )
+    label = "Weekly photo check" if review.kind == AIReviewKind.WEEKLY_IMAGE else "New listing"
+    for admin in CustomUser.objects.filter(role__code=RoleCode.ADMIN, is_active=True):
+        notify(
+            recipient=admin,
+            event_type=NotificationType.AI_LISTING_FLAGGED,
+            context={
+                "product_name": product.name,
+                "stall_name": product.farmer.stall_name,
+                "check_label": label,
+                "summary": review.summary,
+                "product_id": product.pk,
+            },
+        )
+
+
+def record_admin_decision(product_id: int, decision: str, actor=None) -> None:
+    """Pair the admin's approve/reject with the advice they saw, for the agreement figures,
+    and close the AI's open flag on the listing: the decision it asked for has been made."""
+    review = latest_review(product_id)
+    if review is not None and review.admin_decision is None:
+        review.admin_decision = decision
+        review.admin_decided_at = timezone.now()
+        review.save(update_fields=["admin_decision", "admin_decided_at"])
+    close_ai_flags(product_id, resolution=f"Listing {decision.lower()} on the approval page.", actor=actor)
+
+
+def close_ai_flags(product_id: int, *, resolution: str, actor=None) -> int:
+    """Close the AI's open flags on a listing once there is nothing left for an admin to decide."""
+    return ModerationFlag.objects.filter(
+        target_type=FlagTarget.PRODUCT,
+        target_id=product_id,
+        resolved_at__isnull=True,
+        note__startswith=FLAG_NOTE_PREFIX,
+    ).update(resolved_at=timezone.now(), resolved_by=actor, resolution=resolution[:500])
+
+
+# ---------------------------------------------------------------------------- scheduling
+
+
+def _run_in_background(product_id: int) -> None:
+    close_old_connections()
+    try:
+        review_product(product_id)
+    except Exception:  # never let a review failure reach the farmer's request
+        logger.exception("AI listing review failed for product %s", product_id)
+    finally:
+        close_old_connections()
+
+
+def schedule_listing_review(product_id: int) -> None:
+    """After the farmer's save commits, review in the background; the sweep catches misses."""
+    if settings.AI_MODERATION_RUN_INLINE:
+        transaction.on_commit(lambda: review_product(product_id))
+    else:
+        transaction.on_commit(lambda: _pool.submit(_run_in_background, product_id))
+
+
+def products_needing_review(limit: int = 50) -> list[int]:
+    """PENDING listings whose current content has no usable advice yet (the sweep's work list)."""
+    pending = Product.objects.filter(review_status=ReviewStatus.PENDING, is_archived=False).select_related("category")
+    due = []
+    for product in pending.order_by("created_at")[: limit * 4]:
+        previous = latest_review(product.pk)
+        listing = listing_from_product(product)
+        if previous is None or previous.content_hash != content_hash(listing, AIReviewKind.LISTING):
+            due.append(product.pk)
+        elif previous.verdict == AIVerdict.UNAVAILABLE and previous.created_at <= timezone.now() - UNAVAILABLE_RETRY_AFTER:
+            due.append(product.pk)
+        if len(due) >= limit:
+            break
+    return due

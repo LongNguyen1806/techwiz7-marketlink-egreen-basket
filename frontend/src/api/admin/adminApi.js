@@ -210,6 +210,36 @@ export const adminApi = {
     return data;
   },
 
+  // AI-assisted listing review. The AI advises; these never approve or refuse anything.
+  recheckProductWithAI: async (id) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/ai-recheck/`);
+    return data;
+  },
+
+  getAIReviewStats: async (days = 30, { signal } = {}) => {
+    const { data } = await axiosClient.get('/admin/ai-review/stats/', { params: { days }, signal });
+    return data;
+  },
+
+  getPriceGuidelines: async ({ signal } = {}) => {
+    const { data } = await axiosClient.get('/admin/price-guidelines/', { signal });
+    return Array.isArray(data) ? data : [];
+  },
+
+  createPriceGuideline: async (payload) => {
+    const { data } = await axiosClient.post('/admin/price-guidelines/', payload);
+    return data;
+  },
+
+  updatePriceGuideline: async (id, payload) => {
+    const { data } = await axiosClient.patch(`/admin/price-guidelines/${id}/`, payload);
+    return data;
+  },
+
+  deletePriceGuideline: async (id) => {
+    await axiosClient.delete(`/admin/price-guidelines/${id}/`);
+  },
+
   // AD-21b. A takedown, unlike a hide, also cancels the open orders, so the dialog asks what
   // that would cost before the admin commits to it.
   fetchProductBlockImpact: async (id) => {

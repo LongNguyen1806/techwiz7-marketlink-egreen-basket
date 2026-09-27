@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from django.db import transaction
@@ -8,18 +9,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import FarmerProfile, FarmerStatus
+from catalog.ai_review.rules import run_rules
+from catalog.ai_review.types import ListingInput, verdict_for
 from catalog.farmer.serializers_farmer import (
     FarmerProductCreateSerializer,
+    FarmerProductPrecheckSerializer,
     FarmerProductSerializer,
     FarmerProductUpdateSerializer,
+    order_window_error,
 )
-from catalog.models import Category, Product
+from catalog.models import Category, Product, ReviewStatus
 from catalog.services.farmer_product import (
     apply_weekly_template,
     build_product_metrics,
     notify_restock_for_product,
     preview_weekly_template,
 )
+from catalog.ai_review.service import close_ai_flags, schedule_listing_review
+from catalog.services.product_moderation_service import needs_review_again, send_back_for_review
 from marketlink_core.exceptions import (
     BusinessValidationError,
     ErrorCode,
@@ -34,7 +41,7 @@ from marketlink_core.responses import api_response
 from orders.farmer.serializers_farmer import FarmerOrderSummarySerializer
 from orders.services.fsm import run_with_retry_if_top_level
 
-PRODUCT_STATES = ("in_stock", "out_of_stock", "unavailable", "hidden", "archived")
+PRODUCT_STATES = ("in_stock", "out_of_stock", "unavailable", "hidden", "archived", "in_review", "rejected")
 # Fields FA-14 may change; the save lists exactly the changed ones (never a full-row write).
 UPDATABLE_FIELDS = (
     "name",
@@ -42,10 +49,22 @@ UPDATABLE_FIELDS = (
     "unit",
     "stock_quantity",
     "weekly_default_quantity",
+    "min_per_order",
+    "max_per_order",
     "description",
     "image",
     "is_available",
 )
+
+
+def _reviewable_changes(product: Product, before: dict[str, Any], had_image: bool, validated: dict) -> list[str]:
+    """REVIEWABLE_FIELDS whose value really changed. The form resends every field on save, so
+    "present in the body" is not "changed"; a re-sent name must not send the listing back."""
+    changed = [field for field, old in before.items() if getattr(product, field) != old]
+    # A new file is always a new image; a null only counts when there was one to remove.
+    if "image" in validated and (validated["image"] or had_image):
+        changed.append("image")
+    return changed
 
 
 class FarmerBaseProductView(APIView):
@@ -125,7 +144,14 @@ class FarmerProductListView(FarmerBaseProductView):
             qs = qs.filter(category_id=category_id)
 
         if state == "in_stock":
-            qs = qs.filter(is_archived=False, is_hidden_by_admin=False, is_available=True, stock_quantity__gt=0)
+            # "On sale" to the farmer means shoppers can see it, so a listing still in review is not here.
+            qs = qs.filter(
+                is_archived=False,
+                is_hidden_by_admin=False,
+                is_available=True,
+                stock_quantity__gt=0,
+                review_status=ReviewStatus.APPROVED,
+            )
         elif state == "out_of_stock":
             qs = qs.filter(is_archived=False, is_hidden_by_admin=False, stock_quantity=0)
         elif state == "unavailable":
@@ -134,6 +160,10 @@ class FarmerProductListView(FarmerBaseProductView):
             qs = qs.filter(is_hidden_by_admin=True)
         elif state == "archived":
             qs = qs.filter(is_archived=True)
+        elif state == "in_review":
+            qs = qs.filter(is_archived=False, review_status=ReviewStatus.PENDING)
+        elif state == "rejected":
+            qs = qs.filter(is_archived=False, review_status=ReviewStatus.REJECTED)
         else:
             qs = qs.filter(is_archived=False)  # default excludes archived products
 
@@ -162,10 +192,14 @@ class FarmerProductListView(FarmerBaseProductView):
             unit=validated["unit"],
             stock_quantity=validated["stock_quantity"],
             weekly_default_quantity=validated.get("weekly_default_quantity"),
+            min_per_order=validated.get("min_per_order", 1),
+            max_per_order=validated.get("max_per_order"),
             description=validated.get("description"),
             image=validated.get("image"),
             is_available=validated.get("is_available", True),
         )
+        # New listings start PENDING; the AI advises the admin in the background.
+        schedule_listing_review(product.pk)
         return api_response(
             message="Product created successfully.",
             data=self._product_data(request, profile, product),
@@ -202,6 +236,8 @@ class FarmerProductDetailView(FarmerBaseProductView):
                         code=ErrorCode.FAILED_PRECONDITION,
                     )
                 old_stock = product.stock_quantity
+                before = {"name": product.name, "description": product.description, "category_id": product.category_id}
+                had_image = bool(product.image)
                 changed: list[str] = []
                 if category is not None:
                     product.category = category
@@ -211,18 +247,39 @@ class FarmerProductDetailView(FarmerBaseProductView):
                         value = validated[field]
                         setattr(product, field, value.strip() if field == "name" else value)
                         changed.append(field)
+                # Either end may change alone, so the pair is checked against the resulting row.
+                window_error = order_window_error(product.min_per_order, product.max_per_order)
+                if window_error:
+                    raise BusinessValidationError(
+                        window_error, code=ErrorCode.VALIDATION_ERROR, errors={"min_per_order": [window_error]}
+                    )
                 if changed:
                     product.save(update_fields=[*changed, "updated_at"])
+
+                # Changing what the listing is (name, description, image, category) takes it off
+                # the shopper side until an admin approves it again; open orders keep going.
+                sent_back = needs_review_again(product, _reviewable_changes(product, before, had_image, validated))
+                if sent_back:
+                    send_back_for_review(product)
+                if product.review_status == ReviewStatus.PENDING:
+                    # Unchanged content is not reviewed twice (content hash), so this is cheap.
+                    schedule_listing_review(product.pk)
 
                 restock_notified = 0
                 if old_stock == 0 and product.stock_quantity > 0 and product.is_available:
                     restock_notified = notify_restock_for_product(product=product)
-            return product, restock_notified
+            return product, restock_notified, sent_back
 
-        product, restock_notified = run_with_retry_if_top_level(_execute)
+        product, restock_notified, sent_back = run_with_retry_if_top_level(_execute)
         data = self._product_data(request, profile, product)
         data["restock_notified"] = restock_notified
-        return api_response(message="Product updated successfully.", data=data, request=request)
+        data["sent_for_review"] = sent_back
+        message = (
+            "Product updated. Shoppers will see it again once an administrator approves the changes."
+            if sent_back
+            else "Product updated successfully."
+        )
+        return api_response(message=message, data=data, request=request)
 
     def delete(self, request: Request, pk: int) -> Response:
         """FA-15: soft delete (is_archived = True, D-017)."""
@@ -231,6 +288,8 @@ class FarmerProductDetailView(FarmerBaseProductView):
         product = self._get_farmer_product(profile, pk)
         product.is_archived = True
         save_with_history(product, update_fields=["is_archived", "updated_at"], reason="Archived by farmer")
+        # An archived listing is off sale for good; the AI's question about it no longer needs an answer.
+        close_ai_flags(product.pk, resolution="Listing archived by the stall.")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -279,3 +338,38 @@ class FarmerWeeklyTemplateApplyView(FarmerBaseProductView):
 
         apply_data = apply_weekly_template(farmer=profile)
         return api_response(message="OK", data=apply_data, request=request)
+
+
+class FarmerProductPrecheckView(FarmerBaseProductView):
+    """Rule checks on the product form as the farmer types (no AI, nothing saved).
+
+    Advice only: the farmer can still save; an administrator reviews every listing anyway.
+    """
+
+    def get(self, request: Request) -> Response:
+        profile = self._get_farmer_profile(request)
+        serializer = FarmerProductPrecheckSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        category = Category.objects.filter(pk=data.get("category_id")).first()
+        product_id = data.get("product_id")
+        if product_id and not Product.objects.filter(pk=product_id, farmer=profile).exists():
+            product_id = None
+        listing = ListingInput(
+            name=data.get("name", ""),
+            description=data.get("description", ""),
+            category_id=category.pk if category else None,
+            category_name=category.name if category else "",
+            unit=data.get("unit", "KG"),
+            price=data.get("price", Decimal("0.01")),
+            stock_quantity=data.get("stock_quantity", 0),
+            min_per_order=data.get("min_per_order", 1),
+            max_per_order=data.get("max_per_order"),
+            product_id=product_id,
+        )
+        findings = run_rules(listing)
+        return api_response(
+            message="OK",
+            data={"findings": [finding.as_dict() for finding in findings], "verdict": verdict_for(findings)},
+            request=request,
+        )

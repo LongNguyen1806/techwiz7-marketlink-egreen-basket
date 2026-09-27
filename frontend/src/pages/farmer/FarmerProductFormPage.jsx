@@ -16,12 +16,14 @@ import { Textarea } from '../../components/ui/Textarea';
 import { ROUTES } from '../../constants/routes';
 import { useObjectUrl } from '../../hooks/common/useObjectUrl';
 import { useUnsavedChangesGuard } from '../../hooks/common/useUnsavedChangesGuard';
+import { ListingPrecheck } from '../../components/farmer/ListingPrecheck';
 import { useFarmerProduct, useSaveFarmerProduct } from '../../hooks/queries/farmer/useFarmerProducts';
 import { useCategories, usePublicConfig } from '../../hooks/queries/guest/usePublicCatalog';
 import { ApiError } from '../../lib/ApiError';
 import {
   DEFAULT_MAX_UPLOAD_MB,
   IMAGE_TYPES,
+  MAX_PER_ORDER,
   PRODUCT_DEFAULTS,
   makeProductSchema,
   productToFormValues,
@@ -131,8 +133,30 @@ export default function FarmerProductFormPage() {
     <div className="farmer-product-form-page">
       <PageHeader
         title={isEdit ? 'Edit produce' : 'Add produce'}
-        description="Add a photo, set price and stock, then open it for pre-order."
+        description={
+          isEdit
+            ? 'Update the photo, price and stock of this item.'
+            : 'Add a photo, set price and stock. An administrator reviews new produce before shoppers see it.'
+        }
       />
+
+      {!locked && product?.review_status === 'PENDING' ? (
+        <p className="page-primitive__warn-banner">
+          Waiting for an administrator to approve this listing. Shoppers cannot see it until then.
+        </p>
+      ) : null}
+      {!locked && product?.review_status === 'REJECTED' ? (
+        <p className="page-primitive__warn-banner">
+          Not approved{product.review_note ? `: ${product.review_note}` : ''}. Fix it and save to send it for review
+          again.
+        </p>
+      ) : null}
+      {!locked && product?.review_status === 'APPROVED' ? (
+        <p className="page-primitive__muted-xs">
+          Changing the name, description, photo or category sends this listing back for review and hides it from
+          shoppers until it is approved. Price, stock and limits can change freely.
+        </p>
+      ) : null}
 
       {locked ? (
         <p className="page-primitive__warn-banner">
@@ -243,6 +267,39 @@ export default function FarmerProductFormPage() {
             </div>
           </div>
 
+          <div>
+            <div className="page-primitive__form-grid-2">
+              <div className="page-primitive__form-field">
+                <Input
+                  id="min_per_order"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={MAX_PER_ORDER}
+                  label="Min per order"
+                  {...register('min_per_order', { setValueAs: toNumberOrNaN })}
+                />
+                <FieldError error={errors.min_per_order} />
+              </div>
+              <div className="page-primitive__form-field">
+                <Input
+                  id="max_per_order"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={MAX_PER_ORDER}
+                  label="Max per order"
+                  {...register('max_per_order', { setValueAs: toNumberOrNull })}
+                />
+                <FieldError error={errors.max_per_order} />
+              </div>
+            </div>
+            <p className="page-primitive__muted-xs">
+              How much one order can take, based on what you can supply. Min 1 means any amount; leave max blank for no
+              limit.
+            </p>
+          </div>
+
           <div className="page-primitive__form-field">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" rows={4} maxLength={1000} {...register('description')} />
@@ -262,6 +319,8 @@ export default function FarmerProductFormPage() {
               )}
             />
           </div>
+
+          {!locked ? <ListingPrecheck values={watch()} productId={productId} /> : null}
 
           <FieldError error={errors.root?.server} />
 

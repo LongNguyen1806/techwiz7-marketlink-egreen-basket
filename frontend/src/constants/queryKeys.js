@@ -60,6 +60,7 @@ export const farmerKeys = {
     list: (params = {}) => ['farmer', 'products', 'list', params],
     detail: (id) => ['farmer', 'products', 'detail', Number(id)],
     weeklyTemplate: () => ['farmer', 'products', 'weekly-template'],
+    precheck: (params) => ['farmer', 'products', 'precheck', params],
   },
   markets: () => ['farmer', 'markets'],
   closures: () => ['farmer', 'closures'],

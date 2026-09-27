@@ -322,6 +322,25 @@ AI_CHAT_ENABLED = os.environ.get("AI_CHAT_ENABLED", "True").lower() in (
     "t",
 )
 
+# --- AI-assisted listing review (advice for admins; never decides on its own) ---
+AI_MODERATION_ENABLED = os.environ.get("AI_MODERATION_ENABLED", "True").lower() in ("true", "1", "t")
+# Configurable because the Flash model names change; the call fails soft (UNAVAILABLE) if wrong.
+GEMINI_MODERATION_MODEL = os.environ.get("GEMINI_MODERATION_MODEL", "gemini-flash-latest")
+# Tried in order when the model above is out of quota for the day or not available to the key.
+# The free tier counts requests per model, so each fallback adds its own daily allowance.
+GEMINI_MODERATION_FALLBACK_MODELS = [
+    name.strip()
+    for name in os.environ.get(
+        "GEMINI_MODERATION_FALLBACK_MODELS", "gemini-flash-lite-latest,gemini-3.5-flash-lite"
+    ).split(",")
+    if name.strip()
+]
+AI_MODERATION_TIMEOUT_MS = int(os.environ.get("AI_MODERATION_TIMEOUT_MS", "20000"))
+# Pause between model calls in the batch commands, to stay under the key's per-minute quota.
+AI_MODERATION_BATCH_PAUSE_MS = int(os.environ.get("AI_MODERATION_BATCH_PAUSE_MS", "4000"))
+# Tests run the review inline instead of on the background pool.
+AI_MODERATION_RUN_INLINE = os.environ.get("AI_MODERATION_RUN_INLINE", "False").lower() in ("true", "1", "t")
+
 # TEXT, not VARCHAR(100): farmer suspension reasons can be up to 500 characters.
 SIMPLE_HISTORY_HISTORY_CHANGE_REASON_USE_TEXT_FIELD = True
 

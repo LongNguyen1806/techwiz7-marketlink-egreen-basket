@@ -108,7 +108,16 @@ def _resolve_windows(groups, farmers, now) -> list:
 
 
 def _is_published(product: Product) -> bool:
-    return product.is_available and not product.is_archived and not product.is_hidden_by_admin
+    # Same rule as the catalogue: a listing waiting for review cannot be ordered either.
+    return product.is_on_sale
+
+
+def cap_message(product: Product) -> str:
+    return f"You can order at most {product.max_per_order} {product.unit.lower()} of {product.name} per order"
+
+
+def minimum_message(product: Product) -> str:
+    return f"The minimum for {product.name} is {product.min_per_order} {product.unit.lower()} per order"
 
 
 def _shortage_message(product: Product, available: int) -> str:
@@ -124,7 +133,7 @@ def _available_stock(products) -> dict[int, int]:
 
 
 def _validate_products(groups, products) -> None:
-    foreign, unpublished, shortages, available = {}, {}, {}, {}
+    foreign, unpublished, over_cap, shortages, available = {}, {}, {}, {}, {}
     stock = _available_stock(products)
     for group_index, group in enumerate(groups):
         for item_index, item in enumerate(group["items"]):
@@ -134,6 +143,12 @@ def _validate_products(groups, products) -> None:
                 foreign[f"{path}.product_id"] = ["This product does not belong to the selected farmer"]
             elif not _is_published(product):
                 unpublished[f"{path}.product_id"] = ["This product is no longer available"]
+            elif item["quantity"] < product.min_per_order:
+                # The stall's own minimum per order (min_per_order, 1 = any amount).
+                over_cap[f"{path}.quantity"] = [minimum_message(product)]
+            elif product.max_per_order is not None and item["quantity"] > product.max_per_order:
+                # The stall's own per-order cap (what it can supply to one order).
+                over_cap[f"{path}.quantity"] = [cap_message(product)]
             elif stock[product.id] < item["quantity"]:
                 shortages[f"{path}.quantity"] = [_shortage_message(product, stock[product.id])]
                 available[str(product.id)] = stock[product.id]
@@ -141,6 +156,8 @@ def _validate_products(groups, products) -> None:
         raise ValidationError(foreign)
     if unpublished:
         raise ProductNotAvailableError(errors=unpublished)
+    if over_cap:
+        raise ValidationError(over_cap)
     if shortages:
         raise InsufficientStockError(errors=shortages, data={"available": available})
 

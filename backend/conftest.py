@@ -17,6 +17,15 @@ def _clear_all_caches():
 
 
 @pytest.fixture(autouse=True)
+def _no_real_ai_calls(settings):
+    # A GEMINI_API_KEY in .env must never make the test suite call the real model (cost, and
+    # answers that change run to run). AI tests stub catalog.ai_review.gemini.ask_model.
+    settings.GEMINI_API_KEY = ""
+    settings.AI_MODERATION_RUN_INLINE = True
+    settings.AI_MODERATION_BATCH_PAUSE_MS = 0
+
+
+@pytest.fixture(autouse=True)
 def _clear_caches():
     # Throttle counters live in "default"; token revocation lives in "blacklist".
     _clear_all_caches()

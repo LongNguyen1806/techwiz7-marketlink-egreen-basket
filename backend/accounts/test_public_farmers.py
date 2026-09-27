@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from favorites.models import FavoriteFarmer
 from markets.models import FarmerClosure, FarmerMarket, Market, PickupSlot
 
@@ -34,6 +34,7 @@ def make_completed_order(market, customer_user, category):
             status=OrderStatus.COMPLETED, total_amount="5.00",
         )
         product = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=farmer, category=category, name=f"Produce {order.pk}",
             price="2.50", unit=Unit.KG, stock_quantity=5,
         )
@@ -145,14 +146,17 @@ def test_in_stock_count_ignores_hidden_and_sold_out_products(
     api_client, approved_farmer, category
 ):
     Product.objects.create(
+        review_status=ReviewStatus.APPROVED,
         farmer=approved_farmer, category=category, name="In stock", price="2.00",
         unit=Unit.KG, stock_quantity=4,
     )
     Product.objects.create(
+        review_status=ReviewStatus.APPROVED,
         farmer=approved_farmer, category=category, name="Sold out", price="2.00",
         unit=Unit.KG, stock_quantity=0,
     )
     Product.objects.create(
+        review_status=ReviewStatus.APPROVED,
         farmer=approved_farmer, category=category, name="Hidden", price="2.00",
         unit=Unit.KG, stock_quantity=4, is_hidden_by_admin=True,
     )
@@ -174,6 +178,7 @@ def test_the_rating_average_survives_the_product_count(
 
     for index in range(3):
         Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=approved_farmer, category=category, name=f"Product {index}",
             price="2.00", unit=Unit.KG, stock_quantity=4,
         )
@@ -231,6 +236,7 @@ def test_distance_and_distance_ordering(api_client, approved_farmer):
 @pytest.mark.django_db
 def test_filters_by_market_day_and_category(api_client, approved_farmer, stall, category):
     Product.objects.create(
+        review_status=ReviewStatus.APPROVED,
         farmer=approved_farmer, category=category, name="Tomato", price="2.00",
         unit=Unit.KG, stock_quantity=4,
     )

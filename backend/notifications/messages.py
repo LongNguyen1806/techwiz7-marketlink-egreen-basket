@@ -138,6 +138,12 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         target_url="/farmer/products",
         required=("product_name",),
     ),
+    NotificationType.AI_LISTING_FLAGGED: NotificationSpec(
+        title="AI review flagged {product_name}",
+        message="{check_label} at {stall_name}: {summary} The decision is yours.",
+        target_url="/admin/approvals?product={product_id}",
+        required=("product_name", "stall_name", "check_label", "summary", "product_id"),
+    ),
     NotificationType.PRODUCT_REJECTED: NotificationSpec(
         title="{product_name} was not approved",
         message=(

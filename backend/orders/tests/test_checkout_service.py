@@ -234,6 +234,45 @@ class TestPlaceOrders:
 
         assert "groups.0.farmer_id" in caught.value.errors
 
+    @pytest.mark.parametrize("review_status", ["PENDING", "REJECTED"])
+    def test_a_listing_not_approved_by_an_admin_cannot_be_ordered(self, shop, review_status):
+        shop.tomato.review_status = review_status
+        shop.tomato.save()
+
+        with pytest.raises(ProductNotAvailableError) as caught:
+            _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date, (shop.tomato, 1)))
+
+        assert "groups.0.items.0.product_id" in caught.value.errors
+
+    def test_a_line_above_the_stall_cap_is_rejected_on_that_line(self, shop):
+        shop.tomato.max_per_order = 2
+        shop.tomato.save()
+
+        with pytest.raises(ValidationError) as caught:
+            _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date, (shop.herbs, 1), (shop.tomato, 3)))
+
+        assert "at most 2 kg" in str(caught.value.detail["groups.0.items.1.quantity"][0])
+        assert Order.objects.count() == 0
+
+    def test_a_line_at_the_stall_cap_is_accepted(self, shop):
+        shop.tomato.max_per_order = 2
+        shop.tomato.save()
+
+        [order] = _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date, (shop.tomato, 2)))
+
+        assert order.items.get().quantity == 2
+
+    def test_a_line_below_the_stall_minimum_is_rejected_and_the_minimum_itself_is_accepted(self, shop):
+        shop.tomato.min_per_order = 3
+        shop.tomato.save()
+
+        with pytest.raises(ValidationError) as caught:
+            _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date, (shop.tomato, 2)))
+        assert "minimum" in str(caught.value.detail["groups.0.items.0.quantity"][0])
+
+        [order] = _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date, (shop.tomato, 3)))
+        assert order.items.get().quantity == 3
+
     def test_invalid_slot_points_at_the_group(self, shop):
         with pytest.raises(SlotNotAvailableError) as caught:
             _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date + timedelta(days=1), (shop.tomato, 1)))

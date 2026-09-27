@@ -4,6 +4,7 @@ from catalog.farmer.views_farmer import (
     FarmerProductDetailView,
     FarmerProductListView,
     FarmerProductMarkSoldOutView,
+    FarmerProductPrecheckView,
     FarmerWeeklyTemplateApplyView,
     FarmerWeeklyTemplatePreviewView,
 )
@@ -22,6 +23,8 @@ urlpatterns = [
         FarmerWeeklyTemplateApplyView.as_view(),
         name="apply-weekly-template",
     ),
+    # Rule checks while the farmer fills in the product form (advice only).
+    path("precheck/", FarmerProductPrecheckView.as_view(), name="product-precheck"),
     # FA-11 & FA-12 (List & Create)
     path("", FarmerProductListView.as_view(), name="product-list"),
     # FA-16 (Quick Mark Sold Out)

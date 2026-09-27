@@ -6,8 +6,9 @@ import { PriceTag } from '../../common/cards/PriceTag';
 import { QuantityStepper } from '../../common/QuantityStepper';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
-import { MAX_QUANTITY, isOrderable } from '../../../stores/cart.store';
+import { MAX_QUANTITY, isOrderable, lineMax, lineMin } from '../../../stores/cart.store';
 import { formatMoney } from '../../../utils/formatters';
+import { unitLabel } from '../../../utils/labels';
 import { moneyToNumber } from '../../../utils/helpers/domain';
 import { cn } from '../../../lib/cn';
 import './CartLine.css';
@@ -31,11 +32,20 @@ export function CartLine({ line, onQuantityChange, onRemove }) {
         {short ? (
           <p className="cart-line__warning">{`Only ${stock} ${line.unit} left`}</p>
         ) : null}
+        {orderable && (lineMin(line) > 1 || line.max_per_order) ? (
+          <p className="cart-line__limit">
+            {[lineMin(line) > 1 ? `Min ${lineMin(line)}` : null, line.max_per_order ? `Max ${line.max_per_order}` : null]
+              .filter(Boolean)
+              .join(' · ')}{' '}
+            {unitLabel(line.unit)} per order
+          </p>
+        ) : null}
       </div>
 
       <QuantityStepper
         value={line.quantity}
-        max={Math.min(stock ?? MAX_QUANTITY, MAX_QUANTITY)}
+        min={lineMin(line)}
+        max={Math.max(lineMin(line), Math.min(stock ?? MAX_QUANTITY, lineMax(line)))}
         disabled={!orderable}
         onChange={(quantity) => onQuantityChange(line.product_id, quantity)}
         className="cart-line__stepper"

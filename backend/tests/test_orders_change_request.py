@@ -12,7 +12,7 @@ from accounts.models import (
     Role,
     RoleCode,
 )
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from marketlink_core.exceptions import (
     BusinessValidationError,
     ConflictError,
@@ -93,6 +93,7 @@ class FarmerChangeRequestTestCase(TestCase):
 
         self.category = Category.objects.create(name="Produce")
         self.product1 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Organic Spinach",
@@ -101,6 +102,7 @@ class FarmerChangeRequestTestCase(TestCase):
             stock_quantity=50,
         )
         self.product2 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Fresh Mint",

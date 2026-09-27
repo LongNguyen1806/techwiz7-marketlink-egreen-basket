@@ -29,6 +29,8 @@ class ProductCardSerializer(serializers.ModelSerializer):
             "price",
             "unit",
             "stock_quantity",
+            "min_per_order",
+            "max_per_order",
             "is_available",
             "availability",
             "category",

@@ -3,8 +3,15 @@ from typing import Any
 
 from rest_framework import serializers
 
-from catalog.models import Category, Product, Unit
+from catalog.models import MAX_ORDER_QUANTITY, Category, Product, Unit
 from catalog.services.farmer_product import build_product_metrics, validate_image_upload
+
+
+def order_window_error(min_per_order: int, max_per_order: int | None) -> str | None:
+    """The shared min <= max rule for create (FA-12) and update (FA-14, checked against the row)."""
+    if max_per_order is not None and min_per_order > max_per_order:
+        return "Min per order cannot be more than max per order."
+    return None
 
 
 class FarmerProductCategorySerializer(serializers.ModelSerializer):
@@ -45,11 +52,15 @@ class FarmerProductSerializer(serializers.ModelSerializer):
             "description",
             "markets",
             "weekly_default_quantity",
+            "min_per_order",
+            "max_per_order",
             "held_quantity",
             "pending_quantity",
             "is_archived",
             "is_hidden_by_admin",
             "hidden_reason",
+            "review_status",
+            "review_note",
             "created_at",
             "updated_at",
         ]
@@ -103,6 +114,11 @@ class FarmerProductCreateSerializer(serializers.Serializer):
     unit = serializers.ChoiceField(choices=Unit.choices, required=True)
     stock_quantity = serializers.IntegerField(min_value=0, required=True)
     weekly_default_quantity = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    # Per-order window: at least min_per_order (default 1), at most max_per_order (empty = no cap).
+    min_per_order = serializers.IntegerField(min_value=1, max_value=MAX_ORDER_QUANTITY, required=False)
+    max_per_order = serializers.IntegerField(
+        min_value=1, max_value=MAX_ORDER_QUANTITY, required=False, allow_null=True
+    )
     description = serializers.CharField(max_length=1000, required=False, allow_blank=True, allow_null=True)
     image = serializers.FileField(required=False, allow_null=True)
     is_available = serializers.BooleanField(required=False, default=True)
@@ -115,6 +131,12 @@ class FarmerProductCreateSerializer(serializers.Serializer):
     def validate_image(self, value: Any) -> Any:
         # The re-encoded copy is stored, never the uploaded bytes.
         return validate_image_upload(value) if value else value
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        error = order_window_error(attrs.get("min_per_order", 1), attrs.get("max_per_order"))
+        if error:
+            raise serializers.ValidationError({"min_per_order": [error]})
+        return attrs
 
 
 class FarmerProductUpdateSerializer(serializers.Serializer):
@@ -130,6 +152,11 @@ class FarmerProductUpdateSerializer(serializers.Serializer):
     unit = serializers.ChoiceField(choices=Unit.choices, required=False)
     stock_quantity = serializers.IntegerField(min_value=0, required=False)
     weekly_default_quantity = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    # Per-order window: at least min_per_order (default 1), at most max_per_order (empty = no cap).
+    min_per_order = serializers.IntegerField(min_value=1, max_value=MAX_ORDER_QUANTITY, required=False)
+    max_per_order = serializers.IntegerField(
+        min_value=1, max_value=MAX_ORDER_QUANTITY, required=False, allow_null=True
+    )
     description = serializers.CharField(max_length=1000, required=False, allow_blank=True, allow_null=True)
     image = serializers.FileField(required=False, allow_null=True)
     is_available = serializers.BooleanField(required=False)
@@ -153,3 +180,19 @@ class WeeklyTemplateRowSerializer(serializers.Serializer):
     current_stock = serializers.IntegerField()
     new_stock = serializers.IntegerField()
     is_available = serializers.BooleanField()
+
+
+class FarmerProductPrecheckSerializer(serializers.Serializer):
+    """The form's values as they stand; everything optional because the form may be half done."""
+
+    product_id = serializers.IntegerField(required=False, min_value=1)
+    name = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
+    description = serializers.CharField(required=False, allow_blank=True, max_length=1000, default="")
+    category_id = serializers.IntegerField(required=False, min_value=1)
+    unit = serializers.ChoiceField(choices=Unit.choices, required=False, default=Unit.KG)
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=Decimal("0.01"), max_value=Decimal("10000.00"), required=False
+    )
+    stock_quantity = serializers.IntegerField(required=False, min_value=0, default=0)
+    min_per_order = serializers.IntegerField(required=False, min_value=1, max_value=MAX_ORDER_QUANTITY, default=1)
+    max_per_order = serializers.IntegerField(required=False, min_value=1, max_value=MAX_ORDER_QUANTITY)

@@ -28,6 +28,7 @@ export const adminRoutes = [
               { path: '/admin/markets/new', lazy: page(() => import('../../pages/admin/AdminMarketFormPage')) },
               { path: '/admin/markets/:id/edit', lazy: page(() => import('../../pages/admin/AdminMarketFormPage')) },
               { path: '/admin/categories', lazy: page(() => import('../../pages/admin/AdminCategoriesPage')) },
+              { path: '/admin/price-guidelines', lazy: page(() => import('../../pages/admin/AdminPriceGuidelinesPage')) },
               { path: '/admin/moderation', lazy: page(() => import('../../pages/admin/AdminModerationPage')) },
               { path: '/admin/reports', lazy: page(() => import('../../pages/admin/AdminReportsPage')) },
               { path: '/admin/announcements', lazy: page(() => import('../../pages/admin/AdminAnnouncementsPage')) },

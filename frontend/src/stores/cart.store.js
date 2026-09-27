@@ -7,8 +7,18 @@ export const MAX_QUANTITY = 999;
 export const MAX_FARMERS_PER_CHECKOUT = 5;
 
 
-function clamp(quantity) {
-  return Math.min(Math.max(quantity, 0), MAX_QUANTITY);
+// The stall's per-order window for a line: at least min_per_order (default 1), at most
+// max_per_order when set, never over 999.
+export function lineMin(line) {
+  return Math.max(line.min_per_order ?? 1, 1);
+}
+
+export function lineMax(line) {
+  return Math.min(line.max_per_order ?? MAX_QUANTITY, MAX_QUANTITY);
+}
+
+function clamp(quantity, line = {}) {
+  return Math.min(Math.max(quantity, lineMin(line)), lineMax(line));
 }
 
 export const useCartStore = create(
@@ -20,25 +30,24 @@ export const useCartStore = create(
         set((state) => {
           const existing = state.lines.find((line) => line.product_id === product.product_id);
           if (!existing) {
-            return { lines: [...state.lines, { ...product, quantity: clamp(quantity) }] };
+            return { lines: [...state.lines, { ...product, quantity: clamp(quantity, product) }] };
           }
           return {
             lines: state.lines.map((line) =>
               (line.product_id === product.product_id
-                ? { ...line, ...product, quantity: clamp(line.quantity + quantity) }
+                ? { ...line, ...product, quantity: clamp(line.quantity + quantity, product) }
                 : line)),
           };
         }),
 
       setQuantity: (productId, quantity) =>
         set((state) => {
-          const wanted = clamp(quantity);
-          if (wanted === 0) {
+          if (quantity <= 0) {
             return { lines: state.lines.filter((line) => line.product_id !== productId) };
           }
           return {
             lines: state.lines.map((line) =>
-              (line.product_id === productId ? { ...line, quantity: wanted } : line)),
+              (line.product_id === productId ? { ...line, quantity: clamp(quantity, line) } : line)),
           };
         }),
 
@@ -63,6 +72,10 @@ export const useCartStore = create(
                 farmer_stall_name: fresh.farmer.stall_name,
                 stock_quantity: fresh.stock_quantity,
                 availability: fresh.availability,
+                min_per_order: fresh.min_per_order ?? 1,
+                max_per_order: fresh.max_per_order ?? null,
+                // The stall may have moved its window since this was added; checkout would reject outside it.
+                quantity: clamp(line.quantity, fresh),
               };
             }),
           };

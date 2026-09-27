@@ -22,6 +22,7 @@ import {
 } from '../../hooks/queries/admin/useAdminDashboard';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { PageHeader } from '@/components/common/PageHeader';
+import { AIReviewSummaryCard } from '@/components/admin/AIReviewSummaryCard';
 import { PageSkeleton } from '@/components/feedback/PageSkeleton';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -156,6 +157,8 @@ export default function AdminDashboardPage() {
           </div>
         </section>
       ) : null}
+
+      <AIReviewSummaryCard />
 
       <div className="page-primitive__stat-grid-5">
         {cards.map((item) => (

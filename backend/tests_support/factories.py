@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import Order, OrderItem, OrderStatus
 
@@ -83,6 +83,8 @@ def make_product(*, farmer, stock: int = 10, price: str = "2.50", **overrides) -
         "price": Decimal(price),
         "unit": Unit.KG,
         "stock_quantity": stock,
+        # An established listing that an admin already approved; a fresh Product() is PENDING.
+        "review_status": ReviewStatus.APPROVED,
     }
     fields.update(overrides)
     return Product.objects.create(**fields)

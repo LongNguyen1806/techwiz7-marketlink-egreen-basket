@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 
 import {
   useAdminFarmers,
@@ -14,6 +15,8 @@ import {
   useApproveProducts,
   useRejectProduct,
 } from '../../hooks/queries/admin/useAdminApprovals';
+import { useAIRecheck } from '../../hooks/queries/admin/useAdminAIReview';
+import { AIReviewPanel } from '@/components/admin/AIReviewPanel';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -44,13 +47,34 @@ const PRODUCT_SORT = [
   { value: 'stall_name', label: 'Stall A–Z' },
   { value: 'name', label: 'Name A–Z' },
   { value: '-price', label: 'Highest price' },
+  { value: '-ai_risk', label: 'Highest AI risk' },
 ];
+
+// The AI's verdict on the latest version of each listing. "NONE" = not reviewed yet.
+const AI_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'LIKELY_VIOLATION', label: 'Likely violation' },
+  { value: 'NEEDS_REVIEW', label: 'Worth a look' },
+  { value: 'PASS', label: 'AI passed' },
+  { value: 'UNAVAILABLE', label: 'AI unavailable' },
+  { value: 'NONE', label: 'Not reviewed' },
+];
+
+// The refusal text an admin starts from when the AI found something: its findings, in order.
+function reasonFromFindings(findings) {
+  const lines = findings.map((finding) => `- ${finding.message}`);
+  return `Please fix the following before this listing can go on sale:\n${lines.join('\n')}`;
+}
 
 /** A queue is worked from the front, so both tabs open on whatever has waited longest. */
 export default function AdminApprovalsPage() {
+  // An AI alert links here as /admin/approvals?product=<id>, straight to that one listing.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedProduct = searchParams.get('product');
   const [stallFilters, setStallFilters] = useState({});
   const [stallOrdering, setStallOrdering] = useState('date_joined');
-  const [productFilters, setProductFilters] = useState({});
+  const [productFilters, setProductFilters] = useState(() => (linkedProduct ? { product_id: linkedProduct } : {}));
+  const [confirmAIPassed, setConfirmAIPassed] = useState(false);
   const [productOrdering, setProductOrdering] = useState('oldest');
   const [rejecting, setRejecting] = useState(null);
   const [reason, setReason] = useState('');
@@ -74,9 +98,24 @@ export default function AdminApprovalsPage() {
   const approveProduct = useApproveProduct();
   const approveProducts = useApproveProducts();
   const rejectProduct = useRejectProduct();
+  const recheck = useAIRecheck();
 
   const stallCount = stallsQuery.data?.count ?? 0;
   const productCount = productsQuery.data?.count ?? 0;
+  const aiPassed = (productsQuery.data?.results ?? []).filter((item) => item.ai_review?.verdict === 'PASS');
+  const aiFilter = productFilters.ai_verdict ?? '';
+
+  const showAllProducts = () => {
+    setProductFilters({});
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        next.delete('product');
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   const stallFilterFields = [
     { name: 'q', label: 'Search stall, email or phone', type: 'search' },
@@ -123,7 +162,7 @@ export default function AdminApprovalsPage() {
   // One dialog for both kinds. Refusing is the same act either way: say why, in words the
   // person on the other end can act on.
   const openReject = (kind, item) => {
-    setRejecting({ kind, id: item.id, name: item.stall_name ?? item.name });
+    setRejecting({ kind, id: item.id, name: item.stall_name ?? item.name, findings: item.ai_review?.findings ?? [] });
     setReason('');
   };
 
@@ -142,7 +181,7 @@ export default function AdminApprovalsPage() {
         description="New stalls and new listings, before shoppers see them. Approving takes one click; refusing asks for a reason the applicant can act on."
       />
 
-      <Tabs defaultValue={stallCount === 0 && productCount > 0 ? 'products' : 'stalls'}>
+      <Tabs defaultValue={linkedProduct || (stallCount === 0 && productCount > 0) ? 'products' : 'stalls'}>
         <TabsList>
           {/* The counts are on the tabs because the point of this screen is how much is left. */}
           <TabsTrigger value="stalls">Stalls ({stallCount})</TabsTrigger>
@@ -260,6 +299,47 @@ export default function AdminApprovalsPage() {
             onChange={setProductOrdering}
           />
 
+          {/* AI triage: read the likely violations first, clear the passed ones in one go. */}
+          <div className="admin-approvals-page__ai-bar">
+            <span className="admin-approvals-page__ai-label">
+              <Sparkles aria-hidden className="admin-approvals-page__ai-icon" />
+              AI review
+            </span>
+            <div className="admin-approvals-page__ai-filters" role="group" aria-label="Filter by AI review">
+              {AI_FILTERS.map((option) => (
+                <Button
+                  key={option.value || 'all'}
+                  size="sm"
+                  variant={aiFilter === option.value ? 'default' : 'outline'}
+                  aria-pressed={aiFilter === option.value}
+                  onClick={() => setProductFilters((current) => ({ ...current, ai_verdict: option.value || undefined }))}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            {aiPassed.length ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={approveProducts.isPending}
+                onClick={() => setConfirmAIPassed(true)}
+                className="admin-approvals-page__ai-approve"
+              >
+                Approve {aiPassed.length} AI-passed
+              </Button>
+            ) : null}
+          </div>
+
+          {linkedProduct && productFilters.product_id ? (
+            <p className="page-primitive__warn-banner admin-approvals-page__linked">
+              Showing the listing from an AI alert.{' '}
+              <button type="button" className="page-primitive__link-underline" onClick={showAllProducts}>
+                Show every listing waiting
+              </button>
+            </p>
+          ) : null}
+
           {productsQuery.isLoading ? (
             <PageSkeleton />
           ) : !byStall.length ? (
@@ -319,6 +399,12 @@ export default function AdminApprovalsPage() {
                                 {p.description}
                               </p>
                             ) : null}
+                            <AIReviewPanel
+                              review={p.ai_review}
+                              photoCheck={p.ai_photo_check}
+                              onRecheck={() => recheck.mutate(p.id)}
+                              rechecking={recheck.isPending && recheck.variables === p.id}
+                            />
                           </div>
                         </div>
                         <div className="page-primitive__actions-row">
@@ -370,6 +456,41 @@ export default function AdminApprovalsPage() {
           value={reason}
           onChange={(event) => setReason(event.target.value)}
         />
+        {rejecting?.kind === 'product' && rejecting.findings?.length ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="admin-approvals-page__ai-fill"
+            onClick={() => setReason(reasonFromFindings(rejecting.findings))}
+          >
+            <Sparkles aria-hidden className="admin-approvals-page__ai-icon" />
+            Start from the AI findings
+          </Button>
+        ) : null}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={confirmAIPassed}
+        onOpenChange={setConfirmAIPassed}
+        title={`Approve ${aiPassed.length} listing${aiPassed.length === 1 ? '' : 's'} the AI passed?`}
+        description="Neither the rule checks nor the AI found a problem with these. Shoppers will see them as soon as you confirm; the stalls are told."
+        confirmLabel={`Approve ${aiPassed.length}`}
+        loading={approveProducts.isPending}
+        onConfirm={() =>
+          approveProducts.mutate(
+            aiPassed.map((item) => item.id),
+            { onSettled: () => setConfirmAIPassed(false) },
+          )
+        }
+      >
+        <ul className="admin-approvals-page__ai-list">
+          {aiPassed.map((item) => (
+            <li key={item.id}>
+              {item.name} · {item.farmer.stall_name}
+            </li>
+          ))}
+        </ul>
       </ConfirmDialog>
     </div>
   );

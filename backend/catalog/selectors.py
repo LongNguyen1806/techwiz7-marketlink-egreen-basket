@@ -1,10 +1,10 @@
 from collections import defaultdict
 from collections.abc import Iterable
 
-from django.db.models import Avg, Count, F, Q, QuerySet
+from django.db.models import Avg, Count, F, OuterRef, Q, QuerySet, Subquery
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product, ReviewStatus
+from catalog.models import AIReviewKind, AIVerdict, Category, Product, ProductAIReview, ReviewStatus
 from marketlink_core.shortcuts import get_or_404
 from markets.models import PickupSlot
 from marketlink_core.ordering import both_directions, resolve_ordering
@@ -36,6 +36,8 @@ ADMIN_PRODUCT_ORDERING = both_directions(
         "stock_quantity": ("stock_quantity",),
         "created_at": ("created_at",),
         "is_hidden": ("is_hidden_by_admin",),
+        # Latest AI listing review; unreviewed rows sort as the lowest risk.
+        "ai_risk": ("ai_risk",),
     },
     tiebreak=("-id",),
 )
@@ -54,9 +56,15 @@ def list_products_for_admin(
     category_id: int | None = None,
     is_hidden: bool | None = None,
     review_status: str | None = None,
+    ai_verdict: str | None = None,
     ordering: str | None = None,
 ) -> QuerySet[Product]:
+    latest_ai = ProductAIReview.objects.filter(product=OuterRef("pk"), kind=AIReviewKind.LISTING).order_by(
+        "-created_at", "-id"
+    )
     queryset = Product.objects.select_related("farmer", "category").annotate(
+        ai_verdict=Subquery(latest_ai.values("verdict")[:1]),
+        ai_risk=Subquery(latest_ai.values("risk_score")[:1]),
         rating_avg=Avg(
             "order_items__product_review__rating",
             filter=Q(order_items__product_review__is_hidden_by_admin=False),
@@ -83,6 +91,11 @@ def list_products_for_admin(
         queryset = queryset.filter(is_hidden_by_admin=is_hidden)
     if review_status in ReviewStatus.values:
         queryset = queryset.filter(review_status=review_status)
+    # The admin's triage: "what did the AI say about the listings still waiting?"
+    if ai_verdict in AIVerdict.values:
+        queryset = queryset.filter(ai_verdict=ai_verdict)
+    elif ai_verdict == "NONE":
+        queryset = queryset.filter(ai_verdict__isnull=True)
     return queryset.order_by(
         *resolve_ordering(ordering, allowed=ADMIN_PRODUCT_ORDERING, default="newest")
     )
@@ -142,9 +155,8 @@ def public_product_base() -> QuerySet[Product]:
             is_archived=False,
             is_hidden_by_admin=False,
             # A listing reaches shoppers only once an admin has looked at it. An edit that
-            # changes what the thing *is* sends it back to PENDING, but the row keeps the
-            # approved wording until the new one is looked at, so the stall is not taken off
-            # the shopper side for fixing a typo.
+            # changes what the thing *is* sends it back to PENDING and off the shopper side
+            # until it is approved again; orders already placed for it are not affected.
             review_status=ReviewStatus.APPROVED,
             farmer__status=FarmerStatus.APPROVED,
             farmer__user__is_active=True,

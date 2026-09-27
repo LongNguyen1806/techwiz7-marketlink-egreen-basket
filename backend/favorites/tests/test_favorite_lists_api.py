@@ -11,7 +11,7 @@ FARMER_KEYS = {
     "in_stock_product_count", "upcoming_closures", "distance_km", "is_favorite",
 }
 PRODUCT_KEYS = {
-    "id", "name", "image", "price", "unit", "stock_quantity", "is_available", "availability",
+    "id", "name", "image", "price", "unit", "stock_quantity", "min_per_order", "max_per_order", "is_available", "availability",
     "category", "farmer", "rating_avg", "rating_count", "is_favorite",
 }
 MARKET_KEYS = {

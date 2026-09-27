@@ -1,7 +1,7 @@
 from django.db import IntegrityError, transaction
 
 from accounts.models import FarmerProfile, FarmerStatus
-from catalog.models import Product
+from catalog.models import Product, ReviewStatus
 from favorites.models import FavoriteFarmer, FavoriteMarket, FavoriteProduct
 from markets.models import Market
 from marketlink_core.exceptions import ResourceNotFoundError
@@ -15,7 +15,13 @@ def _public_farmers():
 
 
 def _public_products():
-    return Product.objects.filter(is_archived=False, is_hidden_by_admin=False, farmer__status=FarmerStatus.APPROVED)
+    # A listing waiting for review is off the shopper side, favorites included (it returns once approved).
+    return Product.objects.filter(
+        is_archived=False,
+        is_hidden_by_admin=False,
+        review_status=ReviewStatus.APPROVED,
+        farmer__status=FarmerStatus.APPROVED,
+    )
 
 
 def _public_markets():

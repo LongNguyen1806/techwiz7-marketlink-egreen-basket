@@ -10,6 +10,9 @@ export const DEFAULT_MAX_UPLOAD_MB = 2;
 
 const PRICE_PATTERN = /^\d{1,8}(\.\d{1,2})?$/;
 
+// Backend MAX_ORDER_QUANTITY: one order line is 1-999.
+export const MAX_PER_ORDER = 999;
+
 
 export function imageFileError(file, maxUploadMb = DEFAULT_MAX_UPLOAD_MB) {
   if (!IMAGE_TYPES.includes(file.type)) return 'Choose a JPG, PNG or WEBP image';
@@ -38,6 +41,19 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .int('Weekly default must be a whole number')
       .min(0, 'Weekly default cannot be negative')
       .nullable(),
+    // Per-order window from what the stall can sell to one order: at least min (1 = any amount),
+    // at most max (blank = no cap beyond stock).
+    min_per_order: z
+      .number({ error: 'Enter a whole number' })
+      .int('Min per order must be a whole number')
+      .min(1, 'Min per order must be at least 1')
+      .max(MAX_PER_ORDER, `Min per order must be ${MAX_PER_ORDER} or less`),
+    max_per_order: z
+      .number({ error: 'Enter a whole number or leave it blank' })
+      .int('Max per order must be a whole number')
+      .min(1, 'Max per order must be at least 1')
+      .max(MAX_PER_ORDER, `Max per order must be ${MAX_PER_ORDER} or less`)
+      .nullable(),
     description: z.string().trim().max(1000, 'Description must be 1000 characters or fewer'),
     is_available: z.boolean(),
     
@@ -47,6 +63,10 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .refine((file) => !file || !imageFileError(file, maxUploadMb), {
         error: (issue) => imageFileError(issue.input, maxUploadMb) ?? 'Choose a valid image',
       }),
+  }).superRefine(({ min_per_order: min, max_per_order: max }, ctx) => {
+    if (max !== null && Number.isInteger(min) && Number.isInteger(max) && min > max) {
+      ctx.addIssue({ code: 'custom', path: ['min_per_order'], message: 'Min per order cannot be more than max per order' });
+    }
   });
 }
 
@@ -57,6 +77,8 @@ export const PRODUCT_DEFAULTS = {
   price: '',
   stock_quantity: 0,
   weekly_default_quantity: null,
+  min_per_order: 1,
+  max_per_order: null,
   description: '',
   is_available: true,
   image: null,
@@ -70,6 +92,8 @@ export function productToFormValues(product) {
     price: String(product.price),
     stock_quantity: product.stock_quantity,
     weekly_default_quantity: product.weekly_default_quantity ?? null,
+    min_per_order: product.min_per_order ?? 1,
+    max_per_order: product.max_per_order ?? null,
     description: product.description ?? '',
     is_available: product.is_available,
     image: null,

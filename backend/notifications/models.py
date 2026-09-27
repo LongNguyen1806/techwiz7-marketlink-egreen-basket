@@ -32,6 +32,9 @@ class NotificationType(models.TextChoices):
     # The outcome of the review a new or edited listing goes through.
     PRODUCT_APPROVED = "PRODUCT_APPROVED", "Product Approved"
     PRODUCT_REJECTED = "PRODUCT_REJECTED", "Product Rejected"
+    # Admin notifications
+    # The AI listing review found a likely violation (or the weekly photo check found a problem).
+    AI_LISTING_FLAGGED = "AI_LISTING_FLAGGED", "Listing Flagged by AI Review"
 
 
 

@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import CustomUser, CustomerProfile, FarmerProfile, Role, RoleCode
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from marketlink_core.exceptions import (
     BusinessValidationError,
     ConflictError,
@@ -74,6 +74,7 @@ class OrderModifyTestCase(TestCase):
 
         self.category = Category.objects.create(name="Greens")
         self.product1 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Organic Spinach",
@@ -82,6 +83,7 @@ class OrderModifyTestCase(TestCase):
             stock_quantity=50,
         )
         self.product2 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Fresh Mint",
@@ -277,5 +279,72 @@ class OrderModifyTestCase(TestCase):
                 actor=self.customer,
                 expected_version=order.version,
                 items_data=[],
+            )
+        self.assertEqual(ctx.exception.code, ErrorCode.VALIDATION_ERROR)
+
+    def test_modify_cannot_raise_a_line_above_the_stall_cap(self):
+        self.product1.max_per_order = 3
+        self.product1.save(update_fields=["max_per_order"])
+        order = self._create_order(qty=2)
+
+        with self.assertRaises(BusinessValidationError) as ctx:
+            modify_order(
+                order_id=order.id,
+                actor=self.customer,
+                expected_version=order.version,
+                items_data=[{"product_id": self.product1.id, "quantity": 4}],
+            )
+        self.assertEqual(ctx.exception.code, ErrorCode.VALIDATION_ERROR)
+
+        modified = modify_order(
+            order_id=order.id,
+            actor=self.customer,
+            expected_version=order.version,
+            items_data=[{"product_id": self.product1.id, "quantity": 3}],
+        )
+        self.assertEqual(modified.items.get().quantity, 3)
+
+    def test_a_line_of_a_listing_in_review_can_be_lowered_but_not_raised(self):
+        order = self._create_order(qty=2)
+        self.product1.review_status = ReviewStatus.PENDING
+        self.product1.save(update_fields=["review_status"])
+
+        with self.assertRaises(UnprocessableEntityError) as ctx:
+            modify_order(
+                order_id=order.id,
+                actor=self.customer,
+                expected_version=order.version,
+                items_data=[{"product_id": self.product1.id, "quantity": 3}],
+            )
+        self.assertEqual(ctx.exception.code, ErrorCode.PRODUCT_NOT_AVAILABLE)
+
+        modified = modify_order(
+            order_id=order.id,
+            actor=self.customer,
+            expected_version=order.version,
+            items_data=[{"product_id": self.product1.id, "quantity": 1}],
+        )
+        self.assertEqual(modified.items.get().quantity, 1)
+
+    def test_a_changed_line_must_meet_the_stall_minimum_but_an_untouched_one_may_stay_below(self):
+        order = self._create_order(qty=2)
+        self.product1.min_per_order = 3
+        self.product1.save(update_fields=["min_per_order"])
+
+        # Unchanged line: the minimum rose after the order was placed, which is not the customer's doing.
+        kept = modify_order(
+            order_id=order.id,
+            actor=self.customer,
+            expected_version=order.version,
+            items_data=[{"product_id": self.product1.id, "quantity": 2}],
+        )
+        self.assertEqual(kept.items.get().quantity, 2)
+
+        with self.assertRaises(BusinessValidationError) as ctx:
+            modify_order(
+                order_id=order.id,
+                actor=self.customer,
+                expected_version=kept.version,
+                items_data=[{"product_id": self.product1.id, "quantity": 1}],
             )
         self.assertEqual(ctx.exception.code, ErrorCode.VALIDATION_ERROR)

@@ -10,7 +10,7 @@ from orders.models import Order, OrderItem, OrderStatus
 from tests_support.factories import make_customer, make_farmer, make_market, make_order, make_product
 
 PRODUCT_KEYS = {
-    "id", "name", "image", "price", "unit", "stock_quantity", "is_available", "availability",
+    "id", "name", "image", "price", "unit", "stock_quantity", "min_per_order", "max_per_order", "is_available", "availability",
     "category", "farmer", "rating_avg", "rating_count", "is_favorite",
 }
 

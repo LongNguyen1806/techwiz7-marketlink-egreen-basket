@@ -19,7 +19,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, FarmerProfile, FarmerStatus
-from catalog.models import Product
+from catalog.models import Product, ReviewStatus
 from marketlink_core.constants import BOOKING_HORIZON_DAYS
 from marketlink_core.geo import distance_km
 from marketlink_core.policies.roles import RoleCode
@@ -103,6 +103,7 @@ def _in_stock_subquery():
                 is_hidden_by_admin=False,
                 is_available=True,
                 stock_quantity__gt=0,
+                review_status=ReviewStatus.APPROVED,
             )
             .order_by()
             .values("farmer_id")
@@ -160,6 +161,7 @@ def public_farmers(
             products__category_id=category_id,
             products__is_archived=False,
             products__is_hidden_by_admin=False,
+            products__review_status=ReviewStatus.APPROVED,
         )
     if coordinates is not None:
         lat, lng = coordinates

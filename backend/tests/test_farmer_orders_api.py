@@ -12,7 +12,7 @@ from accounts.models import (
     Role,
     RoleCode,
 )
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from marketlink_core.exceptions import ErrorCode
 from markets.models import FarmerMarket, Market, PickupSlot
 from notifications.models import Notification, NotificationType
@@ -86,6 +86,7 @@ class FarmerOrdersAPITestCase(TestCase):
 
         self.category = Category.objects.create(name="Herbs")
         self.product1 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Coriander",
@@ -94,6 +95,7 @@ class FarmerOrdersAPITestCase(TestCase):
             stock_quantity=40,
         )
         self.product2 = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Basil",
@@ -486,6 +488,7 @@ class FarmerOrdersAPITestCase(TestCase):
 
         # Create an unrelated product for this farmer (not in order)
         unrelated_prod = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Unrelated Melon",
@@ -784,6 +787,7 @@ class FarmerOrdersAPITestCase(TestCase):
 
         # Product not in the order -> 404
         other_product = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
             category=self.category,
             name="Mint",

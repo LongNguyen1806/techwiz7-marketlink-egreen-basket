@@ -4,6 +4,7 @@ import { ROLES } from '../../constants/roles';
 import { ROUTES } from '../../constants/routes';
 import { notify } from '../../lib/toast';
 import { useCartStore } from '../../stores/cart.store';
+import { unitLabel } from '../../utils/labels';
 import { useAuth } from '../authentication/useAuth';
 
 
@@ -16,6 +17,8 @@ export function toCartLine(product) {
     unit: product.unit,
     price: product.price,
     image: product.image,
+    min_per_order: product.min_per_order ?? 1,
+    max_per_order: product.max_per_order ?? null,
   };
 }
 
@@ -41,7 +44,22 @@ export function useAddToCart() {
         notify.info('Sign in with a shopper account to order');
         return false;
       }
+      const inCart = useCartStore.getState().lines.find((line) => line.product_id === product.id)?.quantity ?? 0;
       addItem(toCartLine(product), quantity);
+      const minimum = product.min_per_order ?? 1;
+      const cap = product.max_per_order;
+      if (inCart + quantity < minimum) {
+        notify.info(`${product.name}: minimum ${minimum} ${unitLabel(product.unit)} per order`, {
+          description: `We added ${minimum} to your cart.`,
+        });
+        return true;
+      }
+      if (cap && inCart + quantity > cap) {
+        notify.info(`${product.name}: at most ${cap} ${unitLabel(product.unit)} per order`, {
+          description: `Your cart now has the maximum of ${cap}.`,
+        });
+        return true;
+      }
       notify.success(`${product.name} added to your cart`);
       return true;
     },
