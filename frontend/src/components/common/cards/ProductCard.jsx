@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ShoppingCart } from 'lucide-react';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { LazyImage } from '../LazyImage';
@@ -18,12 +17,9 @@ export function ProductCard({ product, onAddToCart, onRequireSignIn, className }
   const canWatchRestock = product.availability === 'OUT_OF_STOCK';
 
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn('product-card', className)}
-    >
+    // A plain element: a layout animation re-measured every card on each sort and made the
+    // grid jump. Loading is shown with ProductCardSkeleton instead.
+    <article className={cn('product-card', className)}>
       <div className="product-card__media">
         <Link to={`/products/${product.id}`} className="product-card__media-link">
           {product.image ? (
@@ -76,7 +72,7 @@ export function ProductCard({ product, onAddToCart, onRequireSignIn, className }
           </p>
         ) : null}
       </div>
-    </motion.article>
+    </article>
   );
 }
 

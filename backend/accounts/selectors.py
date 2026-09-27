@@ -147,7 +147,10 @@ def public_farmers(
 ) -> QuerySet[FarmerProfile]:
     queryset = public_farmer_base()
     if q:
-        queryset = queryset.filter(Q(stall_name__icontains=q) | Q(address__icontains=q))
+        # Not the farmer's own address: searching it would locate their home.
+        queryset = queryset.filter(
+            Q(stall_name__icontains=q) | Q(farmer_markets__market__name__icontains=q)
+        )
     if market_id is not None:
         queryset = queryset.filter(farmer_markets__market_id=market_id)
     if day is not None:
@@ -165,8 +168,14 @@ def public_farmers(
         )
     if coordinates is not None:
         lat, lng = coordinates
+        # Distance to the market the stall trades at (one per farmer), where the shopper goes.
         queryset = queryset.annotate(
-            distance=distance_km(lat=lat, lng=lng, lat_field="latitude", lng_field="longitude")
+            distance=distance_km(
+                lat=lat,
+                lng=lng,
+                lat_field="farmer_markets__market__latitude",
+                lng_field="farmer_markets__market__longitude",
+            )
         )
     # ordering=distance needs coordinates; without them it falls back to name.
     # No explicit sort means the home page, which wants the busiest stalls first.

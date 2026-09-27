@@ -1,0 +1,92 @@
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pagination__page,
+.pagination__step {
+  display: inline-flex;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-card);
+  padding-inline: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    border-color var(--duration-fast),
+    color var(--duration-fast);
+}
+
+.pagination__page:hover:not(:disabled):not(.pagination__page--current),
+.pagination__step:hover:not(:disabled) {
+  border-color: var(--color-primary-300);
+  background-color: var(--color-muted);
+}
+
+.pagination__page:focus-visible,
+.pagination__step:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.pagination__page--current {
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+  cursor: default;
+}
+
+.pagination__page:disabled:not(.pagination__page--current),
+.pagination__step:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.pagination__gap {
+  min-width: 1.5rem;
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
+
+.pagination__icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* On a phone the arrows alone say Previous/Next and leave room for the numbers. */
+@media (max-width: 479px) {
+  .pagination__step-label {
+    display: none;
+  }
+
+  .pagination__step {
+    padding-inline: 0;
+  }
+}
+
+.pagination__status {
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}

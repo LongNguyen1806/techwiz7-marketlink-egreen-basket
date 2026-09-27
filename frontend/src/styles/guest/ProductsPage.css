@@ -167,9 +167,121 @@
   accent-color: var(--color-primary-600);
 }
 
-.products-page__price-row {
+/* Price slider: two range inputs stacked on one track. Only the thumbs take the pointer,
+   so either thumb can be grabbed wherever the other one sits. */
+.products-page__price-head {
   display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-2);
+}
+
+.products-page__price-value {
+  margin-bottom: 0.625rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary-700);
+}
+
+.dark .products-page__price-value {
+  color: var(--color-primary-300);
+}
+
+.products-page__range {
+  position: relative;
+  height: 1.5rem;
+}
+
+.products-page__range-track {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 0.375rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius-full);
+  background-color: var(--color-muted);
+}
+
+.products-page__range-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--range-from);
+  right: calc(100% - var(--range-to));
+  border-radius: inherit;
+  background-color: var(--color-primary-600);
+}
+
+.products-page__range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.products-page__range-input--top {
+  z-index: 1;
+}
+
+.products-page__range-input::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+
+.products-page__range-input::-moz-range-track {
+  background: transparent;
+}
+
+.products-page__range-input::-webkit-slider-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  border: 2px solid var(--color-primary-600);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-soft);
+  cursor: grab;
+  pointer-events: auto;
+  -webkit-appearance: none;
+}
+
+.products-page__range-input::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--color-primary-600);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-soft);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.products-page__range-input:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.products-page__range-input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.products-page__range-input:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.products-page__range-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
 }
 
 .products-page__select {
@@ -236,22 +348,17 @@
   }
 }
 
-.products-page__skeleton {
-  height: 20rem;
-  border-radius: var(--radius-2xl);
+.products-page__results {
+  /* Room for the sticky header when a page change scrolls back here. */
+  scroll-margin-top: 5rem;
 }
 
-.products-page__load-more {
-  margin-top: var(--space-8);
-  display: flex;
-  justify-content: center;
-}
-
-.products-page__end-note {
+.products-page__count {
+  margin-bottom: var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-muted-foreground);
 }
 
-.products-page__btn-press:active:not(:disabled) {
-  transform: scale(0.98);
+.products-page__pagination {
+  margin-top: var(--space-8);
 }

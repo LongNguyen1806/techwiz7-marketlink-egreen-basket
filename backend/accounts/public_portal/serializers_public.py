@@ -55,8 +55,9 @@ class FarmerSummarySerializer(serializers.ModelSerializer):
 
 
 class FarmerPublicSerializer(FarmerSummarySerializer):
-    latitude = serializers.FloatField(allow_null=True)
-    longitude = serializers.FloatField(allow_null=True)
+    """The public stall page. Shoppers meet the stall at its market, so the farmer's own
+    address and map pin (often their home) are left out; the admin serializer adds them."""
+
     pickup_windows = serializers.SerializerMethodField()
 
     class Meta(FarmerSummarySerializer.Meta):
@@ -64,10 +65,7 @@ class FarmerPublicSerializer(FarmerSummarySerializer):
             *FarmerSummarySerializer.Meta.fields,
             "contact_person",
             "phone",
-            "address",
             "description",
-            "latitude",
-            "longitude",
             "order_cutoff_hours",
             "pickup_windows",
         ]

@@ -202,11 +202,26 @@
   gap: var(--space-10);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .public-layout__footer-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-12);
+    grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* Brand, then four link columns (Explore, Account, Help, MarketLink). */
+@media (min-width: 1024px) {
+  .public-layout__footer-grid {
+    grid-template-columns: 1.6fr repeat(4, 1fr);
+    gap: var(--space-10);
+  }
+}
+
+.public-layout__footer-button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
 }
 
 .public-layout__footer-about {

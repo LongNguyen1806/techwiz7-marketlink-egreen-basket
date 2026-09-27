@@ -221,13 +221,17 @@ def test_upcoming_closures_respect_the_horizon(api_client, approved_farmer):
 
 
 @pytest.mark.django_db
-def test_distance_and_distance_ordering(api_client, approved_farmer):
+def test_distance_is_to_the_market_not_the_farm(api_client, approved_farmer, stall):
+    # Standing on the farmer's own pin: the stall is still ~6 km away, at its market.
     response = api_client.get(
-        reverse(LIST_URL), {"lat": "10.762622", "lng": "106.660172", "ordering": "distance"}
+        reverse(LIST_URL), {"lat": "10.800000", "lng": "106.700000", "ordering": "distance"}
     )
 
     row = response.data["data"]["results"][0]
     assert 5.0 < row["distance_km"] < 7.0
+
+    at_market = api_client.get(reverse(LIST_URL), {"lat": "10.762622", "lng": "106.660172"})
+    assert at_market.data["data"]["results"][0]["distance_km"] == 0.0
 
     # Without coordinates the same ordering falls back to name instead of failing.
     assert api_client.get(reverse(LIST_URL), {"ordering": "distance"}).status_code == 200
@@ -254,9 +258,13 @@ def test_filters_by_market_day_and_category(api_client, approved_farmer, stall, 
 
 
 @pytest.mark.django_db
-def test_search_matches_stall_name_or_address(api_client, approved_farmer):
+def test_search_matches_stall_or_market_name_but_not_the_farm_address(
+    api_client, approved_farmer, stall
+):
     assert api_client.get(reverse(LIST_URL), {"q": "test stall"}).data["data"]["count"] == 1
-    assert api_client.get(reverse(LIST_URL), {"q": "Market Street"}).data["data"]["count"] == 1
+    assert api_client.get(reverse(LIST_URL), {"q": "central market"}).data["data"]["count"] == 1
+    # "34 Market Street" is the farmer's own address; searching it must not find them.
+    assert api_client.get(reverse(LIST_URL), {"q": "34 Market Street"}).data["data"]["count"] == 0
     assert api_client.get(reverse(LIST_URL), {"q": "nowhere"}).data["data"]["count"] == 0
 
 
@@ -267,6 +275,10 @@ def test_the_detail_adds_contact_details_and_pickup_windows(api_client, approved
     assert data["contact_person"] == "Test Farmer"
     assert data["phone"] == "0907654321"
     assert data["order_cutoff_hours"] == 12
+    # The farmer's own address and pin are for the admin only.
+    assert "address" not in data
+    assert "latitude" not in data
+    assert "longitude" not in data
     assert len(data["pickup_windows"]) == 1
     window = data["pickup_windows"][0]
     assert window["market_name"] == "Central Market"
@@ -384,3 +396,42 @@ def test_an_explicit_sort_still_wins(api_client, approved_farmer, make_farmer):
         ).data["data"]["results"]
     ]
     assert names == sorted(names)
+
+
+GEOCODE_URL = "public-geocode"
+GEOCODE = "accounts.public_portal.views_public.geocode_address"
+
+
+@pytest.mark.django_db
+def test_geocode_returns_the_point_for_an_address(api_client):
+    from decimal import Decimal
+    from unittest import mock
+
+    with mock.patch(GEOCODE, return_value=(Decimal("10.790451"), Decimal("106.688785"))) as geocode:
+        response = api_client.get(reverse(GEOCODE_URL), {"q": "Cho Tan Dinh, Ho Chi Minh City"})
+
+    assert response.status_code == 200
+    assert response.data["data"] == {"found": True, "latitude": 10.790451, "longitude": 106.688785}
+    geocode.assert_called_once_with("Cho Tan Dinh, Ho Chi Minh City")
+
+
+@pytest.mark.django_db
+def test_geocode_says_not_found_instead_of_failing(api_client):
+    from unittest import mock
+
+    with mock.patch(GEOCODE, return_value=None):
+        response = api_client.get(reverse(GEOCODE_URL), {"q": "somewhere unknown"})
+
+    assert response.status_code == 200
+    assert response.data["data"] == {"found": False, "latitude": None, "longitude": None}
+
+
+@pytest.mark.django_db
+def test_geocode_rejects_a_query_too_short_to_search(api_client):
+    from unittest import mock
+
+    with mock.patch(GEOCODE) as geocode:
+        response = api_client.get(reverse(GEOCODE_URL), {"q": "abc"})
+
+    assert response.status_code == 400
+    geocode.assert_not_called()

@@ -28,6 +28,7 @@ import { useFarmerProfile } from '../hooks/queries/farmer/useFarmerProfile';
 import { cn } from '../lib/cn';
 import { useUiStore } from '../stores/ui.store';
 import '../styles/farmer/FarmerLayout.css';
+import { AIChatWidget } from '../components/common/chat/AIChatWidget';
 
 const NAV_ITEMS = [
   { to: ROUTES.FARMER.HOME, label: 'Overview', icon: LayoutDashboard, end: true },
@@ -149,6 +150,7 @@ export function FarmerLayout() {
             <Outlet />
           </FarmerStatusGate>
         </main>
+        <AIChatWidget />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Store, UserRound } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { ROUTES } from '../../constants/routes';
@@ -11,15 +11,6 @@ import { loginSchema } from '../../schemas/common/auth.schema';
 import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
 import '../../styles/auth/LoginForm.css';
 
-
-
-const DEMO_ACCOUNTS = import.meta.env.DEV
-  ? [
-      { email: 'customer@marketlink.local', label: 'Customer', password: 'Demo@12345', icon: UserRound },
-      { email: 'farmer1@marketlink.local', label: 'Farmer', password: 'Demo@12345', icon: Store },
-    ]
-  : [];
-
 const LOGIN_FIELDS = ['email', 'password'];
 
 export function LoginForm() {
@@ -27,7 +18,6 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    setValue,
     setError,
     formState: { errors },
   } = useForm({
@@ -40,12 +30,6 @@ export function LoginForm() {
       onError: (error) => mapServerErrorsToForm(ApiError.fromUnknown(error).fieldErrors, setError, { fields: LOGIN_FIELDS }),
     }),
   );
-
-  const signInAs = (account) => {
-    setValue('email', account.email);
-    setValue('password', account.password);
-    void onSubmit();
-  };
 
   return (
     <div className="login-form">
@@ -77,39 +61,6 @@ export function LoginForm() {
           Sign in
         </Button>
       </form>
-
-      {DEMO_ACCOUNTS.length > 0 ? (
-        <div className="login-form__demo">
-          <div className="login-form__demo-divider">
-            <span className="login-form__demo-line" />
-            <p className="login-form__demo-label">Try a demo account</p>
-            <span className="login-form__demo-line" />
-          </div>
-          <div className="login-form__demo-list">
-            {DEMO_ACCOUNTS.map((account) => {
-              const Icon = account.icon;
-              return (
-                <button
-                  key={account.email}
-                  type="button"
-                  disabled={login.isPending}
-                  onClick={() => signInAs(account)}
-                  className="login-form__demo-btn"
-                >
-                  <span className="login-form__demo-icon-wrap">
-                    <Icon className="login-form__demo-icon" strokeWidth={1.75} />
-                  </span>
-                  <span className="login-form__demo-text">
-                    <span className="login-form__demo-role">{account.label}</span>
-                    <span className="login-form__demo-email">{account.email}</span>
-                  </span>
-                  <ArrowRight className="login-form__demo-arrow" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
 
       <div className="login-form__footer">
         <p>New to MarketLink?</p>

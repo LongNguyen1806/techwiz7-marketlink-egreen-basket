@@ -13,6 +13,7 @@ from marketlink_core.exceptions import (
 from orders.services.fsm import run_with_retry_if_top_level
 from reviews.models import FarmerReview, ProductReview
 from reviews.selectors import TYPE_FARMER
+from system.auto_flags import check_reply_text, safely
 
 REPLY_MAX_LENGTH = 500
 
@@ -52,4 +53,6 @@ def reply_to_review(*, review_type: str, review_id: int, farmer_id: int, reply: 
             review.save(update_fields=["reply", "replied_at", "updated_at"])
             return review.pk
 
-    return run_with_retry_if_top_level(_execute)
+    review_pk = run_with_retry_if_top_level(_execute)
+    safely(check_reply_text, model.objects.get(pk=review_pk))
+    return review_pk

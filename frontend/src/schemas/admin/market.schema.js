@@ -13,8 +13,9 @@ const dayOfWeekSchema = z.union([
 export const marketSchema = z.object({
   name: z.string().min(1, 'Enter market name'),
   address: z.string().min(1, 'Enter address'),
-  latitude: z.number(),
-  longitude: z.number(),
+  // Null until the admin places the pin; saving without one is refused.
+  latitude: z.number({ error: 'Place the market on the map' }),
+  longitude: z.number({ error: 'Place the market on the map' }),
   image: z.string().optional().nullable(),
   open_time: z.string().min(1, 'Select open time'),
   close_time: z.string().min(1, 'Select close time'),

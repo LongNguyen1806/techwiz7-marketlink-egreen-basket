@@ -5,6 +5,7 @@ import { Printer } from 'lucide-react';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { PageStatus, Pagination } from '../../components/common/Pagination';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { FarmerOrderActions } from '../../components/farmer/FarmerOrderActions';
 import { FarmerOrderFilters, MarketFilter } from '../../components/farmer/FarmerOrderFilters';
@@ -15,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/Ta
 import { ROUTES } from '../../constants/routes';
 import { useDebouncedSearchParam } from '../../hooks/common/useDebouncedSearchParam';
 import { useUrlFilters } from '../../hooks/common/useUrlFilters';
+import { readPage, usePageParam } from '../../hooks/common/usePageParam';
 import {
   useFarmerOrderList,
   useFarmerOrderTabCounts,
@@ -56,7 +58,7 @@ function OrderNotes({ order }) {
 
 OrderNotes.propTypes = { order: PropTypes.object.isRequired };
 
-function OrderRows({ query, emptyDescription, hasFilters, onClearFilters }) {
+function OrderRows({ query, emptyDescription, hasFilters, onClearFilters, onPageChange, showStatus = true }) {
   if (query.isPending) return <PageSkeleton />;
   if (query.isError && !query.data) {
     return <EmptyState title="Orders couldn't be loaded" actionLabel="Try again" onAction={() => query.refetch()} />;
@@ -76,6 +78,14 @@ function OrderRows({ query, emptyDescription, hasFilters, onClearFilters }) {
 
   return (
     <>
+      {showStatus ? (
+        <PageStatus
+          page={query.data.page}
+          pageSize={query.data.pageSize}
+          total={query.data.total}
+          shown={query.data.orders.length}
+        />
+      ) : null}
       {query.data.orders.map((order) => (
         <div key={order.id} className="page-primitive__row-card-responsive">
           <div>
@@ -98,18 +108,12 @@ function OrderRows({ query, emptyDescription, hasFilters, onClearFilters }) {
           </div>
         </div>
       ))}
-      {query.hasNextPage ? (
-        <div className="page-primitive__justify-center-row">
-          <Button
-            variant="outline"
-            size="sm"
-            loading={query.isFetchingNextPage}
-            onClick={() => query.fetchNextPage()}
-          >
-            Load more
-          </Button>
-        </div>
-      ) : null}
+      <Pagination
+        page={query.data.page}
+        totalPages={query.data.totalPages}
+        disabled={query.isPlaceholderData}
+        onChange={onPageChange}
+      />
     </>
   );
 }
@@ -118,6 +122,8 @@ OrderRows.propTypes = {
   query: PropTypes.object.isRequired,
   emptyDescription: PropTypes.string.isRequired,
   hasFilters: PropTypes.bool.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  showStatus: PropTypes.bool,
   onClearFilters: PropTypes.func.isRequired,
 };
 
@@ -276,6 +282,7 @@ export default function FarmerOrdersPage() {
     sort: '',
     prep: toApiDate(),
     changed: false,
+    page: 1,
   });
   const search = useDebouncedSearchParam('q');
   // Counts follow the market filter, so the tab and day badges match the list below them.
@@ -307,6 +314,7 @@ export default function FarmerOrdersPage() {
     pickup_from: from || undefined,
     pickup_to: to || undefined,
     market_id: filters.market || undefined,
+    page: readPage(filters),
   };
   const tabQuery = useFarmerOrderList(
     {
@@ -321,6 +329,7 @@ export default function FarmerOrdersPage() {
   );
   const overdueQuery = useFarmerOverdueOrders(listFilters, { enabled: showOrders && tabResolved && isOverdue });
   const ordersQuery = isOverdue ? overdueQuery : tabQuery;
+  const goToPage = usePageParam({ filters, setFilters, query: ordersQuery });
 
   const activeCount = [search.term, from || to, filters.market, status, sort, onlyChanged].filter(Boolean).length;
 
@@ -408,6 +417,9 @@ export default function FarmerOrdersPage() {
                   emptyDescription={EMPTY_COPY[activeTab.id]}
                   hasFilters={activeCount > 0}
                   onClearFilters={clearFilters}
+                  onPageChange={goToPage}
+                  // Overdue merges two lists page by page, so a "21–40 of N" line would not add up.
+                  showStatus={!isOverdue}
                 />
               ) : (
                 <PageSkeleton />

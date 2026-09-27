@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useAdminFarmer, useUpdateFarmer } from "../../hooks/queries/admin/useAdminFarmers";
 import { ProfileEditDialog } from "../../components/admin/ProfileEditDialog";
 import { ChangeLogPanel } from "../../components/admin/ChangeLogPanel";
+import { FarmerLocationCard } from "../../components/admin/FarmerLocationCard";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { PageHeader } from "../../components/common/PageHeader";
 import { PageSkeleton } from "../../components/feedback/PageSkeleton";
@@ -120,6 +121,13 @@ export default function AdminFarmerDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <FarmerLocationCard
+        address={f.address}
+        latitude={f.latitude}
+        longitude={f.longitude}
+        markets={f.pickup_windows ?? []}
+      />
 
       <ChangeLogPanel model='farmer_profile' id={farmerId} />
 

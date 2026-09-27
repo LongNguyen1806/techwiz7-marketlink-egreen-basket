@@ -147,3 +147,18 @@
 .dark .register-form__footer-link {
   color: var(--color-primary-300);
 }
+
+.register-form__optional {
+  font-weight: var(--weight-normal);
+  color: var(--color-muted-foreground);
+}
+
+.register-form__hint {
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--color-muted-foreground);
+}
+
+.register-form__map .map-picker__leaflet {
+  height: 16rem;
+}

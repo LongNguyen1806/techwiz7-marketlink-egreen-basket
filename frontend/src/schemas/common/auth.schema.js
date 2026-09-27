@@ -70,6 +70,8 @@ export const registerFarmerSchema = z
     contact_person: textField('Contact person', 'a contact person', 2, 100),
     address: textField('Address', 'an address', 5, 255),
     operating_days: operatingDaysField,
+    latitude: z.number().min(-90).max(90).nullable(),
+    longitude: z.number().min(-180).max(180).nullable(),
   })
   .refine(passwordsMatch('password'), MISMATCH);
 

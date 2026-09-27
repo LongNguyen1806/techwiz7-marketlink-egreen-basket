@@ -13,6 +13,15 @@ from dataclasses import dataclass
 from django.conf import settings
 
 from catalog.ai_review.types import Finding, ListingInput, Severity
+from marketlink_core.gemini import (  # noqa: F401 - re-exported for callers and tests
+    MAX_RATE_LIMIT_WAIT_S,
+    RETRY_DELAYS_S,
+    AIUnavailable,
+    call_with_fallback,
+    classify_error,
+    make_client,
+    model_chain,
+)
 
 logger = logging.getLogger("marketlink")
 
@@ -31,9 +40,6 @@ AI_CHECKS = (
 NO_CATEGORY = "NONE"
 # Below this the model is guessing; a HIGH it is unsure about is reported as MEDIUM.
 CONFIDENT = 0.6
-RETRY_DELAYS_S = (2.0, 6.0)
-# Per-minute rate limits: wait as long as Gemini asks, but never stall a request longer.
-MAX_RATE_LIMIT_WAIT_S = 30.0
 
 SYSTEM_INSTRUCTION = """\
 You review product listings for MarketLink, an online pre-order platform for local farmers' markets.
@@ -59,10 +65,6 @@ Rules:
 - Write every message in English, one short sentence an administrator can act on.
 - If nothing is wrong, return an empty findings list.
 """
-
-
-class AIUnavailable(Exception):
-    """The model could not be asked or its answer could not be used; the rules still stand."""
 
 
 @dataclass(frozen=True)
@@ -166,40 +168,7 @@ def is_configured() -> bool:
 
 def _models() -> list[str]:
     """The configured model, then the fallbacks; each has its own free-tier quota."""
-    chain = [settings.GEMINI_MODERATION_MODEL, *settings.GEMINI_MODERATION_FALLBACK_MODELS]
-    return list(dict.fromkeys(name.strip() for name in chain if name and name.strip()))
-
-
-def _retry_seconds(value) -> float | None:
-    """RetryInfo.retryDelay ("1.7s" or "12s") as seconds."""
-    try:
-        return float(str(value).rstrip("s"))
-    except (TypeError, ValueError):
-        return None
-
-
-def classify_error(code: int | None, details) -> tuple[str, float | None, str]:
-    """What to do about a failed call: ("retry", wait_s, why) | ("next_model", None, why) | ("fail", None, why).
-
-    * 429 per-day quota: this model is done for today -> try the next model.
-    * 429 per-minute: wait as long as Gemini asks (capped), then retry the same model.
-    * 404: the key cannot use this model -> next model.
-    * 5xx / timeouts: retry with backoff.
-    * other 4xx (bad key, bad request): retrying cannot help.
-    """
-    error = details.get("error", details) if isinstance(details, dict) else {}
-    extra = error.get("details", []) if isinstance(error, dict) else []
-    quota_ids = [v.get("quotaId", "") for item in extra if "QuotaFailure" in str(item.get("@type", "")) for v in item.get("violations", [])]
-    wait = next((_retry_seconds(item.get("retryDelay")) for item in extra if "RetryInfo" in str(item.get("@type", ""))), None)
-    if code == 429:
-        if any("PerDay" in quota_id for quota_id in quota_ids):
-            return "next_model", None, "daily free-tier quota used up"
-        return "retry", min(wait if wait is not None else 10.0, MAX_RATE_LIMIT_WAIT_S), "rate limited"
-    if code == 404:
-        return "next_model", None, "model not available to this key"
-    if code is None or code >= 500:
-        return "retry", None, f"server error {code}" if code else "no response"
-    return "fail", None, f"request refused ({code})"
+    return model_chain(settings.GEMINI_MODERATION_MODEL, settings.GEMINI_MODERATION_FALLBACK_MODELS)
 
 
 def _generate(client, model: str, parts, config):
@@ -213,18 +182,9 @@ def ask_model(listing: ListingInput, category_names: list[str], *, image_only: b
     """One advisory read of the listing. Raises AIUnavailable instead of guessing."""
     if not settings.AI_MODERATION_ENABLED:
         raise AIUnavailable("AI review is turned off (AI_MODERATION_ENABLED).")
-    if not settings.GEMINI_API_KEY:
-        raise AIUnavailable("No GEMINI_API_KEY is configured.")
-    try:
-        from google import genai
-        from google.genai import errors, types
-    except ImportError as exc:  # pragma: no cover - dependency is in requirements.txt
-        raise AIUnavailable("The google-genai package is not installed.") from exc
+    client = make_client(settings.AI_MODERATION_TIMEOUT_MS)
+    from google.genai import types
 
-    client = genai.Client(
-        api_key=settings.GEMINI_API_KEY,
-        http_options=types.HttpOptions(timeout=settings.AI_MODERATION_TIMEOUT_MS),
-    )
     parts = [types.Part.from_text(text=_listing_block(listing, category_names, image_only=image_only))]
     if listing.image_bytes:
         parts.append(types.Part.from_bytes(data=listing.image_bytes, mime_type=listing.image_mime or "image/jpeg"))
@@ -233,26 +193,13 @@ def ask_model(listing: ListingInput, category_names: list[str], *, image_only: b
         response_mime_type="application/json",
         response_schema=_schema(category_names),
         temperature=0,
+        # No tools here; also keeps SDK 2.x from warning about automatic function calling.
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
 
-    problems = []
-    for model in _models():
-        for attempt in range(len(RETRY_DELAYS_S) + 1):
-            try:
-                response = _generate(client, model, parts, config)
-            except errors.APIError as exc:
-                action, wait, why = classify_error(exc.code, getattr(exc, "details", None))
-            except Exception as exc:  # timeouts, network
-                action, wait, why = "retry", None, type(exc).__name__
-            else:
-                findings, suggested, summary = _parse(response.text, category_names, image_only=image_only)
-                return AIResult(findings=findings, suggested_category=suggested, summary=summary, model_name=model)
+    def attempt(model: str):
+        response = _generate(client, model, parts, config)
+        return _parse(response.text, category_names, image_only=image_only)
 
-            logger.warning("AI listing review: %s on %s (attempt %s, %s)", why, model, attempt + 1, action)
-            if action == "fail":
-                raise AIUnavailable(f"Gemini {why} on {model}.")
-            if action == "next_model" or attempt == len(RETRY_DELAYS_S):
-                problems.append(f"{model}: {why}")
-                break
-            time.sleep(wait if wait is not None else RETRY_DELAYS_S[attempt])
-    raise AIUnavailable(f"No model answered ({'; '.join(problems)}).")
+    (findings, suggested, summary), model = call_with_fallback(_models(), attempt)
+    return AIResult(findings=findings, suggested_category=suggested, summary=summary, model_name=model)

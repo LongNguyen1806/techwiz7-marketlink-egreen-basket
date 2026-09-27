@@ -157,6 +157,8 @@ REST_FRAMEWORK = {
         "register": "10/hour",
         "orders": "10/hour",
         "chat": "20/min",
+        # Address lookups on the sign-up map and the admin market form (Nominatim, D-032).
+        "geocode": "10/min",
     },
 }
 
@@ -325,19 +327,38 @@ AI_CHAT_ENABLED = os.environ.get("AI_CHAT_ENABLED", "True").lower() in (
 # --- AI-assisted listing review (advice for admins; never decides on its own) ---
 AI_MODERATION_ENABLED = os.environ.get("AI_MODERATION_ENABLED", "True").lower() in ("true", "1", "t")
 # Configurable because the Flash model names change; the call fails soft (UNAVAILABLE) if wrong.
-GEMINI_MODERATION_MODEL = os.environ.get("GEMINI_MODERATION_MODEL", "gemini-flash-latest")
+# Explicit versions, not "-latest" aliases: an alias can move to a pricier model on its own.
+# 3.1 Flash-Lite is the cheapest model this key can use (2.5 Flash-Lite is closed to new users).
+GEMINI_MODERATION_MODEL = os.environ.get("GEMINI_MODERATION_MODEL", "gemini-3.1-flash-lite")
 # Tried in order when the model above is out of quota for the day or not available to the key.
 # The free tier counts requests per model, so each fallback adds its own daily allowance.
 GEMINI_MODERATION_FALLBACK_MODELS = [
     name.strip()
     for name in os.environ.get(
-        "GEMINI_MODERATION_FALLBACK_MODELS", "gemini-flash-lite-latest,gemini-3.5-flash-lite"
+        "GEMINI_MODERATION_FALLBACK_MODELS", "gemini-3.5-flash-lite"
     ).split(",")
     if name.strip()
 ]
 AI_MODERATION_TIMEOUT_MS = int(os.environ.get("AI_MODERATION_TIMEOUT_MS", "20000"))
 # Pause between model calls in the batch commands, to stay under the key's per-minute quota.
 AI_MODERATION_BATCH_PAUSE_MS = int(os.environ.get("AI_MODERATION_BATCH_PAUSE_MS", "4000"))
+# --- AI assistant (chat widget, every role; read-only tools) ---
+# A different primary model from the listing review, so the two do not use up each other's
+# free-tier allowance (the free tier counts requests per model).
+GEMINI_CHAT_MODEL = os.environ.get("GEMINI_CHAT_MODEL", "gemini-3.1-flash-lite")
+GEMINI_CHAT_FALLBACK_MODELS = [
+    name.strip()
+    for name in os.environ.get("GEMINI_CHAT_FALLBACK_MODELS", "gemini-3.5-flash-lite").split(",")
+    if name.strip()
+]
+AI_CHAT_TIMEOUT_MS = int(os.environ.get("AI_CHAT_TIMEOUT_MS", "12000"))
+# The whole answer, tool calls included (CH-01: 15 s).
+AI_CHAT_DEADLINE_S = float(os.environ.get("AI_CHAT_DEADLINE_S", "15"))
+# Assistant answers per day (resets at local midnight). Visitors are counted per IP, signed-in
+# users per account; 0 turns the cap off. Never shown to users: a capped request gets the same
+# neutral "busy" reply as an outage.
+AI_CHAT_DAILY_LIMIT_GUEST = int(os.environ.get("AI_CHAT_DAILY_LIMIT_GUEST", "30"))
+AI_CHAT_DAILY_LIMIT_USER = int(os.environ.get("AI_CHAT_DAILY_LIMIT_USER", "100"))
 # Tests run the review inline instead of on the background pool.
 AI_MODERATION_RUN_INLINE = os.environ.get("AI_MODERATION_RUN_INLINE", "False").lower() in ("true", "1", "t")
 

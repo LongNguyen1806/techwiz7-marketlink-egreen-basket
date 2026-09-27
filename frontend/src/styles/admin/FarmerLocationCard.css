@@ -1,0 +1,61 @@
+.farmer-location-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.farmer-location-card__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.farmer-location-card__warn {
+  margin-top: var(--space-1);
+  color: var(--color-warning-700, #b45309);
+}
+
+.farmer-location-card__distances {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-5);
+  list-style: disc;
+  color: var(--color-muted-foreground);
+}
+
+.farmer-location-card__map {
+  height: 18rem;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.farmer-location-card__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-location-card__legend-farm,
+.farmer-location-card__legend-market {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-full);
+}
+
+.farmer-location-card__legend-farm {
+  background-color: #2a81cb;
+}
+
+.farmer-location-card__legend-market {
+  margin-left: var(--space-2);
+  background-color: #d97706;
+}

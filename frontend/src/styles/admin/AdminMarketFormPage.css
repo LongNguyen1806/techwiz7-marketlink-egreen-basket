@@ -27,17 +27,15 @@
 }
 
 .admin-market-form-page__map {
+  display: flex;
   min-width: 0;
-}
-
-.admin-market-form-page__map .page-primitive__map-box {
-  height: 18rem;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 @media (min-width: 1024px) {
-  .admin-market-form-page__map .page-primitive__map-box {
-    height: 100%;
-    min-height: 22rem;
+  .admin-market-form-page__map .map-picker__leaflet {
+    height: 26rem;
   }
 }
 

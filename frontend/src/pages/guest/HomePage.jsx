@@ -6,6 +6,7 @@ import { CategoryIcon } from '../../components/common/badges/CategoryIcon';
 import { FarmerCard } from '../../components/common/cards/FarmerCard';
 import { MarketCard } from '../../components/common/cards/MarketCard';
 import { ProductCard } from '../../components/common/cards/ProductCard';
+import { ProductCardSkeletonGrid } from '../../components/common/cards/ProductCardSkeleton';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -68,8 +69,9 @@ SectionHeading.propTypes = {
 };
 
 
-function CardGrid({ query, shown, gridClass, skeletonClass, errorTitle, emptyTitle, renderItem }) {
+function CardGrid({ query, shown, gridClass, skeletonClass, renderSkeletons, errorTitle, emptyTitle, renderItem }) {
   if (query.isPending) {
+    if (renderSkeletons) return renderSkeletons(shown);
     return (
       <div className={gridClass} aria-busy>
         {Array.from({ length: shown }).map((_, index) => (
@@ -90,7 +92,9 @@ CardGrid.propTypes = {
   query: PropTypes.object.isRequired,
   shown: PropTypes.number.isRequired,
   gridClass: PropTypes.string.isRequired,
-  skeletonClass: PropTypes.string.isRequired,
+  skeletonClass: PropTypes.string,
+  // Card-shaped placeholders instead of plain blocks, for grids that have them.
+  renderSkeletons: PropTypes.func,
   errorTitle: PropTypes.string.isRequired,
   emptyTitle: PropTypes.string.isRequired,
   renderItem: PropTypes.func.isRequired,
@@ -227,7 +231,7 @@ export default function HomePage() {
             query={productsQuery}
             shown={PRODUCTS_SHOWN}
             gridClass="home-page__grid-products"
-            skeletonClass="home-page__skeleton-product"
+            renderSkeletons={(count) => <ProductCardSkeletonGrid count={count} className="home-page__grid-products" />}
             errorTitle="Products couldn't be loaded"
             emptyTitle="No produce listed yet"
             renderItem={(product) => (

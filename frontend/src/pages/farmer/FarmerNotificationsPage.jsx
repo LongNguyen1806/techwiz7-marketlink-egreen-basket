@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { PageStatus, Pagination } from '../../components/common/Pagination';
 import { Button } from '../../components/ui/Button';
 import { useUrlFilters } from '../../hooks/common/useUrlFilters';
+import { readPage, usePageParam } from '../../hooks/common/usePageParam';
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -15,9 +17,10 @@ import '../../styles/farmer/FarmerNotificationsPage.css';
 
 export default function FarmerNotificationsPage() {
   const navigate = useNavigate();
-  const { filters, setFilters } = useUrlFilters({ show: 'all' });
+  const { filters, setFilters } = useUrlFilters({ show: 'all', page: 1 });
   const unreadOnly = filters.show === 'unread';
-  const listQuery = useNotificationList({ isRead: unreadOnly ? false : undefined });
+  const listQuery = useNotificationList({ isRead: unreadOnly ? false : undefined, page: readPage(filters) });
+  const goToPage = usePageParam({ filters, setFilters, query: listQuery });
   const unreadQuery = useUnreadNotificationCount();
   const markAll = useMarkAllNotificationsRead();
   const markOne = useMarkNotificationRead();
@@ -45,6 +48,12 @@ export default function FarmerNotificationsPage() {
   } else {
     body = (
       <>
+        <PageStatus
+          page={listQuery.data.page}
+          pageSize={listQuery.data.pageSize}
+          total={listQuery.data.total}
+          shown={notifications.length}
+        />
         <ul className="farmer-notifications-page__list" aria-busy={listQuery.isFetching}>
           {notifications.map((item) => (
             <li key={item.id}>
@@ -70,13 +79,12 @@ export default function FarmerNotificationsPage() {
             </li>
           ))}
         </ul>
-        {listQuery.hasNextPage ? (
-          <div className="page-primitive__justify-center-row">
-            <Button variant="outline" size="sm" loading={listQuery.isFetchingNextPage} onClick={() => listQuery.fetchNextPage()}>
-              Load more
-            </Button>
-          </div>
-        ) : null}
+        <Pagination
+          page={listQuery.data.page}
+          totalPages={listQuery.data.totalPages}
+          disabled={listQuery.isPlaceholderData}
+          onChange={goToPage}
+        />
       </>
     );
   }

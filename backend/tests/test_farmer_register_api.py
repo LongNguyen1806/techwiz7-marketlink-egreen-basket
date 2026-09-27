@@ -62,6 +62,23 @@ class FarmerRegisterAPITestCase(TestCase):
         self.assertEqual(profile.latitude, Decimal("10.772000"))
         self.assertNotIn("password", data)
 
+    def test_a_pin_from_the_map_is_kept_and_the_address_not_looked_up(self):
+        with mock.patch(GEOCODE) as geocode:
+            res = self._register(latitude=10.8597391234, longitude=106.6006592)
+        self.assertEqual(res.status_code, 201, res.data)
+        profile = FarmerProfile.objects.get(user__email="new.farmer@example.com")
+        self.assertEqual(profile.latitude, Decimal("10.859739"))
+        self.assertEqual(profile.longitude, Decimal("106.600659"))
+        geocode.assert_not_called()
+
+    def test_half_a_pin_is_refused(self):
+        with mock.patch(GEOCODE) as geocode:
+            res = self._register(latitude=10.85)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("longitude", res.data["errors"])
+        self.assertFalse(CustomUser.objects.filter(email="new.farmer@example.com").exists())
+        geocode.assert_not_called()
+
     def test_access_token_opens_farmer_profile(self):
         with mock.patch(GEOCODE, return_value=None):
             access = self._register().data["data"]["access"]

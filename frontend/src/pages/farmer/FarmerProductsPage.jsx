@@ -6,6 +6,7 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { LazyImage } from '../../components/common/LazyImage';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { PageStatus, Pagination } from '../../components/common/Pagination';
 import { PriceTag } from '../../components/common/PriceTag';
 import { QuantityStepper } from '../../components/common/QuantityStepper';
 import { Badge } from '../../components/ui/Badge';
@@ -15,6 +16,7 @@ import { ROUTES } from '../../constants/routes';
 import { useDebouncedSearchParam } from '../../hooks/common/useDebouncedSearchParam';
 import { useDebouncedValue } from '../../hooks/common/useDebouncedValue';
 import { useUrlFilters } from '../../hooks/common/useUrlFilters';
+import { readPage, usePageParam } from '../../hooks/common/usePageParam';
 import {
   useArchiveProduct,
   useFarmerProductList,
@@ -184,14 +186,16 @@ ProductRow.propTypes = {
 };
 
 export default function FarmerProductsPage() {
-  const { filters, setFilters } = useUrlFilters({ state: '', category: 0 });
+  const { filters, setFilters } = useUrlFilters({ state: '', category: 0, page: 1 });
   const search = useDebouncedSearchParam('q');
   const categoriesQuery = useCategories();
   const query = useFarmerProductList({
     q: search.term || undefined,
     state: filters.state || undefined,
     category_id: filters.category || undefined,
+    page: readPage(filters),
   });
+  const goToPage = usePageParam({ filters, setFilters, query });
   const archive = useArchiveProduct();
   const [archiving, setArchiving] = useState(null);
 
@@ -219,6 +223,12 @@ export default function FarmerProductsPage() {
   } else {
     body = (
       <>
+        <PageStatus
+          page={query.data.page}
+          pageSize={query.data.pageSize}
+          total={query.data.total}
+          shown={products.length}
+        />
         <div className="page-primitive__table-wrap" aria-busy={query.isFetching}>
           <table className="page-primitive__table page-primitive__table-min-720">
             <thead className="page-primitive__table-head">
@@ -237,13 +247,12 @@ export default function FarmerProductsPage() {
             </tbody>
           </table>
         </div>
-        {query.hasNextPage ? (
-          <div className="page-primitive__justify-center-row">
-            <Button variant="outline" size="sm" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
-              Load more
-            </Button>
-          </div>
-        ) : null}
+        <Pagination
+          page={query.data.page}
+          totalPages={query.data.totalPages}
+          disabled={query.isPlaceholderData}
+          onChange={goToPage}
+        />
       </>
     );
   }

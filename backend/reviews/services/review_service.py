@@ -4,6 +4,12 @@ from marketlink_core.exceptions import ResourceNotFoundError
 from orders.models import Order, OrderItem, OrderStatus
 from reviews.exceptions import ReviewNotAllowedError
 from reviews.models import FarmerReview, ProductReview
+from system.auto_flags import (
+    LOW_RATING_MAX,
+    check_product_low_ratings,
+    check_review_text,
+    safely,
+)
 
 # D-016: only COMPLETED orders, one Farmer review per order, one review per order item.
 # The UNIQUE indexes on farmer_reviews.order_id / product_reviews.order_item_id are the final guard.
@@ -45,7 +51,9 @@ def create_farmer_review(*, customer, order_id: int, rating: int, comment: str |
     _require_completed(order)
     if _farmer_review_exists(order):
         raise ReviewNotAllowedError()
-    return _create_once(FarmerReview, order=order, rating=rating, comment=comment)
+    review = _create_once(FarmerReview, order=order, rating=rating, comment=comment)
+    safely(check_review_text, review)
+    return review
 
 
 def create_product_review(*, customer, order_id: int, item_id: int, rating: int, comment: str | None = None) -> ProductReview:
@@ -57,4 +65,8 @@ def create_product_review(*, customer, order_id: int, item_id: int, rating: int,
     _require_completed(order)
     if _product_review_exists(item):
         raise ReviewNotAllowedError()
-    return _create_once(ProductReview, order_item=item, rating=rating, comment=comment)
+    review = _create_once(ProductReview, order_item=item, rating=rating, comment=comment)
+    safely(check_review_text, review)
+    if rating <= LOW_RATING_MAX:
+        safely(check_product_low_ratings, item.product_id)
+    return review

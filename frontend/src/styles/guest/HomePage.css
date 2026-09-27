@@ -540,11 +540,6 @@
   border-radius: var(--radius-2xl);
 }
 
-.home-page__skeleton-product {
-  height: 20rem;
-  border-radius: var(--radius-2xl);
-}
-
 .home-page__skeleton-farmer {
   height: 10rem;
   border-radius: var(--radius-2xl);

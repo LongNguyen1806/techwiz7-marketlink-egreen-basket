@@ -34,7 +34,7 @@ channels-redis==4.2.1
 daphne==4.2.0
 
 # --- AI Assistant (Gemini Flash) ---
-google-genai==1.3.0
+google-genai==2.25.0
 
 # --- Testing & Code Quality ---
 pytest==8.3.2

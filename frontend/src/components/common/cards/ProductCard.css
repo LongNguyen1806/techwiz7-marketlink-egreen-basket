@@ -14,7 +14,11 @@
   box-shadow: var(--shadow-soft-lg);
 }
 
+/* Covers the whole picture frame, so a click anywhere on the photo (or the "No image"
+   placeholder) opens the product. The badge and heart come later in the markup and stay on top. */
 .product-card__media-link {
+  position: absolute;
+  inset: 0;
   display: block;
 }
 
@@ -126,4 +130,48 @@
   font-size: var(--text-xs);
   line-height: var(--leading-snug);
   color: var(--color-muted-foreground);
+}
+
+/* Loading placeholder (ProductCardSkeleton): same frame and rows as a real card. */
+.product-card--skeleton,
+.product-card--skeleton:hover {
+  transform: none;
+  box-shadow: var(--shadow-soft);
+}
+
+.product-card__skeleton-media {
+  border-radius: 0;
+}
+
+.product-card__skeleton-line {
+  height: 0.875rem;
+  border-radius: var(--radius-full);
+}
+
+.product-card__skeleton-line--xs {
+  width: 35%;
+  height: 0.75rem;
+}
+
+.product-card__skeleton-line--title {
+  width: 80%;
+  height: 1.125rem;
+}
+
+.product-card__skeleton-line--sm {
+  width: 55%;
+}
+
+.product-card__skeleton-line--price {
+  width: 30%;
+  height: 1.125rem;
+}
+
+.product-card__skeleton-line--rating {
+  width: 25%;
+}
+
+.product-card__skeleton-button {
+  height: 2.25rem;
+  border-radius: var(--radius-full);
 }

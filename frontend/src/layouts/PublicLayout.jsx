@@ -11,10 +11,13 @@ import { DASHBOARD_PATH, ROLES } from '../constants';
 import { useAuth } from '../hooks/authentication/useAuth';
 import { cn } from '../lib/cn';
 import '../styles/guest/PublicLayout.css';
+import { AIChatWidget } from '../components/common/chat/AIChatWidget';
+import { useChatStore } from '../stores/chat.store';
 const footerLinkClass = 'public-layout__footer-link';
 
 const CUSTOMER_AREA = '/customer';
 export function PublicLayout() {
+    const openAssistant = useChatStore((state) => state.setOpen);
     const location = useLocation();
     
     const { user, isAuthenticated } = useAuth();
@@ -88,6 +91,8 @@ export function PublicLayout() {
         <Outlet />
       </main>
 
+      <AIChatWidget />
+
       {!isCustomerApp ? (<footer className="public-layout__footer">
           <div className="public-layout__footer-inner">
             <div className="public-layout__footer-grid">
@@ -151,6 +156,48 @@ export function PublicLayout() {
                         </Link>
                       </li>
                     </>)}
+                </ul>
+              </div>
+
+              <div>
+                <p className="public-layout__footer-heading">Help</p>
+                <ul className="public-layout__footer-links">
+                  <li>
+                    <Link to="/about#faq" className={footerLinkClass}>
+                      FAQ
+                    </Link>
+                  </li>
+                  <li>
+                    <button type="button" className={`${footerLinkClass} public-layout__footer-button`} onClick={() => openAssistant(true)}>
+                      Ask the assistant
+                    </button>
+                  </li>
+                  <li>
+                    <Link to="/contact" className={footerLinkClass}>
+                      Contact us
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="public-layout__footer-heading">MarketLink</p>
+                <ul className="public-layout__footer-links">
+                  <li>
+                    <Link to="/about" className={footerLinkClass}>
+                      About us
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/privacy" className={footerLinkClass}>
+                      Privacy Policy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/sitemap" className={footerLinkClass}>
+                      Sitemap
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </div>

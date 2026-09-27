@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { farmerApi } from '../../../api/farmer/farmerApi';
 import { farmerKeys } from '../../../constants/queryKeys';
 import { STALE } from '../../../constants/staleTimes';
@@ -6,9 +6,12 @@ import { notify } from '../../../lib/toast';
 
 export const PRODUCTS_PAGE_SIZE = 20;
 
-const flattenPages = (data) => ({
-  products: data.pages.flatMap((page) => page.results),
-  total: data.pages[0]?.count ?? 0,
+const toPage = (data) => ({
+  products: data.results,
+  total: data.count,
+  page: data.page,
+  pageSize: data.page_size,
+  totalPages: data.total_pages,
 });
 
 
@@ -18,14 +21,13 @@ export function availabilityOf({ is_available: isAvailable, stock_quantity: stoc
 }
 
 
+/** One page of the stall's products; `filters.page` picks it (1 when left out). */
 export function useFarmerProductList(filters) {
-  return useInfiniteQuery({
+  return useQuery({
     queryKey: farmerKeys.products.list(filters),
-    queryFn: ({ pageParam, signal }) =>
-      farmerApi.getProducts({ ...filters, page: pageParam, page_size: PRODUCTS_PAGE_SIZE }, { signal }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
-    select: flattenPages,
+    queryFn: ({ signal }) =>
+      farmerApi.getProducts({ ...filters, page: filters.page ?? 1, page_size: PRODUCTS_PAGE_SIZE }, { signal }),
+    select: toPage,
     placeholderData: keepPreviousData,
     staleTime: STALE.SEARCH,
   });
@@ -56,11 +58,8 @@ export function useWeeklyTemplatePreview() {
 
 
 function mapListProducts(data, mapProduct) {
-  if (!data?.pages) return data;
-  return {
-    ...data,
-    pages: data.pages.map((page) => ({ ...page, results: page.results.flatMap(mapProduct) })),
-  };
+  if (!Array.isArray(data?.results)) return data;
+  return { ...data, results: data.results.flatMap(mapProduct) };
 }
 
 async function snapshotProducts(queryClient) {

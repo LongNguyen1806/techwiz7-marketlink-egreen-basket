@@ -358,6 +358,9 @@ def test_the_detail_carries_products_stats_and_the_trail(
     assert data["email"] == "farmer@marketlink.test"
     assert data["status"] == FarmerStatus.APPROVED
     assert data["status_reason"] is None
+    # The admin sees where the farmer says they grow, which the public page leaves out.
+    assert data["address"] == approved_farmer.address
+    assert "latitude" in data and "longitude" in data
     assert [row["name"] for row in data["products"]] == ["Tomato"]
     assert data["order_stats"] == {
         "total": 1,

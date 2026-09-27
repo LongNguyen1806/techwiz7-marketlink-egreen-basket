@@ -1,0 +1,264 @@
+/* Layout and colours from the Danh mockup (AiChatWidget); behaviour rewritten. */
+
+.ai-chat__panel {
+  pointer-events: auto;
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-4);
+  z-index: 50;
+  display: flex;
+  height: min(520px, 70vh);
+  width: min(380px, calc(100vw - 2rem));
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.875rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-soft-lg);
+}
+
+@media (min-width: 768px) {
+  .ai-chat__panel {
+    bottom: var(--space-8);
+    right: var(--space-6);
+  }
+}
+
+/* N-03: full screen on phones. */
+@media (max-width: 480px) {
+  .ai-chat__panel {
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+}
+
+.ai-chat__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-primary-700);
+  padding: var(--space-3) var(--space-4);
+  color: #ffffff;
+}
+
+.ai-chat__header-copy {
+  min-width: 0;
+}
+
+.ai-chat__header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-heading);
+  font-weight: var(--weight-semibold);
+}
+
+.ai-chat__header-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ai-chat__header-sub {
+  font-size: var(--text-xs);
+  color: var(--color-primary-100);
+}
+
+.ai-chat__header-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
+
+.ai-chat__close {
+  color: #ffffff;
+}
+
+.ai-chat__close:hover {
+  background-color: var(--color-primary-600);
+}
+
+.ai-chat__close-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.ai-chat__messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.ai-chat__bubble {
+  max-width: 85%;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  /* Plain text only (no HTML); keep the model's line breaks. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-chat__bubble--user {
+  margin-left: auto;
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+}
+
+.ai-chat__bubble--assistant {
+  background-color: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+/* A refusal or outage: calm, not an error colour (it is not the user's fault). */
+.ai-chat__bubble--notice {
+  border: 1px dashed var(--color-border);
+  background-color: var(--color-card);
+  color: var(--color-muted-foreground);
+}
+
+.ai-chat__typing {
+  display: inline-flex;
+  width: fit-content;
+  gap: 0.3rem;
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-muted);
+  padding: var(--space-3);
+}
+
+.ai-chat__typing span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-muted-foreground);
+  animation: ai-chat-dot 1.2s infinite ease-in-out;
+}
+
+.ai-chat__typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ai-chat__typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ai-chat-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-chat__typing span {
+    animation: none;
+  }
+}
+
+.ai-chat__tools {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.ai-chat__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-3);
+}
+
+.ai-chat__suggestion {
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  padding: var(--space-1) 0.625rem;
+  font-size: var(--text-xs);
+}
+
+.ai-chat__suggestion:hover {
+  background-color: var(--color-muted);
+}
+
+.ai-chat__composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-3) var(--space-1);
+}
+
+.ai-chat__input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.ai-chat__textarea {
+  min-height: 0;
+  width: 100%;
+  resize: none;
+}
+
+.ai-chat__counter {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-1);
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+}
+
+.ai-chat__send-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ai-chat__disclaimer {
+  padding: 0 var(--space-3) var(--space-2);
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+}
+
+.ai-chat__fab {
+  pointer-events: auto;
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-4);
+  z-index: 50;
+  display: flex;
+  width: 3.5rem;
+  height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: none;
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+  box-shadow: var(--shadow-soft-lg);
+  cursor: pointer;
+}
+
+.ai-chat__fab:hover {
+  background-color: var(--color-primary-700);
+}
+
+.ai-chat__fab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
+@media (min-width: 768px) {
+  .ai-chat__fab {
+    bottom: var(--space-8);
+    right: var(--space-6);
+  }
+}
+
+.ai-chat__fab-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}

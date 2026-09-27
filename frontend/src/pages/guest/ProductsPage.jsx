@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
+import { Pagination } from '../../components/common/Pagination';
 import { ProductCard } from '../../components/common/cards/ProductCard';
+import { ProductCardSkeletonGrid } from '../../components/common/cards/ProductCardSkeleton';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Skeleton } from '../../components/ui/Skeleton';
 import { useAddToCart } from '../../hooks/common/useAddToCart';
 import { useDebouncedSearchParam } from '../../hooks/common/useDebouncedSearchParam';
 import { useUrlFilters } from '../../hooks/common/useUrlFilters';
-import { useCategories, usePublicMarkets, usePublicProductList } from '../../hooks/queries/guest/usePublicCatalog';
+import { useCategories, usePublicMarkets, usePublicProducts } from '../../hooks/queries/guest/usePublicCatalog';
 import { formatMoney } from '../../utils/formatters';
 import '../../styles/guest/ProductsPage.css';
 
@@ -29,10 +29,18 @@ const FILTER_DEFAULTS = {
   price_max: '',
   in_stock: true,
   ordering: 'newest',
+  page: 1,
 };
 
 const MARKET_OPTIONS_PARAMS = { ordering: 'name', page_size: 20 };
-const PRICE_PATTERN = /^\d+(\.\d{1,2})?$/;
+const PAGE_SIZE = 20;
+
+// The slider runs from $0 to the dearest listing, rounded up to a whole dollar. One request
+// for the top price is enough to find that end; sold-out listings count, since the shopper
+// can include them.
+const TOP_PRICE_PARAMS = { ordering: 'price_desc', page_size: 5, in_stock: false };
+const PRICE_STEP = 0.5;
+const FALLBACK_CEILING = 20;
 
 function parseIds(raw) {
   return raw
@@ -41,55 +49,85 @@ function parseIds(raw) {
     .filter((part) => /^\d+$/.test(part));
 }
 
-function priceError(min, max) {
-  if (min && !PRICE_PATTERN.test(min)) return 'Use a price such as 2.50';
-  if (max && !PRICE_PATTERN.test(max)) return 'Use a price such as 2.50';
-  if (min && max && Number(min) > Number(max)) return 'The minimum must not be above the maximum';
-  return null;
+function clampPrice(raw, fallback, ceiling) {
+  const value = Number(raw);
+  if (raw === '' || !Number.isFinite(value)) return fallback;
+  return Math.min(Math.max(value, 0), ceiling);
 }
 
+function priceParam(value) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
 
-function PriceRange({ min, max, onApply }) {
-  const [draft, setDraft] = useState({ min, max });
-  const error = priceError(draft.min.trim(), draft.max.trim());
+/**
+ * Two thumbs on one track. The labels follow the thumbs while dragging; the filter is applied
+ * when the thumb is let go, so a drag does not fire a request per step. $0 at the bottom and
+ * the top of the track mean "no limit" on that side and leave the URL parameter out.
+ */
+function PriceRange({ min, max, ceiling, onApply }) {
+  const [range, setRange] = useState(() => {
+    const low = clampPrice(min, 0, ceiling);
+    return [low, Math.max(low, clampPrice(max, ceiling, ceiling))];
+  });
+  const [low, high] = range;
 
-  const apply = () => {
-    if (error) return;
-    const next = { price_min: draft.min.trim(), price_max: draft.max.trim() };
+  const commit = () => {
+    const next = {
+      price_min: low > 0 ? priceParam(low) : '',
+      price_max: high < ceiling ? priceParam(high) : '',
+    };
     if (next.price_min !== min || next.price_max !== max) onApply(next);
   };
-  const onKeyDown = (event) => {
-    if (event.key === 'Enter') apply();
-  };
+  const commitHandlers = { onPointerUp: commit, onKeyUp: commit, onBlur: commit };
+
+  const percent = (value) => (value / ceiling) * 100;
+  // When both thumbs meet at the top, the lower one must stay on top or it can never move again.
+  const lowOnTop = low >= ceiling - PRICE_STEP;
 
   return (
     <div>
-      <p className="products-page__filter-label">Price range ($)</p>
-      <div className="products-page__price-row">
-        <Input
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          label="Min"
-          value={draft.min}
-          onChange={(event) => setDraft((current) => ({ ...current, min: event.target.value }))}
-          onBlur={apply}
-          onKeyDown={onKeyDown}
+      <div className="products-page__price-head">
+        <p className="products-page__filter-label">Price range ($)</p>
+        <p className="products-page__price-value" aria-live="polite">
+          {`${formatMoney(low)} – ${formatMoney(high)}`}
+        </p>
+      </div>
+      <div
+        className="products-page__range"
+        style={{ '--range-from': `${percent(low)}%`, '--range-to': `${percent(high)}%` }}
+      >
+        <div className="products-page__range-track" aria-hidden>
+          <div className="products-page__range-fill" />
+        </div>
+        <input
+          type="range"
+          className={`products-page__range-input${lowOnTop ? ' products-page__range-input--top' : ''}`}
+          min={0}
+          max={ceiling}
+          step={PRICE_STEP}
+          value={low}
+          aria-label="Minimum price"
+          aria-valuetext={formatMoney(low)}
+          onChange={(event) => setRange([Math.min(Number(event.target.value), high), high])}
+          {...commitHandlers}
         />
-        <Input
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          label="Max"
-          value={draft.max}
-          onChange={(event) => setDraft((current) => ({ ...current, max: event.target.value }))}
-          onBlur={apply}
-          onKeyDown={onKeyDown}
+        <input
+          type="range"
+          className="products-page__range-input"
+          min={0}
+          max={ceiling}
+          step={PRICE_STEP}
+          value={high}
+          aria-label="Maximum price"
+          aria-valuetext={formatMoney(high)}
+          onChange={(event) => setRange([low, Math.max(Number(event.target.value), low)])}
+          {...commitHandlers}
         />
       </div>
-      {error ? <p className="page-primitive__error">{error}</p> : null}
+      <div className="products-page__range-scale" aria-hidden>
+        <span>{formatMoney(0)}</span>
+        <span>{formatMoney(ceiling)}</span>
+      </div>
     </div>
   );
 }
@@ -97,6 +135,7 @@ function PriceRange({ min, max, onApply }) {
 PriceRange.propTypes = {
   min: PropTypes.string.isRequired,
   max: PropTypes.string.isRequired,
+  ceiling: PropTypes.number.isRequired,
   onApply: PropTypes.func.isRequired,
 };
 
@@ -106,13 +145,18 @@ export default function ProductsPage() {
   const { addToCart, requireSignIn } = useAddToCart();
   const categoriesQuery = useCategories();
   const marketsQuery = usePublicMarkets(MARKET_OPTIONS_PARAMS);
+  const topPriceQuery = usePublicProducts(TOP_PRICE_PARAMS);
+  const topPrice = Number(topPriceQuery.data?.results?.[0]?.price);
+  const priceCeiling = Number.isFinite(topPrice) && topPrice > 0 ? Math.ceil(topPrice) : FALLBACK_CEILING;
+  const resultsRef = useRef(null);
 
   const categoryIds = parseIds(filters.category);
   
   const ordering = SORT_OPTIONS.some((option) => option.value === filters.ordering)
     ? filters.ordering
     : FILTER_DEFAULTS.ordering;
-  const productsQuery = usePublicProductList({
+  const page = Math.max(1, Math.floor(filters.page));
+  const productsQuery = usePublicProducts({
     q: search.term || undefined,
     category: categoryIds.length ? categoryIds.join(',') : undefined,
     market_id: filters.market_id || undefined,
@@ -120,8 +164,22 @@ export default function ProductsPage() {
     price_max: filters.price_max || undefined,
     in_stock: filters.in_stock ? undefined : false,
     ordering,
+    page,
+    page_size: PAGE_SIZE,
   });
-  const products = productsQuery.data?.products ?? [];
+  const pageData = productsQuery.data;
+  const products = pageData?.results ?? [];
+
+  // A page past the end (an old link, or the list shrank) is a 404 from the API: go to page 1.
+  const pageMissing = page > 1 && productsQuery.isError && productsQuery.error?.status === 404;
+  useEffect(() => {
+    if (pageMissing) setFilters({ page: 1 }, { replace: true });
+  }, [pageMissing, setFilters]);
+
+  const goToPage = (next) => {
+    setFilters({ page: next });
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const toggleCategory = (id) => {
     const key = String(id);
@@ -154,15 +212,11 @@ export default function ProductsPage() {
   }
 
   let results;
-  if (productsQuery.isPending) {
-    results = (
-      <div className="products-page__grid" aria-busy>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Skeleton key={index} className="products-page__skeleton" />
-        ))}
-      </div>
-    );
-  } else if (!productsQuery.data) {
+  // While a new sort, filter or page loads, skeletons replace the old list rather than the old
+  // cards staying up and then being reshuffled in place.
+  if (productsQuery.isPending || productsQuery.isPlaceholderData) {
+    results = <ProductCardSkeletonGrid count={6} className="products-page__grid" />;
+  } else if (!pageData) {
     results = (
       <EmptyState title="Products couldn't be loaded" actionLabel="Try again" onAction={() => productsQuery.refetch()} />
     );
@@ -178,26 +232,21 @@ export default function ProductsPage() {
   } else {
     results = (
       <>
+        <p className="products-page__count">
+          {`Showing ${(pageData.page - 1) * pageData.page_size + 1}–${(pageData.page - 1) * pageData.page_size + products.length} of ${pageData.count}`}
+        </p>
         <div className="products-page__grid" aria-busy={productsQuery.isFetching}>
           {products.map((product) => (
             <ProductCard key={product.id} product={product} onAddToCart={addToCart} onRequireSignIn={requireSignIn} />
           ))}
         </div>
-        <div className="products-page__load-more">
-          {productsQuery.hasNextPage ? (
-            <Button
-              variant="outline"
-              size="lg"
-              className="products-page__btn-press"
-              loading={productsQuery.isFetchingNextPage}
-              onClick={() => productsQuery.fetchNextPage()}
-            >
-              Show more produce
-            </Button>
-          ) : (
-            <p className="products-page__end-note">You have reached the end</p>
-          )}
-        </div>
+        <Pagination
+          className="products-page__pagination"
+          page={pageData.page}
+          totalPages={pageData.total_pages}
+          disabled={productsQuery.isPlaceholderData}
+          onChange={goToPage}
+        />
       </>
     );
   }
@@ -260,9 +309,10 @@ export default function ProductsPage() {
 
             
             <PriceRange
-              key={`${filters.price_min}|${filters.price_max}`}
+              key={`${filters.price_min}|${filters.price_max}|${priceCeiling}`}
               min={filters.price_min}
               max={filters.price_max}
+              ceiling={priceCeiling}
               onApply={setFilters}
             />
 
@@ -314,7 +364,7 @@ export default function ProductsPage() {
             </div>
           </aside>
 
-          <div>
+          <div ref={resultsRef} className="products-page__results">
             {chips.length > 0 ? (
               <div className="products-page__chips">
                 {chips.map((chip) => (

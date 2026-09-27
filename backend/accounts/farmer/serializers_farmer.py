@@ -37,6 +37,22 @@ def validate_operating_days_field(value: list[int]) -> list[int]:
         raise serializers.ValidationError(exc.message_dict["operating_days"]) from None
 
 
+def clean_coordinate_pair(attrs: dict[str, Any]) -> dict[str, Any]:
+    """Latitude and longitude arrive together or not at all, rounded to 6 decimals (D-032)."""
+    has_lat, has_lng = "latitude" in attrs, "longitude" in attrs
+    if has_lat != has_lng:
+        missing = "longitude" if has_lat else "latitude"
+        raise serializers.ValidationError(
+            {missing: ["Latitude and longitude must be sent together."]}
+        )
+    for field in ("latitude", "longitude"):
+        if field in attrs:
+            if not math.isfinite(attrs[field]):
+                raise serializers.ValidationError({field: ["Invalid coordinates"]})
+            attrs[field] = Decimal(str(attrs[field])).quantize(COORDINATE_STEP, rounding=ROUND_HALF_UP)
+    return attrs
+
+
 class FarmerProfileUpdateSerializer(serializers.Serializer):
     """FA-03 body (F-08). Every field is optional; email and status are never writable."""
 
@@ -73,15 +89,4 @@ class FarmerProfileUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError(exc.errors.get("image", [str(exc.detail)])) from None
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        has_lat, has_lng = "latitude" in attrs, "longitude" in attrs
-        if has_lat != has_lng:
-            missing = "longitude" if has_lat else "latitude"
-            raise serializers.ValidationError(
-                {missing: ["Latitude and longitude must be sent together."]}
-            )
-        for field in ("latitude", "longitude"):
-            if field in attrs:
-                if not math.isfinite(attrs[field]):
-                    raise serializers.ValidationError({field: ["Invalid coordinates"]})
-                attrs[field] = Decimal(str(attrs[field])).quantize(COORDINATE_STEP, rounding=ROUND_HALF_UP)
-        return attrs
+        return clean_coordinate_pair(attrs)

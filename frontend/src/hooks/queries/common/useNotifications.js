@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../../../api/common/notificationsApi';
 import { notificationKeys } from '../../../constants/queryKeys';
 import { NOTIFICATION_POLL_INTERVAL, STALE } from '../../../constants/staleTimes';
@@ -32,20 +32,22 @@ export function useLatestNotifications(limit = BELL_LIMIT) {
   });
 }
 
-const flattenPages = (data) => ({
-  notifications: data.pages.flatMap((page) => page.results),
-  total: data.pages[0]?.count ?? 0,
+const toPage = (data) => ({
+  notifications: data.results,
+  total: data.count,
+  page: data.page,
+  pageSize: data.page_size,
+  totalPages: data.total_pages,
 });
 
 
-export function useNotificationList({ isRead } = {}) {
+/** One page of the notification list (the stall's inbox). */
+export function useNotificationList({ isRead, page = 1 } = {}) {
   const refetchInterval = usePollInterval();
-  return useInfiniteQuery({
-    queryKey: notificationKeys.list({ isRead }),
-    queryFn: ({ pageParam, signal }) => notificationsApi.list({ page: pageParam, isRead }, { signal }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
-    select: flattenPages,
+  return useQuery({
+    queryKey: notificationKeys.list({ isRead, page }),
+    queryFn: ({ signal }) => notificationsApi.list({ page, isRead }, { signal }),
+    select: toPage,
     placeholderData: keepPreviousData,
     staleTime: STALE.SHORT,
     refetchInterval,
@@ -54,16 +56,16 @@ export function useNotificationList({ isRead } = {}) {
 
 
 
+// The caches under notificationKeys.all() are either a plain list (the bell's latest few)
+// or one page of the inbox ({ results, count, ... }).
 function patchItems(data, patch) {
   if (Array.isArray(data)) return data.map(patch);
-  if (data && Array.isArray(data.pages)) {
-    return { ...data, pages: data.pages.map((page) => ({ ...page, results: page.results.map(patch) })) };
-  }
+  if (data && Array.isArray(data.results)) return { ...data, results: data.results.map(patch) };
   return data;
 }
 
 function findItem(data, id) {
-  const items = Array.isArray(data) ? data : data?.pages?.flatMap((page) => page.results);
+  const items = Array.isArray(data) ? data : data?.results;
   return Array.isArray(items) ? items.find((item) => item.id === id) : undefined;
 }
 

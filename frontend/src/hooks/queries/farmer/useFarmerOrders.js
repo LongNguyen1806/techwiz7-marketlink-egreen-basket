@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { farmerApi } from '../../../api/farmer/farmerApi';
 import { farmerKeys } from '../../../constants/queryKeys';
 import { STALE } from '../../../constants/staleTimes';
@@ -7,22 +7,25 @@ import { STALE } from '../../../constants/staleTimes';
 export const ORDERS_PAGE_SIZE = 20;
 
 
-const flattenPages = (data) => ({
-  orders: data.pages.flatMap((page) => page.results),
-  total: data.pages[0]?.count ?? 0,
+// One page of the list, with what the page buttons need.
+const toPage = (data) => ({
+  orders: data.results,
+  total: data.count,
+  page: data.page,
+  pageSize: data.page_size,
+  totalPages: data.total_pages,
 });
 
 const byPickupEnd = (a, b) => new Date(a.pickup_end_at) - new Date(b.pickup_end_at);
 
 
+/** One page of orders; `filters.page` picks it (1 when left out). */
 export function useFarmerOrderList(filters, { enabled = true } = {}) {
-  return useInfiniteQuery({
+  return useQuery({
     queryKey: farmerKeys.orders.list(filters),
-    queryFn: ({ pageParam, signal }) =>
-      farmerApi.getOrders({ ...filters, page: pageParam, page_size: ORDERS_PAGE_SIZE }, { signal }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
-    select: flattenPages,
+    queryFn: ({ signal }) =>
+      farmerApi.getOrders({ ...filters, page: filters.page ?? 1, page_size: ORDERS_PAGE_SIZE }, { signal }),
+    select: toPage,
     placeholderData: keepPreviousData,
     staleTime: STALE.SEARCH,
     enabled,
@@ -30,6 +33,11 @@ export function useFarmerOrderList(filters, { enabled = true } = {}) {
 }
 
 
+/**
+ * Overdue is two lists (accepted and ready, both past pickup) shown as one. Both are paged
+ * with the same page number, so page N shows the Nth slice of each; there are as many pages
+ * as the longer of the two needs.
+ */
 export function useFarmerOverdueOrders(filters, { enabled = true } = {}) {
   const accepted = useFarmerOrderList({ ...filters, tab: 'accepted', overdue: true }, { enabled });
   const ready = useFarmerOrderList({ ...filters, tab: 'ready', overdue: true }, { enabled });
@@ -41,14 +49,17 @@ export function useFarmerOverdueOrders(filters, { enabled = true } = {}) {
   );
 
   return {
-    data: { orders, total: (accepted.data?.total ?? 0) + (ready.data?.total ?? 0) },
+    data: {
+      orders,
+      total: (accepted.data?.total ?? 0) + (ready.data?.total ?? 0),
+      page: filters.page ?? 1,
+      pageSize: ORDERS_PAGE_SIZE * 2,
+      totalPages: Math.max(accepted.data?.totalPages ?? 0, ready.data?.totalPages ?? 0),
+    },
     isPending: parts.some((q) => q.isPending),
     isError: parts.some((q) => q.isError),
     isFetching: parts.some((q) => q.isFetching),
     isPlaceholderData: parts.some((q) => q.isPlaceholderData),
-    hasNextPage: parts.some((q) => q.hasNextPage),
-    isFetchingNextPage: parts.some((q) => q.isFetchingNextPage),
-    fetchNextPage: () => parts.forEach((q) => q.hasNextPage && q.fetchNextPage()),
     refetch: () => parts.forEach((q) => q.refetch()),
   };
 }

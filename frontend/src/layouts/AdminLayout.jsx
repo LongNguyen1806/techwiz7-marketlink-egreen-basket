@@ -35,6 +35,7 @@ import { useAIReviewStats } from '../hooks/queries/admin/useAdminAIReview';
 import { cn } from '../lib/cn';
 
 import '../styles/admin/AdminLayout.css';
+import { AIChatWidget } from '../components/common/chat/AIChatWidget';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -150,6 +151,7 @@ export function AdminLayout() {
         <main id="main-content" className="admin-layout__main" tabIndex={-1}>
           <Outlet />
         </main>
+        <AIChatWidget />
       </div>
     </div>
   );

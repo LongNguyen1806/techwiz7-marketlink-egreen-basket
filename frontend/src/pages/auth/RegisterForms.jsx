@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { MapPicker } from '../../components/common/maps/MapPicker';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
@@ -38,6 +39,9 @@ const FARMER_DEFAULTS = {
   contact_person: '',
   address: '',
   operating_days: [],
+  // Optional pin for the farm, seen only by the admins who approve the stall.
+  latitude: null,
+  longitude: null,
 };
 
 function AuthFooter({ prompt, linkTo, linkLabel }) {
@@ -184,18 +188,27 @@ export function RegisterFarmerForm() {
     handleSubmit,
     trigger,
     setError,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerFarmerSchema),
     defaultValues: FARMER_DEFAULTS,
   });
+  const [address, latitude, longitude] = watch(['address', 'latitude', 'longitude']);
+
+  const placePin = (point) => {
+    setValue('latitude', point.latitude);
+    setValue('longitude', point.longitude);
+  };
 
   const goToStep2 = async () => {
     if (await trigger(REGISTER_FARMER_STEP_1, { shouldFocus: true })) setStep(2);
   };
 
-  const onSubmit = handleSubmit((values) =>
-    registerFarmer.mutate(values, {
+  // No pin means the API looks the address up itself, so the empty pair is left out.
+  const onSubmit = handleSubmit(({ latitude: lat, longitude: lng, ...values }) =>
+    registerFarmer.mutate(lat !== null && lng !== null ? { ...values, latitude: lat, longitude: lng } : values, {
       onError: (error) => {
         const { fieldErrors } = ApiError.fromUnknown(error);
         mapServerErrorsToForm(fieldErrors, setError, { fields: Object.keys(FARMER_DEFAULTS) });
@@ -279,6 +292,23 @@ export function RegisterFarmerForm() {
             <div className="register-form__field">
               <Input id="address" label="Address" autoComplete="street-address" {...register('address')} />
               <FieldError error={errors.address} />
+            </div>
+            <div className="register-form__field">
+              <Label>
+                Farm location <span className="register-form__optional">(optional)</span>
+              </Label>
+              <p className="register-form__hint">
+                Put the pin where you grow. Only the MarketLink team sees it, to help approve your stall;
+                shoppers only see the market you sell at.
+              </p>
+              <MapPicker
+                address={address}
+                latitude={latitude}
+                longitude={longitude}
+                onChange={placePin}
+                className="register-form__map"
+              />
+              <FieldError error={errors.latitude ?? errors.longitude} />
             </div>
             <div className="register-form__field">
               <Label>Operating days</Label>

@@ -173,9 +173,19 @@ def transition_order(
                 request_id=get_request_id(),
             )
             _send_notifications(order, rule, actor_role, change_reason, notify_customer=notify_customer)
+            if to_status == _S.NO_SHOW:
+                # After the commit, so a retried or rolled-back attempt raises nothing.
+                customer_id = order.customer_id
+                transaction.on_commit(lambda: _flag_if_at_risk(customer_id))
         return order
 
     return run_with_retry_if_top_level(_execute)
+
+
+def _flag_if_at_risk(customer_id: int) -> None:
+    from system.auto_flags import check_customer_no_shows, safely
+
+    safely(check_customer_no_shows, customer_id)
 
 
 def record_order_placed(*, order: Order, actor: Any) -> None:

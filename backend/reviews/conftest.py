@@ -4,7 +4,7 @@ import pytest
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import Market
 from orders.models import Order, OrderItem, OrderStatus
 from reviews.models import FarmerReview, ProductReview
@@ -40,6 +40,8 @@ def product(db, approved_farmer):
         price="2.50",
         unit=Unit.KG,
         stock_quantity=10,
+        # On sale: only admin-approved listings are public (product pre-approval).
+        review_status=ReviewStatus.APPROVED,
     )
 
 

@@ -36,8 +36,13 @@ def register_farmer(
     phone: str,
     address: str,
     operating_days: list[int],
+    latitude=None,
+    longitude=None,
 ) -> tuple[CustomUser, FarmerProfile]:
     """Create the user and a PENDING profile in one transaction, then geocode the address.
+
+    A pin placed on the sign-up map is kept as it is and the address is not looked up: the
+    farmer knows where the farm is better than an address search does.
 
     Emails of locked accounts stay taken (D-028: locking is the blacklist).
     """
@@ -53,6 +58,8 @@ def register_farmer(
                 contact_person=contact_person,
                 phone=phone,
                 address=address,
+                latitude=latitude,
+                longitude=longitude,
                 operating_days=operating_days,
                 status=FarmerStatus.PENDING,
             )
@@ -64,6 +71,9 @@ def register_farmer(
         if "phone" in message:
             raise _phone_taken_error() from exc
         raise
+
+    if latitude is not None:
+        return user, profile
 
     # D-032: outside the transaction; a failed lookup leaves the coordinates empty and never
     # breaks the registration (F-08 then shows "Location not found").

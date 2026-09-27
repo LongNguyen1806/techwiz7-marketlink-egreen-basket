@@ -4,10 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
+import { PageStatus, Pagination } from '../../components/common/Pagination';
 import { RatingStars } from '../../components/common/RatingStars';
 import { Button } from '../../components/ui/Button';
 import { Textarea } from '../../components/ui/Textarea';
 import { useUrlFilters } from '../../hooks/common/useUrlFilters';
+import { readPage, usePageParam } from '../../hooks/common/usePageParam';
 import { reviewKey, useFarmerReviews, useReplyToReview } from '../../hooks/queries/farmer/useFarmerReviews';
 import { ApiError } from '../../lib/ApiError';
 import { REPLY_MAX_LENGTH, replySchema } from '../../schemas/farmer/review.schema';
@@ -15,7 +17,7 @@ import { formatRelative } from '../../utils/formatters';
 import { mapServerErrorsToForm } from '../../utils/mapServerErrors';
 import '../../styles/farmer/FarmerReviewsPage.css';
 
-const FILTER_DEFAULTS = { type: '', rating: '', replied: '' };
+const FILTER_DEFAULTS = { type: '', rating: '', replied: '', page: 1 };
 
 function ReplyForm({ review }) {
   const replyToReview = useReplyToReview();
@@ -105,7 +107,9 @@ export default function FarmerReviewsPage() {
     type: filters.type || undefined,
     rating: filters.rating || undefined,
     replied: filters.replied || undefined,
+    page: readPage(filters),
   });
+  const goToPage = usePageParam({ filters, setFilters, query });
 
   const reviews = query.data?.reviews ?? [];
   const hasFilters = Boolean(filters.type || filters.rating || filters.replied);
@@ -123,18 +127,23 @@ export default function FarmerReviewsPage() {
   } else {
     body = (
       <>
+        <PageStatus
+          page={query.data.page}
+          pageSize={query.data.pageSize}
+          total={query.data.total}
+          shown={reviews.length}
+        />
         <ul className="farmer-reviews-page__list" aria-busy={query.isFetching}>
           {reviews.map((review) => (
             <ReviewItem key={reviewKey(review)} review={review} />
           ))}
         </ul>
-        {query.hasNextPage ? (
-          <div className="page-primitive__justify-center-row">
-            <Button variant="outline" size="sm" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
-              Load more
-            </Button>
-          </div>
-        ) : null}
+        <Pagination
+          page={query.data.page}
+          totalPages={query.data.totalPages}
+          disabled={query.isPlaceholderData}
+          onChange={goToPage}
+        />
       </>
     );
   }

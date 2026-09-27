@@ -2,12 +2,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import "leaflet/dist/leaflet.css";
 
 import { useAdminMarket, useSaveAdminMarket } from "../../hooks/queries/admin/useAdminMarkets";
 import { marketSchema } from "../../schemas/admin/market.schema";
@@ -19,16 +13,11 @@ import { Input } from "../../components/ui/Input";
 import { Label } from "../../components/ui/Label";
 import { Textarea } from "../../components/ui/Textarea";
 import { MarketClosuresPanel } from "../../components/admin/MarketClosuresPanel";
+import { MapPicker } from "../../components/common/maps/MapPicker";
 import { ApiError } from "../../lib/ApiError";
 import { mapServerErrorsToForm } from "../../utils/mapServerErrors";
 
 import "../../styles/admin/AdminMarketFormPage.css";
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 const DAYS = [
   { value: 1, label: "Mon" },
@@ -43,34 +32,16 @@ const DAYS = [
 const DEFAULT_VALUES = {
   name: "",
   address: "",
-  latitude: 10.7725,
-  longitude: 106.698,
+  // No pin until the admin places one: a default spot would send shoppers to the wrong place
+  // whenever it was left unmoved.
+  latitude: null,
+  longitude: null,
   image: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=800&q=80",
   open_time: "06:00",
   close_time: "18:00",
   operating_days: [1, 3, 5],
   description: "",
 };
-
-function MapClick({ onPick }) {
-  useMapEvents({
-    click(e) {
-      onPick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
-function readDragLatLng(target) {
-  if (!target || typeof target !== "object" || !("getLatLng" in target)) return null;
-  const getter = target.getLatLng;
-  if (typeof getter !== "function") return null;
-  const point = getter.call(target);
-  if (!point || typeof point !== "object") return null;
-  if (!("lat" in point) || !("lng" in point)) return null;
-  if (typeof point.lat !== "number" || typeof point.lng !== "number") return null;
-  return { lat: point.lat, lng: point.lng };
-}
 
 export default function AdminMarketFormPage() {
   const { id } = useParams();
@@ -104,8 +75,8 @@ export default function AdminMarketFormPage() {
     setSeededId(market.id);
   }, [form, isEdit, market, seededId]);
 
-  const latitude = form.watch("latitude");
-  const longitude = form.watch("longitude");
+  const [address, latitude, longitude] = form.watch(["address", "latitude", "longitude"]);
+  const pinError = form.formState.errors.latitude ?? form.formState.errors.longitude;
   const operatingDays = form.watch("operating_days") || [];
 
   if (isEdit && marketQuery.isLoading) return <PageSkeleton />;
@@ -191,29 +162,20 @@ export default function AdminMarketFormPage() {
         </div>
 
         <div className='admin-market-form-page__map'>
-          <div className='page-primitive__map-box'>
-            <MapContainer center={[latitude, longitude]} zoom={15} className='page-primitive__map-fill'>
-              <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-              <Marker
-                position={[latitude, longitude]}
-                draggable
-                eventHandlers={{
-                  dragend: (event) => {
-                    const point = readDragLatLng(event.target);
-                    if (!point) return;
-                    form.setValue("latitude", point.lat);
-                    form.setValue("longitude", point.lng);
-                  },
-                }}
-              />
-              <MapClick
-                onPick={(nextLatitude, nextLongitude) => {
-                  form.setValue("latitude", nextLatitude);
-                  form.setValue("longitude", nextLongitude);
-                }}
-              />
-            </MapContainer>
-          </div>
+          <Label>Location on the map</Label>
+          <p className='page-primitive__muted-sm'>
+            Shoppers get directions to this pin. Find the address, then drag the pin onto the market entrance.
+          </p>
+          <MapPicker
+            address={address}
+            latitude={latitude}
+            longitude={longitude}
+            onChange={(point) => {
+              form.setValue("latitude", point.latitude, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+              form.setValue("longitude", point.longitude, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+            }}
+          />
+          {pinError ? <p className='page-primitive__error'>{pinError.message}</p> : null}
         </div>
       </div>
 

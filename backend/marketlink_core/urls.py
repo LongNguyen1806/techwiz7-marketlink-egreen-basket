@@ -39,6 +39,8 @@ urlpatterns = [
     path("api/farmer/products/", include("catalog.farmer.urls_farmer")),
     path("api/farmer/", include("reviews.farmer.urls_farmer")),
     path("api/notifications/", include("notifications.urls")),
+    # CH-01: the assistant (D-011); read-only tools per role.
+    path("api/chat/", include("chat_bot.urls")),
     # Admin and Guest branch: each module already carries its admin/ or public/ prefix.
     path("api/", include("accounts.admin_urls")),
     path("api/", include("accounts.public_urls")),

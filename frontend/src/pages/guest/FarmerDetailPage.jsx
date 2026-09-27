@@ -4,6 +4,7 @@ import { CalendarX2, ExternalLink } from 'lucide-react';
 import { LazyImage } from '../../components/common/LazyImage';
 import { RatingStars } from '../../components/common/RatingStars';
 import { ProductCard } from '../../components/common/cards/ProductCard';
+import { ProductCardSkeletonGrid } from '../../components/common/cards/ProductCardSkeleton';
 import { FavoriteButton } from '../../components/common/favorites/FavoriteButton';
 import { MiniMap } from '../../components/common/maps/MarketsMap';
 import { EmptyState } from '../../components/feedback/EmptyState';
@@ -43,15 +44,7 @@ function StallProducts({ farmerId, onAddToCart, onRequireSignIn }) {
   const query = usePublicProductList({ farmer_id: farmerId });
   const products = query.data?.products ?? [];
 
-  if (query.isPending) {
-    return (
-      <div className="farmer-detail-page__products-grid" aria-busy>
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="farmer-detail-page__product-skeleton" />
-        ))}
-      </div>
-    );
-  }
+  if (query.isPending) return <ProductCardSkeletonGrid count={3} className="farmer-detail-page__products-grid" />;
   if (!query.data) {
     return <EmptyState title="Products couldn't be loaded" actionLabel="Try again" onAction={() => query.refetch()} />;
   }
@@ -133,7 +126,6 @@ function StallAbout({ farmer }) {
     <div className="farmer-detail-page__about-layout">
       <div className="farmer-detail-page__about-copy">
         {farmer.description ? <p className="farmer-detail-page__bio">{farmer.description}</p> : null}
-        {farmer.address ? <p className="farmer-detail-page__phone">Address: {farmer.address}</p> : null}
         {farmer.phone ? (
           <p className="farmer-detail-page__phone">
             Phone:{' '}

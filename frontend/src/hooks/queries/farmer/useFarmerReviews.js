@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { farmerApi } from '../../../api/farmer/farmerApi';
 import { farmerKeys } from '../../../constants/queryKeys';
 import { STALE } from '../../../constants/staleTimes';
@@ -9,20 +9,22 @@ export const REVIEWS_PAGE_SIZE = 20;
 
 export const reviewKey = (review) => `${review.type}-${review.id}`;
 
-const flattenPages = (data) => ({
-  reviews: data.pages.flatMap((page) => page.results),
-  total: data.pages[0]?.count ?? 0,
+const toPage = (data) => ({
+  reviews: data.results,
+  total: data.count,
+  page: data.page,
+  pageSize: data.page_size,
+  totalPages: data.total_pages,
 });
 
 
+/** One page of reviews; `filters.page` picks it (1 when left out). */
 export function useFarmerReviews(filters) {
-  return useInfiniteQuery({
+  return useQuery({
     queryKey: farmerKeys.reviews.list(filters),
-    queryFn: ({ pageParam, signal }) =>
-      farmerApi.getReviews({ ...filters, page: pageParam, page_size: REVIEWS_PAGE_SIZE }, { signal }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
-    select: flattenPages,
+    queryFn: ({ signal }) =>
+      farmerApi.getReviews({ ...filters, page: filters.page ?? 1, page_size: REVIEWS_PAGE_SIZE }, { signal }),
+    select: toPage,
     placeholderData: keepPreviousData,
     staleTime: STALE.MINUTE,
   });
@@ -36,14 +38,8 @@ export function useReplyToReview() {
       
       const key = reviewKey(review);
       queryClient.setQueriesData({ queryKey: farmerKeys.reviews.all() }, (data) =>
-        data?.pages
-          ? {
-              ...data,
-              pages: data.pages.map((page) => ({
-                ...page,
-                results: page.results.map((item) => (reviewKey(item) === key ? review : item)),
-              })),
-            }
+        Array.isArray(data?.results)
+          ? { ...data, results: data.results.map((item) => (reviewKey(item) === key ? review : item)) }
           : data,
       );
       notify.success('Reply posted');
