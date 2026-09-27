@@ -66,3 +66,29 @@
 .admin-moderation-page__reason {
   margin-top: var(--space-2);
 }
+
+/* The takedown dialog says what the button does before the reason box, because "Take down"
+   and "Hide" sit next to each other and only one of them cancels other people's orders. */
+.admin-moderation-page__warning {
+  margin-bottom: var(--space-3);
+  border-left: 3px solid var(--color-danger);
+  background-color: var(--color-muted);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-foreground);
+}
+
+/* Says why the list has one row in it. Without this a deep link from the queue looks like a
+   broken filter. */
+.admin-moderation-page__pin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-muted);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-muted-foreground);
+}

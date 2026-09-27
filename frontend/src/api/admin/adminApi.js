@@ -24,6 +24,15 @@ export const adminApi = {
     return data;
   },
 
+  // One calendar month of the orders chart. Its own call, not part of the dashboard, so
+  // stepping through months does not refetch the totals and the queue on every click.
+  getOrdersByMonth: async (month) => {
+    const { data } = await axiosClient.get('/admin/dashboard/orders-by-day/', {
+      params: month ? { month } : undefined,
+    });
+    return data;
+  },
+
   getFarmerImpact: async (id) => {
     const { data } = await axiosClient.get(`/admin/farmers/${id}/suspension-impact/`);
     return data;
@@ -188,6 +197,23 @@ export const adminApi = {
 
   restoreProduct: async (id) => {
     const { data } = await axiosClient.post(`/admin/products/${id}/restore/`);
+    return data;
+  },
+
+  // AD-21b. A takedown, unlike a hide, also cancels the open orders, so the dialog asks what
+  // that would cost before the admin commits to it.
+  fetchProductBlockImpact: async (id) => {
+    const { data } = await axiosClient.get(`/admin/products/${id}/block-impact/`);
+    return data;
+  },
+
+  blockProduct: async (id, reason) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/block/`, { reason });
+    return data;
+  },
+
+  unblockProduct: async (id) => {
+    const { data } = await axiosClient.post(`/admin/products/${id}/unblock/`);
     return data;
   },
 

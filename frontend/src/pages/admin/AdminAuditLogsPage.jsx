@@ -25,6 +25,7 @@ import {
 } from '@/components/common/drawer/Sheet';
 import { formatDateTime } from '@/utils/formatters';
 
+import '@/components/common/table/FilterBar.css';
 import './AdminAuditLogsPage.css';
 
 const TONE_VARIANT = {
@@ -65,6 +66,9 @@ const SUMMARISED_KEYS = new Set([
   'changed_fields',
   'from',
   'to',
+  // Shown as its own row below, with the numbers written the way an order is referred to.
+  'cancelled_order_ids',
+  'cancelled_order_ids_truncated',
 ]);
 
 function extraDetails(log) {
@@ -78,6 +82,15 @@ function extraDetails(log) {
           ? JSON.stringify(value)
           : String(value),
     ]);
+}
+
+// A takedown cancels other people's orders. The count alone cannot answer a shopper asking
+// why theirs disappeared, so the row carries the ids and this prints them.
+function cancelledOrders(log) {
+  const ids = log.details?.cancelled_order_ids;
+  if (!Array.isArray(ids) || !ids.length) return null;
+  const listed = ids.map((id) => `#${id}`).join(', ');
+  return log.details?.cancelled_order_ids_truncated ? `${listed} and more` : listed;
 }
 
 function outcomeText(log) {
@@ -162,6 +175,25 @@ export default function AdminAuditLogsPage() {
         />
         <Button type="submit" size="sm">
           Apply
+        </Button>
+        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
+            learns one place to look rather than one per screen. */}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="filter-bar__clear"
+          disabled={!action && !from && !to && !actor}
+          onClick={() => {
+            setAction('');
+            setFrom('');
+            setTo('');
+            setActor(null);
+            setFilters({ action: '', from: '', to: '' });
+            setPage(1);
+          }}
+        >
+          Clear
         </Button>
       </form>
 
@@ -301,6 +333,12 @@ export default function AdminAuditLogsPage() {
                   <div className="admin-audit-logs-page__pair">
                     <dt>Reason given</dt>
                     <dd>{auditReason(selected)}</dd>
+                  </div>
+                ) : null}
+                {cancelledOrders(selected) ? (
+                  <div className="admin-audit-logs-page__pair">
+                    <dt>Orders cancelled</dt>
+                    <dd>{cancelledOrders(selected)}</dd>
                   </div>
                 ) : null}
                 <div className="admin-audit-logs-page__pair">

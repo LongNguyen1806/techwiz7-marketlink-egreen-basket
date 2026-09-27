@@ -63,6 +63,41 @@ export function useRestoreModerationProduct() {
   });
 }
 
+export function useBlockModerationProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input) => adminApi.blockProduct(input.id, input.reason),
+    onSuccess: (data) => {
+      const count = data?.affected_orders ?? 0;
+      toast.success(
+        count === 0
+          ? 'Product taken down'
+          : `Product taken down · ${count} ${count === 1 ? 'order' : 'orders'} cancelled`,
+      );
+      invalidateModeration(queryClient);
+      // The cancelled orders change what the follow-up counts and the order list show.
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS()[0]] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_DASHBOARD[0]] });
+    },
+    onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
+  });
+}
+
+export function useUnblockModerationProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.unblockProduct,
+    onSuccess: () => {
+      // Worded so nobody reads it as an undo: the cancelled orders are not coming back.
+      toast.success('Product is on sale again. Cancelled orders were not reinstated.');
+      void queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_MODERATION_PRODUCTS()[0]],
+      });
+    },
+    onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
+  });
+}
+
 export function useRestoreModerationReview() {
   const queryClient = useQueryClient();
   return useMutation({
