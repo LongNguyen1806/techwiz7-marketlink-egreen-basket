@@ -225,8 +225,8 @@ export const adminApi = {
     return response.data;
   },
 
-  getAnnouncements: async () => {
-    const { data } = await axiosClient.get('/admin/announcements/');
+  getAnnouncements: async (params = {}) => {
+    const { data } = await axiosClient.get('/admin/announcements/', { params });
     return adaptPaginated(data);
   },
 
@@ -269,6 +269,30 @@ export const adminApi = {
       params,
       responseType: 'blob',
     });
+    return data;
+  },
+
+  // The follow-up queue (admin-raised flags).
+  getFlags: async (params = {}) => {
+    const { data } = await axiosClient.get('/admin/flags/', { params });
+    return adaptPaginated(data);
+  },
+
+  raiseFlag: async (payload) => {
+    const { data } = await axiosClient.post('/admin/flags/', payload);
+    return data;
+  },
+
+  resolveFlag: async (id, resolution) => {
+    const { data } = await axiosClient.post(`/admin/flags/${id}/resolve/`, {
+      resolution,
+    });
+    return data;
+  },
+
+  // Read only: these limits come from the environment, so changing one is a deploy.
+  getSettings: async () => {
+    const { data } = await axiosClient.get('/admin/settings/');
     return data;
   },
 

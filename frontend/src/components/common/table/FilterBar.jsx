@@ -1,0 +1,95 @@
+import { useEffect, useState } from 'react';
+
+import { Button } from '@/components/common/forms/Button';
+import { Input } from '@/components/common/forms/Input';
+import { Label } from '@/components/common/forms/Label';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+
+import './FilterBar.css';
+
+/**
+ * One filter row for every admin table.
+ *
+ * Only the text box is debounced. A dropdown or a date is a single deliberate choice, so it
+ * fires at once; debouncing those would make the table feel broken.
+ *
+ * `fields` is a list of:
+ *   { name, label, type: 'search' | 'select' | 'date', options?: [{ value, label }] }
+ */
+export function FilterBar({ fields, value, onChange, onReset }) {
+  const [text, setText] = useState(value.q ?? '');
+  const debounced = useDebouncedValue(text);
+
+  useEffect(() => {
+    if ((value.q ?? '') === debounced) return;
+    onChange({ ...value, q: debounced || undefined });
+    // value and onChange are stable per render by the caller; re-running on them would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced]);
+
+  const set = (name, next) => onChange({ ...value, [name]: next || undefined });
+  const isDirty = Object.entries(value).some(([, v]) => v !== undefined && v !== '');
+
+  return (
+    <div className="filter-bar">
+      {fields.map((field) => {
+        if (field.type === 'search') {
+          return (
+            <Input
+              key={field.name}
+              label={field.label}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              className="filter-bar__search"
+            />
+          );
+        }
+        if (field.type === 'date') {
+          return (
+            <Input
+              key={field.name}
+              type="date"
+              label={field.label}
+              value={value[field.name] ?? ''}
+              onChange={(event) => set(field.name, event.target.value)}
+              className="filter-bar__date"
+            />
+          );
+        }
+        return (
+          <div key={field.name} className="filter-bar__field">
+            <Label className="page-primitive__label-xs" htmlFor={`filter-${field.name}`}>
+              {field.label}
+            </Label>
+            <select
+              id={`filter-${field.name}`}
+              className="page-primitive__select"
+              value={value[field.name] ?? ''}
+              onChange={(event) => set(field.name, event.target.value)}
+            >
+              <option value="">{field.allLabel ?? 'All'}</option>
+              {field.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      })}
+
+      {isDirty ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setText('');
+            onReset();
+          }}
+        >
+          Clear
+        </Button>
+      ) : null}
+    </div>
+  );
+}

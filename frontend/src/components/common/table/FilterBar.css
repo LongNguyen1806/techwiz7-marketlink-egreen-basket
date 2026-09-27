@@ -1,0 +1,42 @@
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.filter-bar__search {
+  min-width: 14rem;
+  max-width: 22rem;
+  flex: 1 1 14rem;
+}
+
+.filter-bar__date {
+  width: auto;
+}
+
+/* Same floating-label treatment as Input, so a select lines up with the text and date boxes
+   instead of standing a label's height taller. */
+.filter-bar__field {
+  position: relative;
+  height: 2.75rem;
+}
+
+.filter-bar__field .page-primitive__select {
+  height: 100%;
+}
+
+.filter-bar__field .page-primitive__label-xs {
+  position: absolute;
+  top: 0;
+  left: calc(var(--space-3) - var(--space-1));
+  padding: 0 var(--space-1);
+  background-color: var(--color-card);
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
