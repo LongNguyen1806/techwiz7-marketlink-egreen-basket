@@ -1,11 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { authApi } from '../../api/common/authApi';
 import { ApiError } from '@/lib/ApiError';
-import { DASHBOARD_PATH, QUERY_KEYS } from '@/config/constants';
-import { useAuthStore } from '@/stores/auth.store';
+import { DASHBOARD_PATH, QUERY_KEYS, STALE } from '@/config/constants';
+import {
+  PORTALS,
+  authStoreFor,
+  portalForPath,
+  selectIsAuthenticated,
+  useAdminAuthStore,
+  useMarketAuthStore,
+} from '@/stores/auth.store';
 
 function homePathForRole(role) {
   if (role === 'ADMIN') return DASHBOARD_PATH.ADMIN;
@@ -13,137 +20,130 @@ function homePathForRole(role) {
   return DASHBOARD_PATH.CUSTOMER;
 }
 
+const LOGIN_PATH = {
+  [PORTALS.MARKET]: '/login',
+  [PORTALS.ADMIN]: '/admin/login',
+};
+
+export function loginPathFor(portal) {
+  return LOGIN_PATH[portal] ?? LOGIN_PATH[PORTALS.MARKET];
+}
+
+/** Which session this page belongs to: `/admin/*` is the admin portal, the rest is the market. */
+export function usePortal() {
+  const { pathname } = useLocation();
+  return portalForPath(pathname);
+}
+
+function reportUnlessFieldErrors(error) {
+  const apiError = ApiError.fromUnknown(error);
+  if (Object.keys(apiError.fieldErrors).length === 0) {
+    toast.error(apiError.friendlyMessage);
+  }
+}
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const setTokens = useAuthStore((s) => s.setTokens);
-  const setRole = useAuthStore((s) => s.setRole);
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const portal = usePortal();
+
+  // Both stores are subscribed to unconditionally so the hook order never changes when a
+  // navigation moves this component from one portal to the other. A boolean is selected
+  // rather than the state object, which zustand replaces on every write.
+  const marketAuthed = useMarketAuthStore(selectIsAuthenticated);
+  const adminAuthed = useAdminAuthStore(selectIsAuthenticated);
+  const isAuthenticated = portal === PORTALS.ADMIN ? adminAuthed : marketAuthed;
 
   const meQuery = useQuery({
-    queryKey: QUERY_KEYS.ME,
+    queryKey: QUERY_KEYS.ME(portal),
     queryFn: authApi.me,
-    enabled: Boolean(accessToken),
+    enabled: isAuthenticated,
+    staleTime: STALE.SESSION,
     retry: false,
   });
+
+  // Sign-in writes to the portal the user is signing in to, which is where the form lives.
+  const startSession = (targetPortal) => (data) => {
+    authStoreFor(targetPortal).getState().setTokens({
+      access: data.access,
+      refresh: data.refresh,
+      role: data.user.role,
+    });
+    queryClient.setQueryData(QUERY_KEYS.ME(targetPortal), data.user);
+    navigate(homePathForRole(data.user.role), { replace: true });
+  };
+
+  // Clearing the cache is safe here because a react-query cache belongs to one tab, and this
+  // tab is being sent to a login screen. What must survive is the *other portal's tokens*,
+  // and those live in their own store, which this does not touch.
+  const endSession = () => {
+    authStoreFor(portal).getState().clearSession();
+    queryClient.clear();
+    navigate(loginPathFor(portal), { replace: true });
+  };
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
-      setTokens({
-        access: data.access,
-        refresh: data.refresh,
-        role: data.user.role,
-      });
-      queryClient.setQueryData(QUERY_KEYS.ME, data.user);
+      startSession(PORTALS.MARKET)(data);
       toast.success('Welcome back — you are signed in');
-      navigate(homePathForRole(data.user.role), { replace: true });
     },
-    onError: (error) => {
-      const apiError = ApiError.fromUnknown(error);
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        toast.error(apiError.friendlyMessage);
-      }
-    },
+    onError: reportUnlessFieldErrors,
   });
 
   const adminLoginMutation = useMutation({
     mutationFn: authApi.adminLogin,
     onSuccess: (data) => {
-      setTokens({
-        access: data.access,
-        refresh: data.refresh,
-        role: data.user.role,
-      });
-      queryClient.setQueryData(QUERY_KEYS.ME, data.user);
+      startSession(PORTALS.ADMIN)(data);
       toast.success('Welcome back — you are signed in');
-      navigate(homePathForRole(data.user.role), { replace: true });
     },
-    onError: (error) => {
-      const apiError = ApiError.fromUnknown(error);
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        toast.error(apiError.friendlyMessage);
-      }
-    },
+    onError: reportUnlessFieldErrors,
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const access = useAuthStore.getState().accessToken;
+      const { accessToken } = authStoreFor(portal).getState();
       try {
-        if (access) await authApi.logout(access);
+        if (accessToken) await authApi.logout(accessToken);
       } catch {
-        // Clear local session even if API fails.
+        // Clear the local session even if the API call fails.
       }
     },
-    onSettled: () => {
-      clearSession();
-      queryClient.clear();
-      navigate('/login', { replace: true });
-    },
+    onSettled: endSession,
   });
 
   const changePasswordMutation = useMutation({
     mutationFn: authApi.changePassword,
     onSuccess: () => {
       toast.success('Password updated — please sign in again.');
-      clearSession();
-      queryClient.clear();
-      navigate('/login', { replace: true });
+      endSession();
     },
-    onError: (error) => {
-      const apiError = ApiError.fromUnknown(error);
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        toast.error(apiError.friendlyMessage);
-      }
-    },
+    onError: reportUnlessFieldErrors,
   });
 
   const registerCustomerMutation = useMutation({
     mutationFn: authApi.registerCustomer,
     onSuccess: (data) => {
-      setTokens({
-        access: data.access,
-        refresh: data.refresh,
-        role: data.user.role,
-      });
-      queryClient.setQueryData(QUERY_KEYS.ME, data.user);
+      startSession(PORTALS.MARKET)(data);
       toast.success('Account created — welcome to MarketLink');
-      navigate(homePathForRole(data.user.role), { replace: true });
     },
-    onError: (error) => {
-      const apiError = ApiError.fromUnknown(error);
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        toast.error(apiError.friendlyMessage);
-      }
-    },
+    onError: reportUnlessFieldErrors,
   });
 
   const registerFarmerMutation = useMutation({
     mutationFn: authApi.registerFarmer,
     onSuccess: (data) => {
-      setTokens({
-        access: data.access,
-        refresh: data.refresh,
-        role: data.user.role,
-      });
-      queryClient.setQueryData(QUERY_KEYS.ME, data.user);
+      startSession(PORTALS.MARKET)(data);
       toast.success('Stall submitted — we will review it shortly.');
-      navigate(homePathForRole(data.user.role), { replace: true });
     },
-    onError: (error) => {
-      const apiError = ApiError.fromUnknown(error);
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        toast.error(apiError.friendlyMessage);
-      }
-    },
+    onError: reportUnlessFieldErrors,
   });
 
   return {
+    portal,
     user: meQuery.data,
     isLoadingMe: meQuery.isLoading,
-    isAuthenticated: Boolean(accessToken),
+    isAuthenticated,
     login: loginMutation.mutateAsync,
     loginPending: loginMutation.isPending,
     adminLogin: adminLoginMutation.mutateAsync,
@@ -155,6 +155,6 @@ export function useAuth() {
     registerCustomerPending: registerCustomerMutation.isPending,
     registerFarmer: registerFarmerMutation.mutateAsync,
     registerFarmerPending: registerFarmerMutation.isPending,
-    setRole,
+    setRole: (role) => authStoreFor(portal).getState().setRole(role),
   };
 }

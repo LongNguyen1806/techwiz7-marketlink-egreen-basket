@@ -10,11 +10,17 @@ import { AiChatWidget } from '@/components/common/chat/AiChatWidget';
 import { ErrorBoundary } from '@/components/common/feedback/ErrorBoundary';
 import { PageSkeleton } from '@/components/common/feedback/PageSkeleton';
 import { TooltipProvider } from '@/components/common/layout/Tooltip';
-import { QUERY_KEYS, STORAGE_KEYS } from '@/config/constants';
+import { QUERY_KEYS } from '@/config/constants';
 import { env } from '@/config/env';
 import { queryClient } from '@/lib/queryClient';
 import { router } from './router/AppRouter';
-import { useAuthStore } from '@/stores/auth.store';
+import {
+  authStoreFor,
+  currentPortal,
+  hasHydrated,
+  onHydrated,
+  selectIsAuthenticated,
+} from '@/stores/auth.store';
 
 let mockingStarted = false;
 
@@ -28,33 +34,38 @@ async function enableMocking() {
   mockingStarted = true;
 }
 
+// Both portals, because either may hold a session from a previous visit and the boot below
+// has to know which one this page belongs to before it asks who is signed in.
 function waitForAuthHydration() {
-  if (useAuthStore.persist.hasHydrated()) return Promise.resolve();
+  if (hasHydrated()) return Promise.resolve();
   return new Promise((resolve) => {
-    const unsub = useAuthStore.persist.onFinishHydration(() => {
-      unsub();
+    const unsubscribe = onHydrated(() => {
+      unsubscribe();
       resolve();
     });
   });
 }
 
+const LOGIN_PATH = { market: '/login', admin: '/admin/login' };
+
 function BootProvider({ children }) {
   const [ready, setReady] = useState(false);
-  const setTokens = useAuthStore((s) => s.setTokens);
-  const setRole = useAuthStore((s) => s.setRole);
-  const clearSession = useAuthStore((s) => s.clearSession);
 
   useEffect(() => {
-    const onLost = () => {
-      clearSession();
+    // The event names the portal whose session expired. Only that portal's viewer is sent to
+    // a login screen; a tab showing the other one carries on.
+    const onLost = (event) => {
+      const portal = event.detail?.portal ?? currentPortal();
+      if (portal !== currentPortal()) return;
       queryClient.clear();
-      if (window.location.pathname !== '/login') {
-        window.location.assign('/login');
+      const loginPath = LOGIN_PATH[portal] ?? LOGIN_PATH.market;
+      if (window.location.pathname !== loginPath) {
+        window.location.assign(loginPath);
       }
     };
     window.addEventListener('auth:session-lost', onLost);
     return () => window.removeEventListener('auth:session-lost', onLost);
-  }, [clearSession]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,28 +83,20 @@ function BootProvider({ children }) {
         // Config is non-blocking for Phase 1 shell.
       }
 
-      const state = useAuthStore.getState();
-      let token = state.accessToken;
-      let refresh = state.refreshToken;
-      try {
-        token = token || localStorage.getItem(STORAGE_KEYS.ACCESS);
-        refresh = refresh || localStorage.getItem(STORAGE_KEYS.REFRESH);
-      } catch {
-        // Storage unavailable.
-      }
+      // Only the portal this page belongs to is resumed. Asking the API who the *other*
+      // portal's token belongs to would spend a request on a session nothing here can use.
+      const portal = currentPortal();
+      const store = authStoreFor(portal);
 
-      if (token && refresh) {
+      if (selectIsAuthenticated(store.getState())) {
         try {
-          if (!state.accessToken) {
-            setTokens({ access: token, refresh });
-          }
           const me = await authApi.me();
           if (!cancelled) {
-            queryClient.setQueryData(QUERY_KEYS.ME, me);
-            setRole(me.role);
+            queryClient.setQueryData(QUERY_KEYS.ME(portal), me);
+            store.getState().setRole(me.role);
           }
         } catch {
-          if (!cancelled) clearSession();
+          if (!cancelled) store.getState().clearSession();
         }
       }
 
@@ -104,7 +107,9 @@ function BootProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [clearSession, setRole, setTokens]);
+    // Boot runs once. The stores it touches are read through getState(), not through a
+    // subscription, so there is nothing here that could change and warrant a second run.
+  }, []);
 
   if (!ready) {
     return <PageSkeleton />;

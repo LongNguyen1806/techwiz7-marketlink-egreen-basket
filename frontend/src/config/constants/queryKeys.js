@@ -1,5 +1,7 @@
 export const QUERY_KEYS = {
-  ME: ['me'],
+  // Scoped by portal: an admin session and a shopper session can be open in the same browser,
+  // and one bare ['me'] would let whichever signed in last answer for both.
+  ME: (portal = 'market') => ['me', portal],
   PUBLIC_CONFIG: ['public-config'],
   CATEGORIES: ['categories'],
   MARKETS: (params) => ['markets', params],
@@ -50,8 +52,8 @@ export const QUERY_KEYS = {
   ADMIN_ANNOUNCEMENTS: (params) => ['admin-announcements', params],
   ADMIN_CHANGE_LOG: (model, id) => ['admin-change-log', model, id],
   ADMIN_FLAGS: (params) => ['admin-flags', params],
-  ADMIN_FLAG_TARGET: (kind, id) => ['admin-flag-target', kind, id],
   ADMIN_SETTINGS: ['admin-settings'],
+  ADMIN_FLAG_TARGET: (kind, id) => ['admin-flag-target', kind, id],
   ADMIN_ORDERS: (params) => ['admin-orders', params],
   ADMIN_ORDER: (id) => ['admin-order', id],
   ADMIN_AUDIT_LOGS: (params) => ['admin-audit-logs', params],

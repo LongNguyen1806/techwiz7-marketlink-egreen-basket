@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { authApi } from '../../../api/common/authApi';
 import { adaptNotification } from '@/lib/adapters/notification.adapter';
 import { QUERY_KEYS } from '@/config/constants';
 import { env, wsUrl } from '@/config/env';
-import { useAuthStore } from '@/stores/auth.store';
+import { authStoreFor, currentPortal, portalForPath } from '@/stores/auth.store';
 
 function isWsEnvelope(value) {
   if (!value || typeof value !== 'object') return false;
@@ -21,7 +22,7 @@ function isBeNotification(value) {
 }
 
 async function pushMockNotification(item) {
-  const role = useAuthStore.getState().role;
+  const role = authStoreFor(currentPortal()).getState().role;
   if (role === 'FARMER') {
     const { farmerNotifications } = await import('@/mocks/farmerData');
     farmerNotifications.unshift(item);
@@ -38,7 +39,12 @@ async function pushMockNotification(item) {
  */
 export function useNotificationSocket(enabled) {
   const queryClient = useQueryClient();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  // The socket ticket is cut from the session of the portal being viewed, so an admin tab
+  // does not open a shopper's notification stream. Read from the router rather than from
+  // window.location: navigating inside the app changes the portal without a page load, and a
+  // location read during render would never hear about it.
+  const portal = portalForPath(useLocation().pathname);
+  const accessToken = authStoreFor(portal)((s) => s.accessToken);
 
   useEffect(() => {
     if (!enabled || !accessToken) return;

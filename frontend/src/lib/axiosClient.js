@@ -2,30 +2,25 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ApiError } from '@/lib/ApiError';
-import { STORAGE_KEYS } from '@/config/constants';
 import { env } from '@/config/env';
-import { useAuthStore } from '@/stores/auth.store';
+import { authStoreFor, currentPortal, selectIsAuthenticated } from '@/stores/auth.store';
 
 function isEnvelope(body) {
   return Boolean(body && typeof body === 'object' && 'success' in body && 'data' in body);
 }
 
-function readToken(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
+// Every request belongs to the portal of the page that sent it, fixed at send time. Reading
+// the location again later would let a navigation mid-flight refresh or expire the other
+// portal's session.
+function sessionOf(config) {
+  return authStoreFor(config?._portal ?? currentPortal());
 }
 
-function onSessionLost() {
-  try {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH);
-  } catch {
-    // Storage unavailable.
-  }
-  window.dispatchEvent(new CustomEvent('auth:session-lost'));
+function onSessionLost(portal) {
+  const store = authStoreFor(portal);
+  if (!selectIsAuthenticated(store.getState())) return;
+  store.getState().clearSession();
+  window.dispatchEvent(new CustomEvent('auth:session-lost', { detail: { portal } }));
 }
 
 function ensureTrailingSlash(url) {
@@ -45,11 +40,14 @@ const axiosClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-let refreshing = null;
-let waiters = [];
+// One in-flight refresh per portal, not one for the whole app: a refresh of the admin session
+// must not make a shopper's queued request wait for it, nor hand it the wrong token.
+const refreshing = {};
+const waiters = {};
 
-async function refreshAccessToken() {
-  const refresh = readToken(STORAGE_KEYS.REFRESH);
+async function refreshAccessToken(portal) {
+  const store = authStoreFor(portal);
+  const { refreshToken: refresh } = store.getState();
   if (!refresh) throw new Error('No refresh token');
 
   const { data } = await axios.post(`${env.API_URL}/auth/refresh/`, { refresh });
@@ -73,15 +71,16 @@ async function refreshAccessToken() {
   if (!access) throw new Error('Refresh response missing access token');
 
   if (nextRefresh) {
-    useAuthStore.getState().setTokens({ access, refresh: nextRefresh });
+    store.getState().setTokens({ access, refresh: nextRefresh });
   } else {
-    useAuthStore.getState().setAccessToken(access);
+    store.getState().setAccessToken(access);
   }
   return access;
 }
 
 axiosClient.interceptors.request.use((config) => {
-  const token = readToken(STORAGE_KEYS.ACCESS);
+  config._portal ??= currentPortal();
+  const { accessToken: token } = sessionOf(config).getState();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -125,8 +124,10 @@ axiosClient.interceptors.response.use(
       }
     }
 
+    const portal = original?._portal ?? currentPortal();
+
     if (code === 'TOKEN_INVALID' || code === 'ACCOUNT_LOCKED') {
-      onSessionLost();
+      onSessionLost(portal);
       return Promise.reject(
         new ApiError({
           status: error.response?.status ?? 401,
@@ -161,26 +162,28 @@ axiosClient.interceptors.response.use(
 
     original._retried = true;
 
-    if (!refreshing) {
-      refreshing = refreshAccessToken()
+    waiters[portal] ??= [];
+
+    if (!refreshing[portal]) {
+      refreshing[portal] = refreshAccessToken(portal)
         .then((token) => {
-          waiters.forEach((resolve) => resolve(token));
+          waiters[portal].forEach((resolve) => resolve(token));
           return token;
         })
         .catch((err) => {
-          waiters.forEach((resolve) => resolve(null));
-          onSessionLost();
+          waiters[portal].forEach((resolve) => resolve(null));
+          onSessionLost(portal);
           throw err;
         })
         .finally(() => {
-          waiters = [];
-          refreshing = null;
+          waiters[portal] = [];
+          refreshing[portal] = null;
         });
     }
 
     const token = await new Promise((resolve) => {
-      waiters.push(resolve);
-      refreshing?.catch(() => {});
+      waiters[portal].push(resolve);
+      refreshing[portal]?.catch(() => {});
     });
 
     if (!token) {
