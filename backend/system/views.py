@@ -18,7 +18,7 @@ from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
 from system.dashboard import dashboard_snapshot
 from system.excel import XLSX_CONTENT_TYPE, build_report_workbook, report_filename
-from system.models import AuditAction
+from system.models import AuditAction, FlagTarget
 from system.reports import parse_report_range, report_summary
 from system.selectors import (
     AUDIT_LOG_ORDERING,
@@ -236,13 +236,16 @@ class AdminFlagListView(ListAPIView):
     def get_queryset(self):
         raw = self.request.query_params.get("resolved")
         resolved = {"true": True, "false": False}.get((raw or "").lower(), False)
-        return list_flags(resolved=resolved)
+        return list_flags(
+            resolved=resolved, target_type=self.request.query_params.get("target_type")
+        )
 
     @extend_schema(
         parameters=[
             OpenApiParameter(
                 "resolved", bool, description="Default false: the open queue."
-            )
+            ),
+            OpenApiParameter("target_type", str, enum=list(FlagTarget.values)),
         ],
         summary="Content waiting for a decision",
     )

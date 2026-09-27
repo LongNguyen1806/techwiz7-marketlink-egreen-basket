@@ -109,6 +109,9 @@ class Order(BaseModel):
                 fields=["market", "status", "pickup_date"], name="ord_market_status_date_idx"
             ),
             models.Index(fields=["created_at"], name="ord_created_idx"),
+            # Admin support searches by collection day without naming a market or a status,
+            # which the composite index above cannot serve.
+            models.Index(fields=["pickup_date"], name="ord_pickup_date_idx"),
         ]
         constraints = [
             models.CheckConstraint(

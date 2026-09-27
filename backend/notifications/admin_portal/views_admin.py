@@ -1,4 +1,6 @@
 from rest_framework import status
+from django.db.models import Q
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 
@@ -8,7 +10,7 @@ from notifications.admin_portal.serializers_admin import (
     AnnouncementAdminReadSerializer,
     AnnouncementAdminWriteSerializer,
 )
-from notifications.models import Announcement
+from notifications.models import Announcement, AnnouncementAudience
 
 
 def _announcements():
@@ -19,7 +21,30 @@ class AnnouncementListCreateView(ListCreateAPIView):
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        return _announcements()
+        params = self.request.query_params
+        queryset = _announcements()
+        audience = params.get("audience")
+        if audience in AnnouncementAudience.values:
+            queryset = queryset.filter(audience=audience)
+        active = {"true": True, "false": False}.get((params.get("is_active") or "").lower())
+        if active is not None:
+            queryset = queryset.filter(is_active=active)
+        search = (params.get("q") or "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) | Q(content__icontains=search)
+            )
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, description="Matches the title or the body."),
+            OpenApiParameter("audience", str, enum=list(AnnouncementAudience.values)),
+            OpenApiParameter("is_active", bool),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_serializer_class(self):
         return (
@@ -46,7 +71,30 @@ class AnnouncementDetailView(RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
-        return _announcements()
+        params = self.request.query_params
+        queryset = _announcements()
+        audience = params.get("audience")
+        if audience in AnnouncementAudience.values:
+            queryset = queryset.filter(audience=audience)
+        active = {"true": True, "false": False}.get((params.get("is_active") or "").lower())
+        if active is not None:
+            queryset = queryset.filter(is_active=active)
+        search = (params.get("q") or "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) | Q(content__icontains=search)
+            )
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, description="Matches the title or the body."),
+            OpenApiParameter("audience", str, enum=list(AnnouncementAudience.values)),
+            OpenApiParameter("is_active", bool),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_serializer_class(self):
         return (

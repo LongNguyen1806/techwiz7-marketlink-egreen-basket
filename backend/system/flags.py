@@ -18,12 +18,14 @@ def open_flags():
     ).order_by("created_at", "id")
 
 
-def list_flags(*, resolved: bool | None = False):
+def list_flags(*, resolved: bool | None = False, target_type: str | None = None):
     queryset = ModerationFlag.objects.select_related("raised_by", "resolved_by")
     if resolved is True:
         queryset = queryset.filter(resolved_at__isnull=False)
     elif resolved is False:
         queryset = queryset.filter(resolved_at__isnull=True)
+    if target_type:
+        queryset = queryset.filter(target_type=target_type)
     # Oldest first: a queue is worked from the front, unlike a log.
     return queryset.order_by("resolved_at", "created_at", "id")
 
