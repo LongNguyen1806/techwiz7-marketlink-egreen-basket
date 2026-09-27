@@ -94,7 +94,10 @@ function SortableRow({ cat, onDelete }) {
 
 export default function AdminCategoriesPage() {
   const query = useAdminCategories();
-  const [items, setItems] = useState([]);
+  // Both pieces of state start from the same cached value. Starting `items` at [] while
+  // `syncedData` already held the cache made the sync guard below false on the very first
+  // render, so arriving with a warm cache left the list permanently empty.
+  const [items, setItems] = useState(() => query.data ?? []);
   const [syncedData, setSyncedData] = useState(query.data);
   const [deleting, setDeleting] = useState(null);
   const form = useForm({
@@ -118,13 +121,11 @@ export default function AdminCategoriesPage() {
     const oldIndex = items.findIndex((i) => i.id === active.id);
     const newIndex = items.findIndex((i) => i.id === over.id);
     const next = arrayMove(items, oldIndex, newIndex);
+    // The optimistic order above is what the admin sees; the refetch the mutation triggers
+    // brings back the rows with their product counts, which the individual PATCH replies
+    // do not carry.
     setItems(next);
-    reorder.mutate(
-      next.map((i) => i.id),
-      {
-        onSuccess: (data) => setItems(data),
-      },
-    );
+    reorder.mutate(next.map((i) => i.id));
   };
 
   if (query.isLoading) return <PageSkeleton />;
