@@ -1,6 +1,8 @@
 import pytest
 from django.urls import reverse
 
+from catalog.models import Category, Product, Unit
+from system.flags import raise_flag
 from system.models import AuditAction, AuditLog, FlagTarget, ModerationFlag
 
 LIST_URL = "admin-flag-list"
@@ -139,3 +141,80 @@ def test_the_dashboard_counts_what_is_waiting(admin_client, admin_user, farmer_u
     assert waiting["stalls_awaiting_approval"] == 1
     assert "customers_at_risk" in waiting
     assert "hidden_products" in waiting
+
+
+# ------------------------------------------------------- queue search + links
+# The queue names a flagged thing by number. Without a link and a line of the content, every
+# decision starts with the admin going off to find the row by hand.
+
+
+@pytest.mark.django_db
+def test_a_flagged_product_carries_a_link_and_a_preview(admin_client, admin_user, approved_farmer):
+    category = Category.objects.create(name="Leafy greens", display_order=1)
+    product = Product.objects.create(
+        farmer=approved_farmer,
+        category=category,
+        name="Water spinach",
+        price="12.00",
+        unit=Unit.BUNCH,
+        stock_quantity=10,
+    )
+    raise_flag(
+        target_type=FlagTarget.PRODUCT,
+        target_id=product.id,
+        note="Photo looks borrowed",
+        actor=admin_user,
+    )
+
+    row = admin_client.get(reverse(LIST_URL)).data["data"]["results"][0]
+
+    assert row["target_url"] == f"/admin/moderation?tab=products&product_id={product.id}"
+    assert product.name in row["target_preview"]
+
+
+@pytest.mark.django_db
+def test_a_flagged_stall_links_to_its_own_page(admin_client, admin_user, approved_farmer):
+    raise_flag(
+        target_type=FlagTarget.FARMER,
+        target_id=approved_farmer.user_id,
+        note="Second complaint this month",
+        actor=admin_user,
+    )
+
+    row = admin_client.get(reverse(LIST_URL)).data["data"]["results"][0]
+
+    assert row["target_url"] == f"/admin/farmers/{approved_farmer.user_id}"
+    assert row["target_preview"] == approved_farmer.stall_name
+
+
+@pytest.mark.django_db
+def test_a_flag_whose_target_is_gone_still_lists(admin_client, admin_user):
+    # The flag outlives the row it points at, and the queue must not 500 because of it.
+    raise_flag(
+        target_type=FlagTarget.PRODUCT, target_id=999_999, note="Gone now", actor=admin_user
+    )
+
+    row = admin_client.get(reverse(LIST_URL)).data["data"]["results"][0]
+
+    assert row["target_preview"] is None
+    assert row["target_url"] is not None
+
+
+@pytest.mark.django_db
+def test_queue_search_matches_the_note_and_the_target_number(admin_client, admin_user):
+    raise_flag(
+        target_type=FlagTarget.PRODUCT, target_id=321, note="Price looks wrong", actor=admin_user
+    )
+    raise_flag(
+        target_type=FlagTarget.CUSTOMER, target_id=7, note="Duplicate account", actor=admin_user
+    )
+
+    by_note = admin_client.get(reverse(LIST_URL), {"q": "price"}).data["data"]
+    assert [row["target_id"] for row in by_note["results"]] == [321]
+
+    # An admin refers to a flagged thing by its number, with or without the hash.
+    for term in ("321", "#321"):
+        by_id = admin_client.get(reverse(LIST_URL), {"q": term}).data["data"]
+        assert [row["target_id"] for row in by_id["results"]] == [321], term
+
+    assert admin_client.get(reverse(LIST_URL), {"q": "nothing"}).data["data"]["count"] == 0

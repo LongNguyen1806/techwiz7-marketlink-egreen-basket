@@ -4,6 +4,7 @@ from accounts.admin_portal.serializers_admin import AdminFarmerRowSerializer
 from accounts.models import CustomUser
 from orders.models import OrderStatus
 from system.models import AuditLog, FlagTarget, ModerationFlag
+from system.flags import target_url
 
 
 class AuditLogActorSerializer(serializers.ModelSerializer):
@@ -45,6 +46,14 @@ class DashboardTotalsSerializer(serializers.Serializer):
 class OrdersByDaySerializer(serializers.Serializer):
     date = serializers.DateField()
     count = serializers.IntegerField()
+
+
+class OrdersByMonthSerializer(serializers.Serializer):
+    """One calendar month of the orders chart, which the dashboard pages through."""
+
+    month = serializers.CharField()
+    total = serializers.IntegerField()
+    days = OrdersByDaySerializer(many=True)
 
 
 class OrdersByStatusSerializer(serializers.Serializer):
@@ -123,14 +132,25 @@ class ChangeLogEntrySerializer(serializers.Serializer):
 class ModerationFlagReadSerializer(serializers.ModelSerializer):
     raised_by = AuditLogActorSerializer(read_only=True)
     resolved_by = AuditLogActorSerializer(read_only=True)
+    # Where to go and look, and a line of what is there. A queue that only gives a number
+    # makes the admin hunt for the thing before every decision.
+    target_url = serializers.SerializerMethodField()
+    target_preview = serializers.SerializerMethodField()
 
     class Meta:
         model = ModerationFlag
         fields = [
-            "id", "target_type", "target_id", "note", "raised_by",
-            "created_at", "resolved_at", "resolved_by", "resolution",
+            "id", "target_type", "target_id", "target_url", "target_preview", "note",
+            "raised_by", "created_at", "resolved_at", "resolved_by", "resolution",
         ]
         read_only_fields = fields
+
+    def get_target_url(self, flag) -> str | None:
+        return target_url(flag)
+
+    def get_target_preview(self, flag) -> str | None:
+        # Missing when the flagged row has since been deleted, which the screen says out loud.
+        return self.context.get("target_previews", {}).get((flag.target_type, flag.target_id))
 
 
 class ModerationFlagWriteSerializer(serializers.Serializer):

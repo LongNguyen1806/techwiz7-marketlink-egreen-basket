@@ -16,7 +16,7 @@ from marketlink_core.constants import (
 from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
-from system.dashboard import dashboard_snapshot
+from system.dashboard import dashboard_snapshot, month_bounds, orders_per_month
 from system.excel import XLSX_CONTENT_TYPE, build_report_workbook, report_filename
 from system.models import AuditAction, FlagTarget
 from system.reports import parse_report_range, report_summary
@@ -32,7 +32,7 @@ from marketlink_core.constants import (
     MAX_UPLOAD_MB,
 )
 from orders.admin_selectors import at_risk_threshold, at_risk_window_days
-from system.flags import list_flags, raise_flag, resolve_flag
+from system.flags import list_flags, raise_flag, resolve_flag, target_previews
 from system.serializers import (
     AdminSettingsSerializer,
     AuditLogReadSerializer,
@@ -41,6 +41,7 @@ from system.serializers import (
     ModerationFlagWriteSerializer,
     ChangeLogEntrySerializer,
     DashboardSerializer,
+    OrdersByMonthSerializer,
     ReportSummarySerializer,
 )
 from system.services import log_request_event
@@ -105,6 +106,29 @@ class DashboardView(APIView):
     def get(self, request) -> Response:
         serializer = DashboardSerializer(dashboard_snapshot())
         return api_response(message="OK", request=request, data=serializer.data)
+
+
+class DashboardOrdersByMonthView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "month",
+                str,
+                description="Calendar month as YYYY-MM. Defaults to the current month.",
+            )
+        ],
+        responses={200: OrdersByMonthSerializer},
+        summary="Orders per day for one calendar month",
+    )
+    def get(self, request) -> Response:
+        # Its own endpoint rather than a parameter on the dashboard: stepping through months
+        # would otherwise refetch the totals, the queue and the pending stalls every click.
+        first_day = month_bounds(request.query_params.get("month"))
+        return api_response(
+            message="OK", request=request, data=orders_per_month(first_day=first_day)
+        )
 
 
 class ReportSummaryView(APIView):
@@ -237,15 +261,29 @@ class AdminFlagListView(ListAPIView):
         raw = self.request.query_params.get("resolved")
         resolved = {"true": True, "false": False}.get((raw or "").lower(), False)
         return list_flags(
-            resolved=resolved, target_type=self.request.query_params.get("target_type")
+            resolved=resolved,
+            target_type=self.request.query_params.get("target_type"),
+            q=self.request.query_params.get("q"),
         )
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(
+            page, many=True, context={"target_previews": target_previews(page)}
+        )
+        return self.paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         parameters=[
             OpenApiParameter(
                 "resolved", bool, description="Default false: the open queue."
             ),
-            OpenApiParameter("target_type", str, enum=list(FlagTarget.values)),
+            # Unpacked rather than list(...): this class now defines a method called `list`,
+            # which shadows the builtin inside the class body.
+            OpenApiParameter("target_type", str, enum=[*FlagTarget.values]),
+            OpenApiParameter(
+                "q", str, description="Matches the note, the resolution, or the target id."
+            ),
         ],
         summary="Content waiting for a decision",
     )
