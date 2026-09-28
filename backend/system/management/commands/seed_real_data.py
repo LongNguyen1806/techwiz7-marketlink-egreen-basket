@@ -49,7 +49,7 @@ DEFAULT_PASSWORD = "Pass@123"
 MARKET_DATA = [
     {
         "name": "Thu Duc Wholesale Agricultural Market",
-        "address": "141 Đỗ Mười, Phường Tam Bình, Thành phố Hồ Chí Minh",
+        "address": "141 Do Muoi Street, Tam Binh Ward, Ho Chi Minh City",
         "latitude": Decimal("10.869713"),
         "longitude": Decimal("106.728056"),
         "open_time": time(4, 0),
@@ -62,7 +62,7 @@ MARKET_DATA = [
     },
     {
         "name": "Hoc Mon Wholesale Market",
-        "address": "Nguyễn Thị Sóc, Xã Xuân Thới Sơn, Thành phố Hồ Chí Minh",
+        "address": "Nguyen Thi Soc Street, Xuan Thoi Son Commune, Ho Chi Minh City",
         "latitude": Decimal("10.859739"),
         "longitude": Decimal("106.600659"),
         "open_time": time(4, 0),
@@ -74,7 +74,7 @@ MARKET_DATA = [
     },
     {
         "name": "Binh Dien Wholesale Market",
-        "address": "Quản Trọng Linh, Phường Bình Đông, Thành phố Hồ Chí Minh",
+        "address": "Quan Trong Linh Street, Binh Dong Ward, Ho Chi Minh City",
         "latitude": Decimal("10.702026"),
         "longitude": Decimal("106.608376"),
         "open_time": time(4, 0),
@@ -86,7 +86,7 @@ MARKET_DATA = [
     },
     {
         "name": "Ba Chieu Market",
-        "address": "Phan Đăng Lưu, Phường Gia Định, Thành phố Hồ Chí Minh",
+        "address": "Phan Dang Luu Street, Gia Dinh Ward, Ho Chi Minh City",
         "latitude": Decimal("10.801875"),
         "longitude": Decimal("106.698760"),
         "open_time": time(5, 0),
@@ -98,7 +98,7 @@ MARKET_DATA = [
     },
     {
         "name": "Binh Tay Market (Cho Lon)",
-        "address": "57A Tháp Mười, Phường Bình Tây, Thành phố Hồ Chí Minh",
+        "address": "57A Thap Muoi Street, Binh Tay Ward, Ho Chi Minh City",
         "latitude": Decimal("10.749297"),
         "longitude": Decimal("106.650728"),
         "open_time": time(6, 0),
@@ -110,7 +110,7 @@ MARKET_DATA = [
     },
     {
         "name": "Tan Dinh Market",
-        "address": "336 Hai Bà Trưng, Phường Tân Định, Thành phố Hồ Chí Minh",
+        "address": "336 Hai Ba Trung Street, Tan Dinh Ward, Ho Chi Minh City",
         "latitude": Decimal("10.790451"),
         "longitude": Decimal("106.688785"),
         "open_time": time(5, 30),
@@ -330,7 +330,7 @@ PRODUCTS_DATA = [
 
 CLOSED_MARKET = {
     "name": "An Dong Market",
-    "address": "34-36 An Dương Vương, Phường An Đông, Thành phố Hồ Chí Minh",
+    "address": "34-36 An Duong Vuong Street, An Dong Ward, Ho Chi Minh City",
     "latitude": Decimal("10.758108"),
     "longitude": Decimal("106.672182"),
     "open_time": time(6, 0),
@@ -344,7 +344,7 @@ PENDING_FARMER_DATA = [
         "stall_name": "Cu Chi Green Leaf Farm",
         "contact_person": "Vo Thanh Son",
         "phone": "0901000007",
-        "address": "Tỉnh lộ 8, Xã Củ Chi, Thành phố Hồ Chí Minh",
+        "address": "Provincial Road 8, Cu Chi Commune, Ho Chi Minh City",
         "latitude": Decimal("10.957000"),
         "longitude": Decimal("106.508000"),
     },
@@ -353,7 +353,7 @@ PENDING_FARMER_DATA = [
         "stall_name": "Can Gio Coastal Produce",
         "contact_person": "Huynh Kim Ngan",
         "phone": "0901000008",
-        "address": "Rừng Sác, Xã Cần Giờ, Thành phố Hồ Chí Minh",
+        "address": "Rung Sac Street, Can Gio Commune, Ho Chi Minh City",
         "latitude": Decimal("10.412000"),
         "longitude": Decimal("106.955000"),
     },
