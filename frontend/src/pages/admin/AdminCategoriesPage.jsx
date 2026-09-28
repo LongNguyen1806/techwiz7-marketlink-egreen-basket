@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -16,7 +16,11 @@ import { Input } from "../../components/ui/Input";
 import { ApiError } from "../../lib/ApiError";
 import { mapServerErrorsToForm } from "../../utils/mapServerErrors";
 import { CategoryIcon } from "../../components/common/badges/CategoryIcon";
-import { IconPicker } from "../../components/admin/IconPicker";
+import { IconPicker, freeIcons } from "../../components/admin/IconPicker";
+import { PriceGuidelinesPanel } from "./AdminPriceGuidelinesPage";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
+import { Scale } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import "../../styles/admin/AdminCategoriesPage.css";
 
@@ -62,6 +66,8 @@ export default function AdminCategoriesPage() {
   const [items, setItems] = useState(() => query.data ?? []);
   const [syncedData, setSyncedData] = useState(query.data);
   const [deleting, setDeleting] = useState(null);
+  const [params, setParams] = useSearchParams();
+  const [guidelinesOpen, setGuidelinesOpen] = useState(() => params.get("guidelines") === "open");
   const form = useForm({
     resolver: zodResolver(categorySchema),
     defaultValues: { name: "", icon: "" },
@@ -73,6 +79,12 @@ export default function AdminCategoriesPage() {
   }
 
   const takenIcons = Object.fromEntries(items.map((cat) => [cat.icon, cat.name]));
+  // The button shows an icon from the start: the chosen one, or else the first one still free.
+  const chosenIcon = form.watch("icon");
+  const iconValue = chosenIcon && !takenIcons[chosenIcon] ? chosenIcon : freeIcons(takenIcons)[0] ?? "";
+  useEffect(() => {
+    if (iconValue && iconValue !== chosenIcon) form.setValue("icon", iconValue);
+  }, [form, iconValue, chosenIcon]);
 
   const sensors = useSensors(useSensor(PointerSensor));
   const reorder = useReorderCategories();
@@ -96,7 +108,16 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className='admin-categories-page'>
-      <PageHeader title='Produce categories' description='Drag to reorder how categories appear to shoppers.' />
+      <PageHeader
+        title='Produce categories'
+        description='Drag to reorder how categories appear to shoppers. Price guidelines set the usual price and stock per category.'
+        actions={
+          <Button variant='outline' onClick={() => setGuidelinesOpen(true)}>
+            <Scale aria-hidden='true' className='admin-categories-page__btn-icon' />
+            Price guidelines
+          </Button>
+        }
+      />
 
       <form
         className='admin-categories-page__create'
@@ -109,6 +130,11 @@ export default function AdminCategoriesPage() {
           });
         })}>
         <div className='admin-categories-page__create-row'>
+          <IconPicker
+            value={iconValue}
+            onChange={(icon) => form.setValue("icon", icon, { shouldDirty: true, shouldValidate: true })}
+            taken={takenIcons}
+          />
           <div className='page-primitive__field-tight'>
             <Input label='Name' requiredMark className='page-primitive__input-name-wide' {...form.register("name")} />
             {form.formState.errors.name ? <p className='page-primitive__error'>{form.formState.errors.name.message}</p> : null}
@@ -117,11 +143,7 @@ export default function AdminCategoriesPage() {
             Add
           </Button>
         </div>
-        <IconPicker
-          value={form.watch("icon") ?? ""}
-          onChange={(icon) => form.setValue("icon", icon, { shouldDirty: true })}
-          taken={takenIcons}
-        />
+        {form.formState.errors.icon ? <p className='page-primitive__error'>{form.formState.errors.icon.message}</p> : null}
       </form>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -149,6 +171,23 @@ export default function AdminCategoriesPage() {
           remove.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
         }}
       />
+      <Dialog
+        open={guidelinesOpen}
+        onOpenChange={(open) => {
+          setGuidelinesOpen(open);
+          if (!open && params.get("guidelines")) {
+            const next = new URLSearchParams(params);
+            next.delete("guidelines");
+            setParams(next, { replace: true });
+          }
+        }}>
+        <DialogContent className='admin-categories-page__guidelines'>
+          <DialogHeader>
+            <DialogTitle>Price guidelines</DialogTitle>
+          </DialogHeader>
+          <PriceGuidelinesPanel />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

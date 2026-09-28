@@ -175,7 +175,7 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
             "{count} listing(s) passed the AI review and went on sale without waiting. "
             "Latest: {product_name} ({stall_name}). Check them in AI decisions."
         ),
-        target_url="/admin/ai-decisions",
+        target_url="/admin/approvals?tab=ai",
         required=("count", "product_name", "stall_name"),
     ),
     NotificationType.PRODUCT_REJECTED: NotificationSpec(

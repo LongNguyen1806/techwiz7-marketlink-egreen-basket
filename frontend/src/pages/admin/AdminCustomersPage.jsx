@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AccountsTabs } from '../../components/admin/AccountsTabs';
 
 import { useCsvDownload } from '@/hooks/useCsvDownload';
 import { Link } from 'react-router-dom';
@@ -76,7 +77,7 @@ export default function AdminCustomersPage() {
   return (
     <div className="admin-customers-page">
       <PageHeader
-        title="Customers"
+        title="Accounts"
         actions={
           <Button
             size="sm"
@@ -89,6 +90,7 @@ export default function AdminCustomersPage() {
         }
         description="Lock or unlock accounts and monitor no-show history."
       />
+      <AccountsTabs />
       <FilterBar
         fields={CUSTOMER_FILTERS}
         value={filters}

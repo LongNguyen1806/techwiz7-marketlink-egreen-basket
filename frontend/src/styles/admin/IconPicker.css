@@ -1,12 +1,50 @@
-.icon-picker {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+@import '../common/page-primitives.css';
+
+.icon-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.icon-picker__trigger:hover,
+.icon-picker__trigger[data-state='open'] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.icon-picker__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.icon-picker__menu {
+  width: min(20rem, calc(100vw - 2rem));
+  padding: var(--space-3);
+}
+
+.icon-picker__menu-label {
+  padding: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.icon-picker__empty {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
 }
 
 .icon-picker__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(2.75rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
   gap: var(--space-2);
 }
 
@@ -14,35 +52,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
-  height: 2.75rem;
-  width: 2.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   margin-inline: auto;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background-color: var(--color-card);
   color: var(--color-muted-foreground);
   cursor: pointer;
-  transition:
-    border-color var(--duration-fast) ease,
-    color var(--duration-fast) ease;
 }
 
 .icon-picker__option:hover {
   color: var(--color-foreground);
+  border-color: var(--color-primary);
 }
 
 .icon-picker__option--on {
   border-color: var(--color-primary);
   color: var(--color-primary-700);
   box-shadow: 0 0 0 1px var(--color-primary);
-}
-
-.dark .icon-picker__option--on {
-  color: var(--color-primary-300);
-}
-
-.icon-picker__icon {
-  width: 1.25rem;
-  height: 1.25rem;
 }

@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { ROLES } from '../../constants/roles';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { RequireAuth, RequireRole } from '../guards';
@@ -21,9 +22,9 @@ export const adminRoutes = [
               { path: '/admin/customers/:id', lazy: page(() => import('../../pages/admin/AdminCustomerDetailPage')) },
               { path: '/admin/orders', lazy: page(() => import('../../pages/admin/AdminOrdersPage')) },
               { path: '/admin/approvals', lazy: page(() => import('../../pages/admin/AdminApprovalsPage')) },
-              { path: '/admin/products', lazy: page(() => import('../../pages/admin/AdminProductsPage')) },
+              { path: '/admin/products', element: <Navigate to="/admin/moderation" replace /> },
               { path: '/admin/ai-decisions', lazy: page(() => import('../../pages/admin/AdminAIDecisionsPage')) },
-              { path: '/admin/queue', lazy: page(() => import('../../pages/admin/AdminQueuePage')) },
+              { path: '/admin/queue', element: <Navigate to="/admin/approvals" replace /> },
               { path: '/admin/limits', lazy: page(() => import('../../pages/admin/AdminSettingsPage')) },
               { path: '/admin/markets', lazy: page(() => import('../../pages/admin/AdminMarketsPage')) },
               { path: '/admin/markets/new', lazy: page(() => import('../../pages/admin/AdminMarketFormPage')) },

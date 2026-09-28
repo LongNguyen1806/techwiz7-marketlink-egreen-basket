@@ -3,7 +3,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   LabelList,
   ResponsiveContainer,
   Tooltip,
@@ -19,15 +18,13 @@ import {
 } from '../../hooks/queries/admin/useAdminReports';
 import { useAdminMarkets } from '../../hooks/queries/admin/useAdminMarkets';
 import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
+import { Navigate } from 'react-router-dom';
 import { PageSkeleton } from '@/components/feedback/PageSkeleton';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { formatVnd } from '@/utils/formatters';
-import { orderStatusLabel } from '@/utils/labels';
-import { orderStatusColor } from '@/utils/statusColors';
 
 import '@/components/common/table/FilterBar.css';
 import './AdminReportsPage.css';
@@ -50,7 +47,7 @@ function compactVnd(value) {
   return String(Math.round(amount));
 }
 
-export default function AdminReportsPage() {
+export function ReportsPanel() {
   const initial = useMemo(() => defaultRange(), []);
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
@@ -65,13 +62,6 @@ export default function AdminReportsPage() {
   const reportQuery = useAdminReports(applied);
 
   const report = reportQuery.data;
-  const ordersByStatus = useMemo(
-    () =>
-      (report?.orders_by_status ?? [])
-        .map((row) => ({ ...row, name: orderStatusLabel(row.status) }))
-        .sort((a, b) => b.count - a.count),
-    [report],
-  );
   const revenueByMarket = useMemo(
     () =>
       (report?.revenue_by_market ?? [])
@@ -126,15 +116,6 @@ export default function AdminReportsPage() {
 
   return (
     <div className="admin-reports-page">
-      <PageHeader
-        title="Reports"
-        description="Order volume, revenue by market, and top-performing stalls."
-        actions={
-          <Button variant="outline" loading={exporting} onClick={() => void onExport()}>
-            Export Excel
-          </Button>
-        }
-      />
 
       <div className="page-primitive__filters-bar">
         <div>
@@ -182,6 +163,14 @@ export default function AdminReportsPage() {
         >
           Clear
         </Button>
+        <Button
+          variant="outline"
+          className="admin-reports-page__export"
+          loading={exporting}
+          onClick={() => void onExport()}
+        >
+          Export Excel
+        </Button>
       </div>
 
       {reportQuery.isLoading ? (
@@ -194,43 +183,7 @@ export default function AdminReportsPage() {
         />
       ) : (
         <>
-          <div className="page-primitive__grid-2-lg">
-            <Card>
-              <CardHeader>
-                <CardTitle>Orders by status</CardTitle>
-              </CardHeader>
-              <CardContent className="page-primitive__chart-card-body">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    layout="vertical"
-                    data={ordersByStatus}
-                    margin={{ left: 4, right: 40, top: 4, bottom: 4 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={124}
-                      tick={{ fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip formatter={(value) => [value, 'Orders']} cursor={false} />
-                    <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={16}>
-                      {ordersByStatus.map((row) => (
-                        <Cell key={row.status} fill={orderStatusColor(row.status)} />
-                      ))}
-                      <LabelList
-                        dataKey="count"
-                        position="right"
-                        style={{ fontSize: 12, fontWeight: 600 }}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <div>
             <Card>
               <CardHeader>
                 <CardTitle>Revenue by market</CardTitle>
@@ -296,4 +249,8 @@ export default function AdminReportsPage() {
       )}
     </div>
   );
+}
+
+export default function AdminReportsPage() {
+  return <Navigate to="/admin?tab=reports" replace />;
 }

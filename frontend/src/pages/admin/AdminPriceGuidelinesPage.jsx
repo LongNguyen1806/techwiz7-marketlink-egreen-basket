@@ -6,7 +6,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/feedback/EmptyState';
-import { PageHeader } from '@/components/common/PageHeader';
+import { Navigate } from 'react-router-dom';
 import { PageSkeleton } from '@/components/feedback/PageSkeleton';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -146,7 +146,7 @@ GuidelineForm.propTypes = {
   onDone: PropTypes.func,
 };
 
-export default function AdminPriceGuidelinesPage() {
+export function PriceGuidelinesPanel() {
   const guidelinesQuery = usePriceGuidelines();
   const categoriesQuery = useAdminCategories();
   const remove = useDeletePriceGuideline();
@@ -172,10 +172,10 @@ export default function AdminPriceGuidelinesPage() {
 
   return (
     <div className="admin-price-guidelines">
-      <PageHeader
-        title="Price guidelines"
-        description="The usual price and stock per category and unit. New listings outside these ranges, or far from what other stalls charge, are flagged by the AI review for a closer look. Nothing is blocked automatically."
-      />
+      <p className="page-primitive__muted-sm">
+        The usual price and stock per category and unit. New listings outside these ranges are
+        flagged by the AI review for a closer look. Nothing is blocked automatically.
+      </p>
 
       <section className="admin-price-guidelines__create" aria-labelledby="pg-add-title">
         <h2 className="page-primitive__heading" id="pg-add-title">
@@ -281,4 +281,8 @@ export default function AdminPriceGuidelinesPage() {
       />
     </div>
   );
+}
+
+export default function AdminPriceGuidelinesPage() {
+  return <Navigate to="/admin/categories?guidelines=open" replace />;
 }

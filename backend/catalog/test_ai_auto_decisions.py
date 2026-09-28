@@ -113,7 +113,7 @@ class TestAdminsAreToldOnce:
         notice = notices.get()
         assert "3 listing" in notice.title
         assert "Spinach" in notice.message
-        assert notice.target_url == "/admin/ai-decisions"
+        assert notice.target_url == "/admin/approvals?tab=ai"
 
     def test_after_reading_it_a_new_notice_starts(self, stall, category, monkeypatch, admin_user):
         monkeypatch.setattr(gemini, "ask_model", _model())

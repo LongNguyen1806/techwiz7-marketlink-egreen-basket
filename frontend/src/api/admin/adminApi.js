@@ -352,23 +352,6 @@ export const adminApi = {
     return data;
   },
 
-  getFlags: async (params = {}) => {
-    const { data } = await axiosClient.get('/admin/flags/', { params });
-    return adaptPaginated(data);
-  },
-
-  raiseFlag: async (payload) => {
-    const { data } = await axiosClient.post('/admin/flags/', payload);
-    return data;
-  },
-
-  resolveFlag: async (id, resolution) => {
-    const { data } = await axiosClient.post(`/admin/flags/${id}/resolve/`, {
-      resolution,
-    });
-    return data;
-  },
-
   getSettings: async () => {
     const { data } = await axiosClient.get('/admin/settings/');
     return data;

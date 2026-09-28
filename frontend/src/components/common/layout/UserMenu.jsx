@@ -27,6 +27,7 @@ const LINKS_BY_ROLE = {
     { to: ROUTES.FARMER.HOME, label: 'Stall overview', icon: LayoutDashboard },
     { to: ROUTES.FARMER.CHANGE_PASSWORD, label: 'Change password', icon: KeyRound },
   ],
+  [ROLES.ADMIN]: [{ to: '/admin/password', label: 'Change password', icon: KeyRound }],
 };
 
 function initials(displayName, email) {

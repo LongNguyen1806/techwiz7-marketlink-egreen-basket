@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AccountsTabs } from "../../components/admin/AccountsTabs";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -86,7 +87,7 @@ export default function AdminFarmersPage() {
   return (
     <div className="admin-farmers-page">
       <PageHeader
-        title="Farmer stalls"
+        title="Accounts"
         actions={
           <Button
             size="sm"
@@ -101,6 +102,7 @@ export default function AdminFarmersPage() {
         }
         description="Approve new growers, suspend accounts, and restore access."
       />
+      <AccountsTabs />
 
       <div className="page-primitive__actions-row">
         <Input

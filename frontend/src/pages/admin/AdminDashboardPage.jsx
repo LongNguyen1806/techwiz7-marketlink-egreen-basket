@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   CartesianGrid,
@@ -29,6 +29,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { orderStatusLabel, orderStatusShortLabel } from '@/utils/labels';
 import { orderStatusColor } from '@/utils/statusColors';
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { ReportsPanel } from './AdminReportsPage';
 import './AdminDashboardPage.css';
 
 const ATTENTION = [
@@ -37,7 +39,7 @@ const ATTENTION = [
     label: 'Stalls awaiting approval',
     to: '/admin/approvals',
   },
-  { key: 'flags_open', label: 'In the follow-up queue', to: '/admin/queue' },
+  { key: 'flags_open', label: 'Held by AI', to: '/admin/approvals?tab=ai' },
   { key: 'customers_at_risk', label: 'Shoppers at risk', to: '/admin/customers' },
   {
     key: 'products_awaiting_approval',
@@ -47,9 +49,9 @@ const ATTENTION = [
   {
     key: 'market_requests_awaiting_approval',
     label: 'Market requests awaiting approval',
-    to: '/admin/approvals',
+    to: '/admin/approvals?tab=markets',
   },
-  { key: 'hidden_products', label: 'Products hidden', to: '/admin/products' },
+  { key: 'hidden_products', label: 'Products hidden', to: '/admin/moderation' },
   { key: 'markets_closed', label: 'Markets closed', to: '/admin/markets' },
 ];
 
@@ -99,6 +101,8 @@ export default function AdminDashboardPage() {
   const monthQuery = useAdminOrdersByMonth(month);
   const approve = useDashboardApproveFarmer();
   const reject = useDashboardRejectFarmer();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'reports' ? 'reports' : 'overview';
 
   if (query.isLoading) return <PageSkeleton />;
   if (query.isError || !query.data) {
@@ -135,8 +139,21 @@ export default function AdminDashboardPage() {
     <div className="admin-dashboard-page">
       <PageHeader
         title="Platform overview"
-        description="Monitor stalls, markets, orders, and content that needs attention."
+        description="What needs you now, and the reports behind it."
       />
+
+      <Tabs
+        value={tab}
+        onValueChange={(next) => setParams(next === 'reports' ? { tab: 'reports' } : {}, { replace: true })}
+      >
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+        <TabsContent value="reports">
+          <ReportsPanel />
+        </TabsContent>
+        <TabsContent value="overview" className="admin-dashboard-page__overview">
 
       {data.needs_attention ? (
         <section className="admin-dashboard-page__attention">
@@ -351,6 +368,8 @@ export default function AdminDashboardPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
