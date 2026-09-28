@@ -593,8 +593,6 @@
   color: var(--color-primary-600);
 }
 
-/* Tall enough for eight sideways bars at 16px each plus their gaps; a 16rem box squeezed
-   them until the labels stopped fitting between the bars. */
 .page-primitive__chart-card-body {
   height: 19rem;
 }

@@ -87,8 +87,6 @@ export function auditSubject(log) {
   if (affected && affected !== '0') {
     parts.push(`${affected} order${affected === '1' ? '' : 's'} closed`);
   }
-  // The ids themselves are on the detail panel; the summary line only says there are some,
-  // because a row in a table cannot carry two hundred numbers.
   const cancelled = d['cancelled_order_ids'];
   if (Array.isArray(cancelled) && cancelled.length && !affected) {
     parts.push(`${cancelled.length} order${cancelled.length === 1 ? '' : 's'} cancelled`);

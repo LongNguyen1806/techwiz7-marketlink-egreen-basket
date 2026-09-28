@@ -110,6 +110,11 @@ export const adminApi = {
     return data;
   },
 
+  previewMarketUpdate: async (id, payload) => {
+    const { data } = await axiosClient.post(`/admin/markets/${id}/impact/`, payload);
+    return data;
+  },
+
   activateMarket: async (id) => {
     const { data } = await axiosClient.post(`/admin/markets/${id}/activate/`);
     return data;

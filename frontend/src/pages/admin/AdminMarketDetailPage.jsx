@@ -32,7 +32,6 @@ function Row({ label, children }) {
   );
 }
 
-// Looking at a market is not editing it: this page only reads, and Edit is its own button.
 export default function AdminMarketDetailPage() {
   const { id } = useParams();
   const marketId = Number(id);

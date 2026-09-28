@@ -3,7 +3,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { useAdminMarket, useSaveAdminMarket } from "../../hooks/queries/admin/useAdminMarkets";
+import {
+  useAdminMarket,
+  useMarketEditImpact,
+  useSaveAdminMarket,
+} from "../../hooks/queries/admin/useAdminMarkets";
 import { marketSchema } from "../../schemas/admin/market.schema";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { PageHeader } from "../../components/common/PageHeader";
@@ -14,6 +18,7 @@ import { Label } from "../../components/ui/Label";
 import { Textarea } from "../../components/ui/Textarea";
 import { MarketClosuresPanel } from "../../components/admin/MarketClosuresPanel";
 import { MapPicker } from "../../components/common/maps/MapPicker";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { ApiError } from "../../lib/ApiError";
 import { mapServerErrorsToForm } from "../../utils/mapServerErrors";
 
@@ -28,6 +33,21 @@ const DAYS = [
   { value: 6, label: "Sat" },
   { value: 7, label: "Sun" },
 ];
+
+const CONFIRM_WORD = "confirm";
+
+function toPayload(values) {
+  return {
+    name: values.name,
+    address: values.address,
+    latitude: values.latitude,
+    longitude: values.longitude,
+    open_time: values.open_time,
+    close_time: values.close_time,
+    operating_days: values.operating_days,
+    description: values.description || null,
+  };
+}
 
 const DEFAULT_VALUES = {
   name: "",
@@ -50,6 +70,9 @@ export default function AdminMarketFormPage() {
 
   const marketQuery = useAdminMarket(marketId, isEdit);
   const save = useSaveAdminMarket(isEdit ? marketId : undefined);
+  const preview = useMarketEditImpact(marketId);
+  const [pending, setPending] = useState(null);
+  const [typed, setTyped] = useState("");
   const form = useForm({
     resolver: zodResolver(marketSchema),
     defaultValues: DEFAULT_VALUES,
@@ -89,31 +112,54 @@ export default function AdminMarketFormPage() {
     form.setValue("operating_days", next, { shouldValidate: true });
   };
 
-  const onSubmit = (values) => {
-    save.mutate(
-      {
-        name: values.name,
-        address: values.address,
-        latitude: values.latitude,
-        longitude: values.longitude,
-        image: values.image || null,
-        open_time: values.open_time,
-        close_time: values.close_time,
-        operating_days: values.operating_days,
-        description: values.description || null,
+  const doneUrl = isEdit ? `/admin/markets/${marketId}` : "/admin/markets";
+
+  const commit = (payload) => {
+    save.mutate(payload, {
+      onSuccess: () => {
+        setPending(null);
+        navigate(doneUrl);
       },
-      {
-        onSuccess: () => navigate("/admin/markets"),
-        onError: (error) => {
-          mapServerErrorsToForm(ApiError.fromUnknown(error).fieldErrors, form.setError);
-        },
+      onError: (error) => {
+        setPending(null);
+        mapServerErrorsToForm(ApiError.fromUnknown(error).fieldErrors, form.setError);
       },
-    );
+    });
   };
+
+  const onSubmit = (values) => {
+    const payload = toPayload(values);
+    if (!isEdit) {
+      commit(payload);
+      return;
+    }
+    preview.mutate(payload, {
+      onSuccess: (impact) => {
+        const reaches =
+          impact.orders_to_reschedule + impact.customers_to_notify + impact.stalls_to_notify;
+        if (!reaches && !impact.slots_to_disable) {
+          commit(payload);
+          return;
+        }
+        setTyped("");
+        setPending({ payload, impact });
+      },
+    });
+  };
+
+  const impact = pending?.impact;
+  const moving = impact?.orders_to_reschedule ?? 0;
 
   return (
     <form className='admin-market-form-page' onSubmit={form.handleSubmit(onSubmit)}>
-      <PageHeader title={isEdit ? "Edit market" : "Add a market"} />
+      <PageHeader
+        title={isEdit ? "Edit market" : "Add a market"}
+        description={
+          isEdit
+            ? "A new address, days or hours reaches everyone due here; you will see who before it saves."
+            : undefined
+        }
+      />
       <div className='admin-market-form-page__body'>
         <div className='admin-market-form-page__fields'>
           <div className='page-primitive__form-grid-2'>
@@ -178,13 +224,60 @@ export default function AdminMarketFormPage() {
       </div>
 
       <div className='admin-market-form-page__actions'>
-        <Button type='button' variant='outline' onClick={() => navigate("/admin/markets")}>
+        <Button type='button' variant='outline' onClick={() => navigate(doneUrl)}>
           Cancel
         </Button>
-        <Button type='submit' loading={save.isPending}>
+        <Button type='submit' loading={save.isPending || preview.isPending}>
           Save
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pending)}
+        onOpenChange={(open) => {
+          if (!open) setPending(null);
+        }}
+        title='Save these changes?'
+        description='Here is who this change reaches. Each person gets one notice.'
+        confirmLabel='Save and notify'
+        loading={save.isPending}
+        confirmDisabled={moving > 0 && typed.trim().toLowerCase() !== CONFIRM_WORD}
+        onConfirm={() => {
+          if (!pending) return;
+          commit({ ...pending.payload, confirm_affected_orders: moving > 0 });
+        }}
+      >
+        {impact ? (
+          <ul className='admin-market-form-page__impact'>
+            {moving > 0 ? (
+              <li>
+                <strong>{moving}</strong> open order{moving === 1 ? "" : "s"} no longer fit
+                the new days or hours. The shoppers will be asked to choose a new pickup
+                time; any left without one is cancelled at its old pickup time.
+              </li>
+            ) : null}
+            {impact.slots_to_disable > 0 ? (
+              <li>
+                <strong>{impact.slots_to_disable}</strong> pickup slot
+                {impact.slots_to_disable === 1 ? "" : "s"} outside the new hours will be turned off.
+              </li>
+            ) : null}
+            <li>
+              <strong>{impact.customers_to_notify}</strong> shopper
+              {impact.customers_to_notify === 1 ? "" : "s"} and{" "}
+              <strong>{impact.stalls_to_notify}</strong> stall
+              {impact.stalls_to_notify === 1 ? "" : "s"} will be notified.
+            </li>
+          </ul>
+        ) : null}
+        {moving > 0 ? (
+          <Input
+            label={`Type ${CONFIRM_WORD} to save`}
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+          />
+        ) : null}
+      </ConfirmDialog>
     </form>
   );
 }

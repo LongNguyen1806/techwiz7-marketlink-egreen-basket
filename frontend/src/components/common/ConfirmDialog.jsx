@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import '../../styles/common/ConfirmDialog.css';
-export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel = 'Confirm', cancelLabel = 'Cancel', loading = false, destructive = false, onConfirm, children, }) {
+export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel = 'Confirm', cancelLabel = 'Cancel', loading = false, destructive = false, confirmDisabled = false, onConfirm, children, }) {
     return (<Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
@@ -14,7 +14,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button variant={destructive ? 'destructive' : 'default'} loading={loading} onClick={onConfirm}>
+          <Button variant={destructive ? 'destructive' : 'default'} loading={loading} disabled={confirmDisabled} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>
@@ -31,6 +31,7 @@ ConfirmDialog.propTypes = {
     cancelLabel: PropTypes.string,
     loading: PropTypes.bool,
     destructive: PropTypes.bool,
+    confirmDisabled: PropTypes.bool,
     onConfirm: PropTypes.func.isRequired,
     children: PropTypes.node,
 };
