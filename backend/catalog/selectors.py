@@ -10,7 +10,7 @@ from catalog.models import (
     Category,
     Product,
     ProductAIReview,
-    ProductMarketExclusion,
+    ProductMarket,
     ReviewStatus,
 )
 from marketlink_core.shortcuts import get_or_404
@@ -113,24 +113,22 @@ def get_product_for_admin(*, product_id: int) -> Product:
     return list_products_for_admin().get(pk=product_id)
 
 
-def _not_excluded_here(product_ref: str = "pk", stall_ref: str = "pk"):
-    return ~Exists(
-        ProductMarketExclusion.objects.filter(
-            product_id=OuterRef(OuterRef(product_ref)), farmer_market_id=OuterRef(stall_ref)
+def _registered_here(stall_ref: str = "pk"):
+    return Exists(
+        ProductMarket.objects.filter(
+            product_id=OuterRef(OuterRef("pk")), farmer_market_id=OuterRef(stall_ref)
         )
     )
 
 
 def open_stalls_for_product():
-    """Inside a Product query: the approved, running stalls this product is sold at."""
-    return FarmerMarket.objects.selling().filter(
-        _not_excluded_here(), farmer_id=OuterRef("farmer_id")
-    )
+    """Inside a Product query: the approved, running stalls this product is registered at."""
+    return FarmerMarket.objects.selling().filter(_registered_here(), farmer_id=OuterRef("farmer_id"))
 
 
-def excluded_pairs(*, product_ids: Iterable[int]) -> set[tuple[int, int]]:
+def linked_pairs(*, product_ids: Iterable[int]) -> set[tuple[int, int]]:
     return set(
-        ProductMarketExclusion.objects.filter(product_id__in=set(product_ids)).values_list(
+        ProductMarket.objects.filter(product_id__in=set(product_ids)).values_list(
             "product_id", "farmer_market_id"
         )
     )
@@ -154,11 +152,11 @@ def markets_for_products(*, product_ids: Iterable[int]) -> dict[int, list[dict]]
         )
         .distinct()
     )
-    skipped = excluded_pairs(product_ids=ids)
+    registered = linked_pairs(product_ids=ids)
     grouped: dict[int, dict[int, dict]] = defaultdict(dict)
     for row in rows:
         product_id = row["farmer_market__farmer__products__id"]
-        if (product_id, row["farmer_market_id"]) in skipped:
+        if (product_id, row["farmer_market_id"]) not in registered:
             continue
         market_id = row["farmer_market__market_id"]
         entry = grouped[product_id].setdefault(
@@ -246,7 +244,7 @@ def public_products(
         queryset = queryset.filter(
             Exists(
                 PickupSlot.objects.filter(
-                    _not_excluded_here(stall_ref="farmer_market_id"),
+                    _registered_here(stall_ref="farmer_market_id"),
                     farmer_market__farmer_id=OuterRef("farmer_id"),
                     farmer_market__status=FarmerMarketStatus.APPROVED,
                     farmer_market__market__is_active=True,

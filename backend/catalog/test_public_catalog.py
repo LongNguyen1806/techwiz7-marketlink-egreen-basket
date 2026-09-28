@@ -5,6 +5,7 @@ from accounts.models import FarmerStatus
 from catalog.models import Category, Product, ReviewStatus, Unit
 from catalog.selectors import MAX_CART_REFRESH_IDS
 from favorites.models import FavoriteProduct
+from tests_support.factories import sell_at_every_stall
 
 CATEGORIES_URL = "public-category-list"
 PRODUCTS_URL = "public-product-list"
@@ -19,7 +20,7 @@ def other_category(db):
 @pytest.fixture
 def make_product(category, approved_farmer):
     def _make(*, name, price="2.00", stock=5, **overrides) -> Product:
-        return Product.objects.create(
+        created = Product.objects.create(
             farmer=approved_farmer,
             category=overrides.pop("category", category),
             name=name,
@@ -31,6 +32,8 @@ def make_product(category, approved_farmer):
             review_status=overrides.pop("review_status", ReviewStatus.APPROVED),
             **overrides,
         )
+        sell_at_every_stall(approved_farmer)
+        return created
 
     return _make
 

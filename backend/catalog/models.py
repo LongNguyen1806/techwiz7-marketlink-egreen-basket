@@ -181,20 +181,20 @@ class Product(BaseModel):
         )
 
 
-class ProductMarketExclusion(CreatedAtModel):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="market_exclusions")
+class ProductMarket(CreatedAtModel):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="market_links")
     farmer_market = models.ForeignKey(
-        "markets.FarmerMarket", on_delete=models.CASCADE, related_name="product_exclusions"
+        "markets.FarmerMarket", on_delete=models.CASCADE, related_name="product_links"
     )
 
     class Meta:
-        db_table = "product_market_exclusions"
+        db_table = "product_markets"
         constraints = [
-            models.UniqueConstraint(fields=["product", "farmer_market"], name="pme_uniq_product_stall"),
+            models.UniqueConstraint(fields=["product", "farmer_market"], name="pm_uniq_product_stall"),
         ]
 
     def __str__(self) -> str:
-        return f"{self.product_id} not at {self.farmer_market_id}"
+        return f"{self.product_id} at {self.farmer_market_id}"
 
 
 # --------------------------------------------------------------------------------------------

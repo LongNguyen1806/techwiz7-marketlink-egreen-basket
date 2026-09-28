@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import CustomUser, CustomerProfile, FarmerProfile, Role, RoleCode
-from catalog.models import Category, Product, ReviewStatus, Unit
+from catalog.models import Category, Product, ProductMarket, ReviewStatus, Unit
 from marketlink_core.exceptions import (
     BusinessValidationError,
     ConflictError,
@@ -91,6 +91,8 @@ class OrderModifyTestCase(TestCase):
             price=Decimal("5.00"),
             stock_quantity=30,
         )
+        for product in (self.product1, self.product2):
+            ProductMarket.objects.create(product=product, farmer_market=self.farmer_market)
 
         now = timezone.now()
         self.pickup_date = (now + timedelta(days=2)).date()

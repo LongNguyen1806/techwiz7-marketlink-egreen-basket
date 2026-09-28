@@ -29,7 +29,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
-from catalog.models import Category, ModerationAction, Product, ReviewStatus, Unit
+from catalog.models import Category, ModerationAction, Product, ProductMarket, ReviewStatus, Unit
 from marketlink_core.policies.roles import RoleCode
 from markets.models import DayOfWeek, FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import (
@@ -482,6 +482,7 @@ class Command(BaseCommand):
             "orders",
             "pickup_slot_histories",
             "pickup_slots",
+            "product_markets",
             "farmer_market_histories",
             "farmer_markets",
             "farmer_closure_histories",
@@ -561,9 +562,16 @@ class Command(BaseCommand):
             categories[name] = cat
         return categories
 
+    def _link(self, product, *stalls):
+        ProductMarket.objects.bulk_create(
+            [ProductMarket(product=product, farmer_market=stall) for stall in stalls]
+        )
+
     def _seed_farmers(self, markets):
         role_farmer = Role.objects.get(code=RoleCode.FARMER)
         farmers = []
+        self.home_stalls = {}
+        self.weekend_stalls = {}
         for idx, data in enumerate(FARMER_DATA, start=2):  # IDs 2 to 7
             user = CustomUser.objects.create(
                 id=idx,
@@ -590,6 +598,22 @@ class Command(BaseCommand):
                 market=market,
                 stall_label=data["stall_label"],
             )
+            self.home_stalls[profile.pk] = fm
+            weekend_market = markets[(data["market_idx"] + 1) % len(markets)]
+            weekend = FarmerMarket.objects.create(
+                farmer=profile,
+                market=weekend_market,
+                stall_label=f"Weekend row, Stall {idx:02d}",
+            )
+            self.weekend_stalls[profile.pk] = weekend
+            for day in (DayOfWeek.SATURDAY, DayOfWeek.SUNDAY):
+                PickupSlot.objects.create(
+                    farmer_market=weekend,
+                    day_of_week=day,
+                    start_time=time(6, 0),
+                    end_time=time(9, 0),
+                    is_active=True,
+                )
             # Create pickup slots for each day
             for day in range(1, 8):
                 PickupSlot.objects.create(
@@ -630,6 +654,10 @@ class Command(BaseCommand):
                 is_archived=False,
                 review_status=ReviewStatus.APPROVED,
             )
+            if idx % 2 == 0:
+                self._link(p, self.home_stalls[farmer.pk], self.weekend_stalls[farmer.pk])
+            else:
+                self._link(p, self.home_stalls[farmer.pk])
             products.append(p)
         return products
 
@@ -668,7 +696,12 @@ class Command(BaseCommand):
         for product in products:
             by_farmer[product.farmer_id].append(product)
         self.slots = defaultdict(list)
-        for slot in PickupSlot.objects.select_related("farmer_market__market").order_by("start_time"):
+        home_stall_ids = [stall.pk for stall in self.home_stalls.values()]
+        for slot in (
+            PickupSlot.objects.select_related("farmer_market__market")
+            .filter(farmer_market_id__in=home_stall_ids)
+            .order_by("start_time")
+        ):
             self.slots[(slot.farmer_market.farmer_id, slot.day_of_week)].append(slot)
 
         specs = self._showcase_specs(customers, farmers, products, today)
@@ -1098,7 +1131,7 @@ class Command(BaseCommand):
         counts = {"pending": 0, "rejected": 0}
         for cat_name, name, unit, price, farmer_idx, desc, status, note in REVIEW_QUEUE_PRODUCTS:
             reviewed = status != ReviewStatus.PENDING
-            Product.objects.create(
+            queued = Product.objects.create(
                 farmer=farmers[farmer_idx],
                 category=categories[cat_name],
                 name=name,
@@ -1115,6 +1148,7 @@ class Command(BaseCommand):
                 reviewed_at=now if reviewed else None,
                 reviewed_by=admin_user if reviewed else None,
             )
+            self._link(queued, self.home_stalls[queued.farmer_id])
             counts["pending" if status == ReviewStatus.PENDING else "rejected"] += 1
 
         hidden = products[HIDDEN_PRODUCT_INDEX]

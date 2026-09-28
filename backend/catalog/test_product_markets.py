@@ -1,17 +1,17 @@
-from datetime import timedelta
+from datetime import time, timedelta
 
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from catalog.models import Product, ProductMarketExclusion, ReviewStatus, Unit
+from catalog.models import Product, ProductMarket, ReviewStatus, Unit
 from catalog.selectors import markets_for_products, public_products
-from markets.models import FarmerMarket, PickupSlot
+from markets.models import FarmerMarket, FarmerMarketStatus, Market, PickupSlot
+from marketlink_core.exceptions import UnprocessableEntityError
 from orders.exceptions import ProductNotAvailableError
 from orders.services.checkout_service import _validate_markets
 from orders.services.modify import modify_order
 from orders.services.pickup_service import PickupWindow, _active_slots
-from marketlink_core.exceptions import UnprocessableEntityError
 
 PRODUCTS_URL = "/api/farmer/products/"
 
@@ -33,12 +33,27 @@ def home_stall(approved_farmer):
     return FarmerMarket.objects.get(farmer=approved_farmer, market__name="Home Market")
 
 
-def _exclude(product, stall):
-    ProductMarketExclusion.objects.create(product=product, farmer_market=stall)
+@pytest.fixture
+def market_waiting(approved_farmer):
+    market = Market.objects.create(
+        name="Waiting Market", address="5 Wait Road", latitude="10.9", longitude="106.9",
+        open_time=time(6, 0), close_time=time(12, 0),
+    )
+    return FarmerMarket.objects.create(
+        farmer=approved_farmer, market=market, stall_label="W1", status=FarmerMarketStatus.PENDING
+    )
+
+
+def _unlink(product, stall):
+    ProductMarket.objects.filter(product=product, farmer_market=stall).delete()
+
+
+def _market_ids(product) -> list[int]:
+    return sorted(ProductMarket.objects.filter(product=product).values_list("farmer_market__market_id", flat=True))
 
 
 @pytest.mark.django_db
-def test_a_product_is_sold_at_every_approved_market_by_default(product, seller_market):
+def test_a_registered_product_shows_at_its_market(product, seller_market):
     assert list(public_products(market_id=seller_market.id)) == [product]
     assert [m["market_id"] for m in markets_for_products(product_ids=[product.id])[product.id]] == [
         seller_market.id
@@ -46,10 +61,8 @@ def test_a_product_is_sold_at_every_approved_market_by_default(product, seller_m
 
 
 @pytest.mark.django_db
-def test_an_excluded_market_drops_out_of_the_filters_and_the_detail(
-    product, seller_market, central_stall
-):
-    _exclude(product, central_stall)
+def test_a_market_the_product_is_not_registered_at_drops_out(product, seller_market, central_stall):
+    _unlink(product, central_stall)
 
     assert list(public_products(market_id=seller_market.id)) == []
     assert list(public_products(day=1)) == []
@@ -58,20 +71,32 @@ def test_an_excluded_market_drops_out_of_the_filters_and_the_detail(
 
 
 @pytest.mark.django_db
-def test_a_product_sold_nowhere_is_not_public(product, central_stall, home_stall):
-    _exclude(product, central_stall)
-    _exclude(product, home_stall)
+def test_a_product_registered_nowhere_is_not_public(product, central_stall, home_stall):
+    _unlink(product, central_stall)
+    _unlink(product, home_stall)
 
     assert list(public_products()) == []
 
 
 @pytest.mark.django_db
-def test_pickup_slots_skip_markets_a_cart_item_is_not_sold_at(
+def test_a_newly_approved_market_does_not_pick_up_existing_products(product, approved_farmer):
+    riverside = Market.objects.create(
+        name="Riverside Market", address="88 River Road", latitude="10.8", longitude="106.7",
+        open_time=time(6, 0), close_time=time(12, 0),
+    )
+    FarmerMarket.objects.create(farmer=approved_farmer, market=riverside, stall_label="R1")
+
+    assert riverside.id not in _market_ids(product)
+    assert list(public_products(market_id=riverside.id)) == []
+
+
+@pytest.mark.django_db
+def test_pickup_slots_keep_only_markets_every_cart_item_is_sold_at(
     approved_farmer, product, central_stall
 ):
     assert _active_slots(approved_farmer, [product.id]).exists()
 
-    _exclude(product, central_stall)
+    _unlink(product, central_stall)
 
     assert not _active_slots(approved_farmer, [product.id]).exists()
     assert _active_slots(approved_farmer).exists()
@@ -79,7 +104,7 @@ def test_pickup_slots_skip_markets_a_cart_item_is_not_sold_at(
 
 @pytest.mark.django_db
 def test_checkout_refuses_an_item_at_a_market_it_is_not_sold_at(product, central_stall):
-    _exclude(product, central_stall)
+    _unlink(product, central_stall)
     slot = PickupSlot.objects.filter(farmer_market=central_stall, is_active=True).first()
     start = timezone.now() + timedelta(days=2)
     window = PickupWindow(
@@ -102,7 +127,7 @@ def test_an_order_cannot_grow_with_an_item_not_sold_at_its_market(
     product, central_stall, make_order_with_item, customer_user
 ):
     order = make_order_with_item(product=product, quantity=2, days_ahead=3)
-    _exclude(product, central_stall)
+    _unlink(product, central_stall)
 
     with pytest.raises(UnprocessableEntityError):
         modify_order(
@@ -132,14 +157,26 @@ def test_a_farmer_chooses_where_a_new_product_is_sold(
 
     assert response.status_code == 201
     product = Product.objects.get(name="Cucumber")
-    assert list(ProductMarketExclusion.objects.filter(product=product).values_list("farmer_market_id", flat=True)) == [
-        home_stall.id
-    ]
+    assert _market_ids(product) == [seller_market.id]
     assert [m["market_id"] for m in response.data["data"]["markets"]] == [seller_market.id]
 
 
 @pytest.mark.django_db
-def test_markets_must_be_approved_and_not_empty(farmer_client, category, approved_farmer, market_waiting):
+def test_without_a_choice_a_new_product_goes_to_every_approved_market(
+    farmer_client, category, seller_market, central_stall, home_stall, market_waiting
+):
+    response = farmer_client.post(
+        PRODUCTS_URL,
+        {"name": "Cucumber", "category_id": category.id, "price": "1.50", "unit": "KG", "stock_quantity": 10},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert _market_ids(Product.objects.get(name="Cucumber")) == sorted([seller_market.id, home_stall.market_id])
+
+
+@pytest.mark.django_db
+def test_markets_must_be_approved_and_not_empty(farmer_client, category, market_waiting):
     body = {"name": "Cucumber", "category_id": category.id, "price": "1.50", "unit": "KG", "stock_quantity": 10}
 
     assert farmer_client.post(PRODUCTS_URL, {**body, "market_ids": []}, format="json").status_code == 400
@@ -149,21 +186,6 @@ def test_markets_must_be_approved_and_not_empty(farmer_client, category, approve
     assert not Product.objects.filter(name="Cucumber").exists()
 
 
-@pytest.fixture
-def market_waiting(approved_farmer):
-    from datetime import time
-
-    from markets.models import FarmerMarketStatus, Market
-
-    market = Market.objects.create(
-        name="Waiting Market", address="5 Wait Road", latitude="10.9", longitude="106.9",
-        open_time=time(6, 0), close_time=time(12, 0),
-    )
-    return FarmerMarket.objects.create(
-        farmer=approved_farmer, market=market, stall_label="W1", status=FarmerMarketStatus.PENDING
-    )
-
-
 @pytest.mark.django_db
 def test_editing_the_markets_moves_the_product(farmer_client, product, seller_market, central_stall, home_stall):
     response = farmer_client.patch(
@@ -171,9 +193,18 @@ def test_editing_the_markets_moves_the_product(farmer_client, product, seller_ma
     )
 
     assert response.status_code == 200
+    assert _market_ids(product) == [home_stall.market_id]
     assert list(public_products(market_id=seller_market.id)) == []
     product.refresh_from_db()
     assert product.review_status == ReviewStatus.APPROVED
+
+
+@pytest.mark.django_db
+def test_leaving_a_market_drops_it_from_the_products(product, central_stall, seller_market):
+    PickupSlot.objects.filter(farmer_market=central_stall).delete()
+    central_stall.delete()
+
+    assert seller_market.id not in _market_ids(product)
 
 
 @pytest.mark.django_db
@@ -184,7 +215,9 @@ def test_the_list_filters_by_market_and_the_counts_follow(
         farmer=approved_farmer, category=category, name="Carrot", price="1.00", unit=Unit.KG,
         stock_quantity=0, review_status=ReviewStatus.PENDING,
     )
-    _exclude(other, central_stall)
+    ProductMarket.objects.create(product=other, farmer_market=FarmerMarket.objects.get(
+        farmer=approved_farmer, market__name="Home Market"
+    ))
 
     listed = farmer_client.get(PRODUCTS_URL, {"market_id": seller_market.id}).data["data"]["results"]
     counts = farmer_client.get(f"{PRODUCTS_URL}counts/").data["data"]
@@ -197,7 +230,7 @@ def test_the_list_filters_by_market_and_the_counts_follow(
 
 @pytest.mark.django_db
 def test_bulk_actions_touch_only_the_farmers_own_products(
-    farmer_client, product, category, approved_farmer, seller_market, make_farmer
+    farmer_client, product, category, seller_market, home_stall, make_farmer
 ):
     stranger = make_farmer(email="stranger@marketlink.test", stall_name="Stranger")
     foreign = Product.objects.create(
@@ -218,4 +251,5 @@ def test_bulk_actions_touch_only_the_farmers_own_products(
     foreign.refresh_from_db()
     assert product.is_available is False and product.stock_quantity == 0
     assert foreign.is_available is True
+    assert _market_ids(product) == [seller_market.id]
     assert farmer_client.post(url, {"product_ids": [product.id], "action": "set_markets"}, format="json").status_code == 400

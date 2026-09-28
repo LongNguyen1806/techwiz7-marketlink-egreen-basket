@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus
 from accounts.services.auth_service import account_locked_error
-from catalog.models import Product, ProductMarketExclusion
+from catalog.models import Product, ProductMarket
 from catalog.services.stock import get_held_quantities
 from orders.exceptions import (
     CutoffPassedError,
@@ -164,17 +164,15 @@ def _validate_products(groups, products) -> None:
 
 def _validate_markets(groups, windows, products) -> None:
     stall_ids = {window.slot.farmer_market_id for window in windows}
-    excluded = set(
-        ProductMarketExclusion.objects.filter(
+    registered = set(
+        ProductMarket.objects.filter(
             farmer_market_id__in=stall_ids, product_id__in=list(products)
         ).values_list("product_id", "farmer_market_id")
     )
-    if not excluded:
-        return
     errors = {}
     for group_index, (group, window) in enumerate(zip(groups, windows)):
         for item_index, item in enumerate(group["items"]):
-            if (item["product_id"], window.slot.farmer_market_id) in excluded:
+            if (item["product_id"], window.slot.farmer_market_id) not in registered:
                 name = products[item["product_id"]].name
                 errors[f"groups.{group_index}.items.{item_index}.product_id"] = [
                     f"{name} is not sold at {window.market.name}. Choose another pickup market or remove it."

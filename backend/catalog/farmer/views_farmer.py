@@ -25,6 +25,7 @@ from catalog.services.farmer_product import (
     build_product_metrics,
     notify_restock_for_product,
     preview_weekly_template,
+    sell_everywhere,
     set_product_markets,
     validate_market_ids,
 )
@@ -127,7 +128,7 @@ def _farmer_products(profile: FarmerProfile, filters: dict[str, Any]):
         stall = FarmerMarket.objects.filter(farmer=profile, market_id=filters["market_id"]).first()
         if stall is None:
             return qs.none()
-        qs = qs.exclude(market_exclusions__farmer_market_id=stall.pk)
+        qs = qs.filter(market_links__farmer_market_id=stall.pk)
     return qs
 
 
@@ -227,6 +228,8 @@ class FarmerProductListView(FarmerBaseProductView):
             )
             if market_ids is not None:
                 set_product_markets(product=product, market_ids=market_ids)
+            else:
+                sell_everywhere(product=product)
             # New listings start PENDING; the AI advises the admin in the background.
             schedule_listing_review(product.pk)
         return api_response(

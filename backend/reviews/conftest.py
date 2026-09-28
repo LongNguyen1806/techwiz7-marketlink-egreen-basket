@@ -8,6 +8,7 @@ from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import FarmerMarket, Market
 from orders.models import Order, OrderItem, OrderStatus
 from reviews.models import FarmerReview, ProductReview
+from tests_support.factories import sell_at_every_stall
 
 
 @pytest.fixture
@@ -43,7 +44,7 @@ def market(db):
 def product(db, approved_farmer):
     # Icons are unique per category now, so a fixture cannot leave it to the default.
     category = Category.objects.create(name="Vegetables", icon="carrot", display_order=1)
-    return Product.objects.create(
+    created = Product.objects.create(
         farmer=approved_farmer,
         category=category,
         name="Tomato",
@@ -53,6 +54,8 @@ def product(db, approved_farmer):
         # On sale: only admin-approved listings are public (product pre-approval).
         review_status=ReviewStatus.APPROVED,
     )
+    sell_at_every_stall(approved_farmer)
+    return created
 
 
 @pytest.fixture

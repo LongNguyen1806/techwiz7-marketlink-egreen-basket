@@ -295,7 +295,16 @@ export default function FarmerProductsPage() {
   else if (query.isError && !query.data) {
     body = <EmptyState title="Products couldn't be loaded" actionLabel="Try again" onAction={() => query.refetch()} />;
   } else if (products.length === 0) {
-    body = hasFilters ? (
+    const onlyMarketChosen = Boolean(filters.market) && !search.term && !filters.state && !filters.category;
+    const marketName = farmerMarkets.find((item) => item.market.id === filters.market)?.market.name;
+    body = onlyMarketChosen ? (
+      <EmptyState
+        title={`Nothing is sold at ${marketName ?? 'this market'} yet`}
+        description="Go to All markets, tick the produce you bring here, then use Choose markets… — or tick this market when you edit an item."
+        actionLabel="Show all markets"
+        onAction={() => setFilters({ market: 0 })}
+      />
+    ) : hasFilters ? (
       <EmptyState
         title="No products match"
         description="Try another market, search, category or status."

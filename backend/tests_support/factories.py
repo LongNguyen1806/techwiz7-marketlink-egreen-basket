@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
-from catalog.models import Category, Product, ReviewStatus, Unit
+from catalog.models import Category, Product, ProductMarket, ReviewStatus, Unit
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import Order, OrderItem, OrderStatus
 
@@ -65,10 +65,23 @@ def make_market(*, days=range(1, 8), is_active: bool = True) -> Market:
     return market
 
 
+def sell_at_every_stall(farmer) -> None:
+    """Test convenience: register each of the farmer's products at each of the farmer's stalls."""
+    ProductMarket.objects.bulk_create(
+        [
+            ProductMarket(product_id=product_id, farmer_market_id=stall_id)
+            for product_id in Product.objects.filter(farmer=farmer).values_list("pk", flat=True)
+            for stall_id in FarmerMarket.objects.filter(farmer=farmer).values_list("pk", flat=True)
+        ],
+        ignore_conflicts=True,
+    )
+
+
 def make_slot(*, farmer, market, day_of_week: int, start=time(8, 0), end=time(10, 0), is_active=True) -> PickupSlot:
     farmer_market, _ = FarmerMarket.objects.get_or_create(
         farmer=farmer, market=market, defaults={"stall_label": "Row B, stall 12"}
     )
+    sell_at_every_stall(farmer)
     return PickupSlot.objects.create(
         farmer_market=farmer_market, day_of_week=day_of_week, start_time=start, end_time=end, is_active=is_active
     )
@@ -87,7 +100,9 @@ def make_product(*, farmer, stock: int = 10, price: str = "2.50", **overrides) -
         "review_status": ReviewStatus.APPROVED,
     }
     fields.update(overrides)
-    return Product.objects.create(**fields)
+    product = Product.objects.create(**fields)
+    sell_at_every_stall(farmer)
+    return product
 
 
 def make_order(*, customer, product, quantity: int = 2, status: str = OrderStatus.PLACED, pickup_start_at=None, market=None) -> Order:

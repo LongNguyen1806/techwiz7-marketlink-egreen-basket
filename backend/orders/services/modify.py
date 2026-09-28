@@ -4,7 +4,7 @@ from typing import Any
 from django.db import models, transaction
 from django.utils import timezone
 
-from catalog.models import ProductMarketExclusion
+from catalog.models import ProductMarket
 from catalog.services.stock import lock_products
 from orders.services.checkout_service import cap_message, minimum_message
 from marketlink_core.context import get_request_id
@@ -186,15 +186,14 @@ def modify_order(
                 if new_qty > (old_items[pid].quantity if pid in old_items else 0)
             ]
             if growing:
-                not_here = (
-                    ProductMarketExclusion.objects.filter(
+                sold_here = set(
+                    ProductMarket.objects.filter(
                         product_id__in=growing,
                         farmer_market__farmer_id=order.farmer_id,
                         farmer_market__market_id=order.market_id,
-                    )
-                    .values_list("product_id", flat=True)
-                    .first()
+                    ).values_list("product_id", flat=True)
                 )
+                not_here = next((pid for pid in growing if pid not in sold_here), None)
                 if not_here is not None:
                     raise UnprocessableEntityError(
                         f"{locked_products[not_here].name} is not sold at {order.market.name}.",

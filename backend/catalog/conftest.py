@@ -7,6 +7,7 @@ from accounts.models import FarmerStatus
 from catalog.models import Category, Product, ReviewStatus, Unit
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import Order, OrderItem, OrderStatus
+from tests_support.factories import sell_at_every_stall
 
 
 @pytest.fixture
@@ -36,7 +37,7 @@ def product(category, approved_farmer):
     # An established listing: written, reviewed, and on sale. A fresh Product() defaults to
     # PENDING, which is right for the model and wrong for a fixture the rest of the suite
     # treats as something a shopper can already see.
-    return Product.objects.create(
+    created = Product.objects.create(
         farmer=approved_farmer,
         category=category,
         name="Tomato",
@@ -45,6 +46,8 @@ def product(category, approved_farmer):
         stock_quantity=10,
         review_status=ReviewStatus.APPROVED,
     )
+    sell_at_every_stall(approved_farmer)
+    return created
 
 
 @pytest.fixture
@@ -61,6 +64,7 @@ def seller_market(db, approved_farmer):
     farmer_market = FarmerMarket.objects.create(
         farmer=approved_farmer, market=market, stall_label="Row B, Stall 12"
     )
+    sell_at_every_stall(approved_farmer)
     PickupSlot.objects.create(
         farmer_market=farmer_market, day_of_week=1, start_time=time(7, 0), end_time=time(9, 0)
     )

@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.auth.tokens import issue_tokens
+from markets.models import FarmerMarket
 from notifications.models import Notification
 from tests_support.factories import make_customer, make_farmer, make_market, make_order, make_product, make_slot
 
@@ -31,6 +32,7 @@ def shop(db):
     farmer = make_farmer()
     customer = make_customer()
     market = make_market()
+    FarmerMarket.objects.create(farmer=farmer, market=market, stall_label="Row B, stall 12")
     return SimpleNamespace(
         customer=customer, api=_client(customer), farmer=farmer, market=market,
         tomato=make_product(farmer=farmer, stock=10, price="2.50"),

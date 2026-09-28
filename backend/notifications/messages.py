@@ -190,8 +190,8 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
     NotificationType.STALL_MARKET_APPROVED: NotificationSpec(
         title="You can now sell at {market_name}",
         message=(
-            "An administrator approved your stall at {market_name} ({stall_label}). Shoppers "
-            "can now book your pickup slots there."
+            "An administrator approved your stall at {market_name} ({stall_label}). Choose which "
+            "produce you sell there on the Products page; shoppers can then book your pickup slots."
         ),
         target_url="/farmer/markets",
         required=("market_name", "stall_label"),

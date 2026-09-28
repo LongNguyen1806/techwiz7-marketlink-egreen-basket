@@ -11,7 +11,7 @@ from django.utils import timezone
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from accounts.models import FarmerProfile
-from catalog.models import Product, ProductMarketExclusion
+from catalog.models import Product, ProductMarket
 from catalog.services.stock import (
     get_pending_quantities,
     get_weekly_pattern_held_quantities,
@@ -187,22 +187,27 @@ def validate_market_ids(*, farmer: FarmerProfile, market_ids: list[int]) -> list
 
 
 def set_product_markets(*, product: Product, market_ids: list[int]) -> None:
-    """Sell the product at exactly these approved markets; every other approved stall excludes it."""
+    """Sell the product at exactly these approved markets and nowhere else."""
     chosen = set(validate_market_ids(farmer=product.farmer, market_ids=market_ids))
-    stalls = FarmerMarket.objects.selling().filter(farmer_id=product.farmer_id)
-    excluded_stall_ids = {stall.pk for stall in stalls if stall.market_id not in chosen}
-    ProductMarketExclusion.objects.filter(product=product).exclude(
-        farmer_market_id__in=excluded_stall_ids
-    ).delete()
-    existing = set(
-        ProductMarketExclusion.objects.filter(product=product).values_list("farmer_market_id", flat=True)
+    stall_ids = set(
+        FarmerMarket.objects.selling()
+        .filter(farmer_id=product.farmer_id, market_id__in=chosen)
+        .values_list("pk", flat=True)
     )
-    ProductMarketExclusion.objects.bulk_create(
-        [
-            ProductMarketExclusion(product=product, farmer_market_id=stall_id)
-            for stall_id in sorted(excluded_stall_ids - existing)
-        ]
+    ProductMarket.objects.filter(product=product).exclude(farmer_market_id__in=stall_ids).delete()
+    existing = set(ProductMarket.objects.filter(product=product).values_list("farmer_market_id", flat=True))
+    ProductMarket.objects.bulk_create(
+        [ProductMarket(product=product, farmer_market_id=stall_id) for stall_id in sorted(stall_ids - existing)]
     )
+
+
+def sell_everywhere(*, product: Product) -> None:
+    """Default for a listing created without a choice: every market that approved the stall today."""
+    market_ids = list(
+        FarmerMarket.objects.selling().filter(farmer_id=product.farmer_id).values_list("market_id", flat=True)
+    )
+    if market_ids:
+        set_product_markets(product=product, market_ids=market_ids)
 
 
 def build_product_metrics(*, farmer: FarmerProfile, product_ids: list[int]) -> dict[str, Any]:
@@ -229,9 +234,7 @@ def build_product_metrics(*, farmer: FarmerProfile, product_ids: list[int]) -> d
     stalls = list(
         FarmerMarket.objects.selling().filter(farmer=farmer).select_related("market").order_by("market__name")
     )
-    excluded = set(
-        ProductMarketExclusion.objects.filter(product_id__in=ids).values_list("product_id", "farmer_market_id")
-    )
+    linked = set(ProductMarket.objects.filter(product_id__in=ids).values_list("product_id", "farmer_market_id"))
     markets = {
         product_id: [
             {
@@ -240,7 +243,7 @@ def build_product_metrics(*, farmer: FarmerProfile, product_ids: list[int]) -> d
                 "days": sorted(days_by_market.get(fm.market_id, set())),
             }
             for fm in stalls
-            if (product_id, fm.pk) not in excluded
+            if (product_id, fm.pk) in linked
         ]
         for product_id in ids
     }

@@ -18,7 +18,7 @@ from accounts.models import (
     Role,
     RoleCode,
 )
-from catalog.models import Category, Product, ReviewStatus, Unit
+from catalog.models import Category, Product, ProductMarket, ReviewStatus, Unit
 from favorites.models import FavoriteProduct
 from marketlink_core.exceptions import ErrorCode
 from markets.models import FarmerMarket, Market, PickupSlot
@@ -68,7 +68,7 @@ class FarmerProductsAPITestCase(TestCase):
             open_time=time(6, 0),
             close_time=time(12, 0),
         )
-        FarmerMarket.objects.create(
+        self.home_stall = FarmerMarket.objects.create(
             farmer=self.farmer_profile, market=self.home_market, stall_label="Home row, Stall 1"
         )
 
@@ -126,6 +126,8 @@ class FarmerProductsAPITestCase(TestCase):
             weekly_default_quantity=15,
             is_available=True,
         )
+        for product in (self.prod1, self.prod2):
+            ProductMarket.objects.create(product=product, farmer_market=self.home_stall)
 
     def test_fa11_list_products_and_stock_quantities(self):
         self.client.force_authenticate(user=self.farmer_user)
@@ -146,6 +148,7 @@ class FarmerProductsAPITestCase(TestCase):
             market=market,
             stall_label="Stall 1",
         )
+        ProductMarket.objects.create(product=self.prod1, farmer_market=fm)
         slot = PickupSlot.objects.create(
             farmer_market=fm,
             day_of_week=1,
@@ -412,6 +415,7 @@ class FarmerProductsAPITestCase(TestCase):
             is_active=True,
         )
         fm = FarmerMarket.objects.create(farmer=self.farmer_profile, market=market, stall_label="R1")
+        ProductMarket.objects.create(product=self.prod1, farmer_market=fm)
         slot = PickupSlot.objects.create(
             farmer_market=fm, day_of_week=3, start_time=time(8, 0), end_time=time(10, 0), is_active=True
         )

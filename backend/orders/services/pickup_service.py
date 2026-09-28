@@ -53,8 +53,8 @@ def _active_slots(farmer, product_ids=None):
             is_active=True,
         )
     )
-    if product_ids:
-        slots = slots.exclude(farmer_market__product_exclusions__product_id__in=list(product_ids))
+    for product_id in sorted(set(product_ids or [])):
+        slots = slots.filter(farmer_market__product_links__product_id=product_id)
     return slots
 
 

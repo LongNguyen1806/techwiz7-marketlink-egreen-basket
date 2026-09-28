@@ -32,7 +32,7 @@ from django.utils import timezone
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
 from catalog.icons import CATEGORY_ICONS
-from catalog.models import Category, Product, ReviewStatus, Unit
+from catalog.models import Category, Product, ProductMarket, ReviewStatus, Unit
 from favorites.models import FavoriteFarmer, FavoriteMarket, FavoriteProduct
 from marketlink_core.policies.roles import RoleCode
 from markets.models import (
@@ -811,6 +811,18 @@ class Command(BaseCommand):
         Product.objects.bulk_create(rows, batch_size=200)
         products = list(
             Product.objects.filter(farmer__in=producers).select_related("farmer").order_by("id")
+        )
+        stalls_by_farmer: dict[int, list[int]] = {}
+        for stall_id, farmer_id in FarmerMarket.objects.filter(farmer__in=producers).values_list("id", "farmer_id"):
+            stalls_by_farmer.setdefault(farmer_id, []).append(stall_id)
+        ProductMarket.objects.bulk_create(
+            [
+                ProductMarket(product_id=product.pk, farmer_market_id=stall_id)
+                for product in products
+                for stall_id in stalls_by_farmer.get(product.farmer_id, [])
+            ],
+            batch_size=500,
+            ignore_conflicts=True,
         )
         self._spread_created_at(Product, len(products), 180)
         self.counts["Products"] = len(products)

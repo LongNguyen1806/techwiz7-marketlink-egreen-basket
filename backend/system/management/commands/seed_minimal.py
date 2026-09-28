@@ -8,7 +8,7 @@ from django.db import transaction
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
 from catalog.icons import CATEGORY_ICONS
-from catalog.models import Category, Product, Unit
+from catalog.models import Category, Product, ProductMarket, Unit
 from markets.models import DayOfWeek, FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from marketlink_core.policies.roles import RoleCode
 
@@ -238,8 +238,9 @@ class Command(BaseCommand):
                     start_time=start,
                     defaults={"end_time": end},
                 )
+        stalls = list(FarmerMarket.objects.filter(farmer=farmer))
         for category_name, name, unit, price, stock, weekly in spec["products"]:
-            Product.objects.get_or_create(
+            product, _ = Product.objects.get_or_create(
                 farmer=farmer,
                 name=name,
                 defaults={
@@ -250,6 +251,8 @@ class Command(BaseCommand):
                     "weekly_default_quantity": weekly,
                 },
             )
+            for stall in stalls:
+                ProductMarket.objects.get_or_create(product=product, farmer_market=stall)
 
     def _seed_customer(self, password: str) -> CustomUser:
         user, _ = self._create_user(CUSTOMER["email"], password, RoleCode.CUSTOMER)
