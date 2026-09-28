@@ -17,6 +17,8 @@ import {
 } from '../../hooks/queries/admin/useAdminApprovals';
 import { useAIRecheck } from '../../hooks/queries/admin/useAdminAIReview';
 import { AIReviewPanel } from '@/components/admin/AIReviewPanel';
+import { AIDecisionsPanel } from './AdminAIDecisionsPage';
+import { useAIReviewStats } from '../../hooks/queries/admin/useAdminAIReview';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -67,6 +69,8 @@ function reasonFromFindings(findings) {
 export default function AdminApprovalsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const linkedProduct = searchParams.get('product');
+  const aiStats = useAIReviewStats(30);
+  const aiUnchecked = aiStats.data?.unchecked_ai_decisions ?? 0;
   const [stallFilters, setStallFilters] = useState({});
   const [stallOrdering, setStallOrdering] = useState('date_joined');
   const [productFilters, setProductFilters] = useState(() => (linkedProduct ? { product_id: linkedProduct } : {}));
@@ -165,17 +169,36 @@ export default function AdminApprovalsPage() {
 
   const sortStalls = (next) => setStallOrdering(next);
 
+  const requestedTab = searchParams.get('tab');
+  const tab = ['stalls', 'products', 'ai'].includes(requestedTab)
+    ? requestedTab
+    : linkedProduct || (stallCount === 0 && productCount > 0)
+      ? 'products'
+      : 'stalls';
+
   return (
     <div className="page-primitive__stack-4">
       <PageHeader
         title="Waiting for approval"
-        description="New stalls and new listings, before shoppers see them. Approving takes one click; refusing asks for a reason the applicant can act on."
+        description="New stalls and listings before shoppers see them. The admin tabs are yours to decide; the AI tab is what the AI decided on its own, to look over."
       />
 
-      <Tabs defaultValue={linkedProduct || (stallCount === 0 && productCount > 0) ? 'products' : 'stalls'}>
+      <Tabs
+        value={tab}
+        onValueChange={(next) => {
+          const params = new URLSearchParams(searchParams);
+          params.set('tab', next);
+          params.delete('product');
+          setSearchParams(params, { replace: true });
+        }}
+      >
         <TabsList>
           <TabsTrigger value="stalls">Stalls ({stallCount})</TabsTrigger>
           <TabsTrigger value="products">Products ({productCount})</TabsTrigger>
+          <TabsTrigger value="ai">
+            <Sparkles className="admin-approvals-page__tab-icon" aria-hidden="true" />
+            AI decisions ({aiUnchecked})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="stalls">
@@ -413,6 +436,10 @@ export default function AdminApprovalsPage() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="ai">
+          <AIDecisionsPanel />
         </TabsContent>
       </Tabs>
 

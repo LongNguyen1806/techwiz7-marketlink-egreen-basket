@@ -37,7 +37,7 @@ const ATTENTION = [
     label: 'Stalls awaiting approval',
     to: '/admin/approvals',
   },
-  { key: 'flags_open', label: 'In the follow-up queue', to: '/admin/queue' },
+  { key: 'flags_open', label: 'Held by AI', to: '/admin/approvals?tab=ai' },
   { key: 'customers_at_risk', label: 'Shoppers at risk', to: '/admin/customers' },
   {
     key: 'products_awaiting_approval',

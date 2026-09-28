@@ -75,3 +75,16 @@
   font-size: var(--text-sm);
   color: var(--color-muted-foreground);
 }
+
+.admin-products-page__btn-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: var(--space-1);
+}
+
+.admin-products-page__guidelines {
+  width: min(56rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}

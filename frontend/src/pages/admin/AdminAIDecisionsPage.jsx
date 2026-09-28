@@ -8,7 +8,7 @@ import {
 } from '../../hooks/queries/admin/useAdminAIDecisions';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { FilterBar } from '../../components/common/table/FilterBar';
-import { PageHeader } from '../../components/common/PageHeader';
+import { Navigate } from 'react-router-dom';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { PageSkeleton } from '../../components/feedback/PageSkeleton';
 import { Badge } from '../../components/ui/Badge';
@@ -48,7 +48,7 @@ const ACTION = {
   HELD: { label: 'Held by AI', variant: 'destructive' },
 };
 
-export default function AdminAIDecisionsPage() {
+export function AIDecisionsPanel() {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);
   const [undoing, setUndoing] = useState(null);
@@ -70,10 +70,9 @@ export default function AdminAIDecisionsPage() {
 
   return (
     <div className="admin-ai-decisions">
-      <PageHeader
-        title="AI decisions"
-        description="Listings the AI approved or held on its own. Check each one, or undo it."
-      />
+      <p className="page-primitive__muted-sm">
+        Listings the AI approved or held on its own. Check each one, or undo it.
+      </p>
 
       <FilterBar
         fields={FILTERS}
@@ -204,4 +203,8 @@ export default function AdminAIDecisionsPage() {
       </ConfirmDialog>
     </div>
   );
+}
+
+export default function AdminAIDecisionsPage() {
+  return <Navigate to="/admin/approvals?tab=ai" replace />;
 }

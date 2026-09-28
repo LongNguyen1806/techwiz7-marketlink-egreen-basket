@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/Tabs';
 import { SortSelect } from '@/components/common/SortSelect';
 import { FilterBar } from '@/components/common/table/FilterBar';
-import { useRaiseFlag } from '../../hooks/queries/admin/useAdminFlags';
 import { Textarea } from '@/components/ui/Textarea';
 
 import './AdminModerationPage.css';
@@ -42,7 +41,6 @@ function reviewTarget(review) {
     : `Stall review · Order #${review.order_id}`;
 }
 
-const FLAG_NOTE_MIN_LENGTH = 5;
 
 const MODERATION_COPY = {
   HIDE: { label: 'Hidden', undo: 'Restore' },
@@ -128,8 +126,6 @@ export default function AdminModerationPage() {
   const [blockTarget, setBlockTarget] = useState(null);
   const [blockImpact, setBlockImpact] = useState('');
   const [unblockTarget, setUnblockTarget] = useState(null);
-  const [flagTarget, setFlagTarget] = useState(null);
-  const [flagNote, setFlagNote] = useState('');
   const [reason, setReason] = useState('');
 
   const [productOrdering, setProductOrdering] = useState(undefined);
@@ -158,7 +154,6 @@ export default function AdminModerationPage() {
   const hide = useHideModerationItem();
   const block = useBlockModerationProduct();
   const unblock = useUnblockModerationProduct();
-  const raiseFlag = useRaiseFlag();
   const restoreProduct = useRestoreModerationProduct();
   const restoreReview = useRestoreModerationReview();
 
@@ -258,20 +253,6 @@ export default function AdminModerationPage() {
                     </div>
                   </div>
                   <div className="page-primitive__actions-row">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setFlagTarget({
-                          target_type: 'PRODUCT',
-                          target_id: p.id,
-                          name: p.name,
-                        });
-                        setFlagNote('');
-                      }}
-                    >
-                      Flag
-                    </Button>
                     {p.moderation_action === 'BLOCK' ? (
                       <Button size="sm" onClick={() => setUnblockTarget(p)}>
                         Unblock
@@ -454,35 +435,6 @@ export default function AdminModerationPage() {
           unblock.mutate(unblockTarget.id, { onSuccess: () => setUnblockTarget(null) });
         }}
       />
-      <ConfirmDialog
-        open={Boolean(flagTarget)}
-        onOpenChange={(open) => {
-          if (!open) setFlagTarget(null);
-        }}
-        title={`Flag ${flagTarget?.name ?? 'this'} for follow-up?`}
-        description="Use this when something looks wrong but the decision is not yours to make right now. It joins the follow-up queue instead of being hidden."
-        confirmLabel="Add to queue"
-        loading={raiseFlag.isPending}
-        confirmDisabled={flagNote.trim().length < FLAG_NOTE_MIN_LENGTH}
-        onConfirm={() => {
-          if (!flagTarget) return;
-          raiseFlag.mutate(
-            {
-              target_type: flagTarget.target_type,
-              target_id: flagTarget.target_id,
-              note: flagNote,
-            },
-            { onSuccess: () => setFlagTarget(null) },
-          );
-        }}
-      >
-        <Textarea
-          className="admin-moderation-page__reason"
-          placeholder="What should the next person look at?"
-          value={flagNote}
-          onChange={(event) => setFlagNote(event.target.value)}
-        />
-      </ConfirmDialog>
     </div>
   );
 }

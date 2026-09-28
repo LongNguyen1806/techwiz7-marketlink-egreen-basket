@@ -148,3 +148,9 @@ a.admin-approvals-page__name:hover {
   list-style: disc;
   font-size: var(--text-sm);
 }
+
+.admin-approvals-page__tab-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-right: var(--space-1);
+}

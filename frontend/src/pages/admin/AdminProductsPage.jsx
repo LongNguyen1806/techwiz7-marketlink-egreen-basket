@@ -10,7 +10,9 @@ import {
   useRestoreModerationProduct,
   useUnblockModerationProduct,
 } from '../../hooks/queries/admin/useAdminModeration';
-import { useRaiseFlag } from '../../hooks/queries/admin/useAdminFlags';
+import { PriceGuidelinesPanel } from './AdminPriceGuidelinesPage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Scale } from 'lucide-react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -26,7 +28,6 @@ import { REVIEW_STATE, reviewStateBadge } from '@/utils/reviewState';
 import './AdminProductsPage.css';
 
 const REASON_MIN_LENGTH = 5;
-const FLAG_NOTE_MIN_LENGTH = 5;
 
 const MODERATION_COPY = {
   HIDE: { label: 'Hidden', undo: 'Restore' },
@@ -69,6 +70,7 @@ const PRODUCT_SORT = [
 
 export default function AdminProductsPage() {
   const [params, setParams] = useSearchParams();
+  const [guidelinesOpen, setGuidelinesOpen] = useState(() => params.get('guidelines') === 'open');
   const [pinnedId] = useState(() => params.get('product_id') ?? undefined);
 
   const [filters, setFilters] = useState(() =>
@@ -79,8 +81,6 @@ export default function AdminProductsPage() {
   const [blockTarget, setBlockTarget] = useState(null);
   const [blockImpact, setBlockImpact] = useState('');
   const [unblockTarget, setUnblockTarget] = useState(null);
-  const [flagTarget, setFlagTarget] = useState(null);
-  const [flagNote, setFlagNote] = useState('');
   const [reason, setReason] = useState('');
 
   const query = useModerationProducts({ ...filters, ordering });
@@ -88,7 +88,6 @@ export default function AdminProductsPage() {
   const block = useBlockModerationProduct();
   const unblock = useUnblockModerationProduct();
   const restore = useRestoreModerationProduct();
-  const raiseFlag = useRaiseFlag();
 
   const clearPin = () => {
     if (!params.size) return;
@@ -119,11 +118,17 @@ export default function AdminProductsPage() {
       <PageHeader
         title="Products"
         description="Everything on the shelves. Hide one while you look into it, or take it down if it must not be sold at all."
+        actions={
+          <Button variant="outline" onClick={() => setGuidelinesOpen(true)}>
+            <Scale aria-hidden="true" className="admin-products-page__btn-icon" />
+            Price guidelines
+          </Button>
+        }
       />
 
       {pinnedId ? (
         <p className="admin-products-page__pin">
-          Showing one item, opened from the follow-up queue.
+          Showing one item.
           <Button
             size="sm"
             variant="ghost"
@@ -191,20 +196,6 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
                 <div className="page-primitive__actions-row">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setFlagTarget({
-                        target_type: 'PRODUCT',
-                        target_id: p.id,
-                        name: p.name,
-                      });
-                      setFlagNote('');
-                    }}
-                  >
-                    Flag
-                  </Button>
                   {p.moderation_action === 'BLOCK' ? (
                     <Button size="sm" onClick={() => setUnblockTarget(p)}>
                       Unblock
@@ -324,35 +315,24 @@ export default function AdminProductsPage() {
         }}
       />
 
-      <ConfirmDialog
-        open={Boolean(flagTarget)}
+      <Dialog
+        open={guidelinesOpen}
         onOpenChange={(open) => {
-          if (!open) setFlagTarget(null);
-        }}
-        title={`Flag ${flagTarget?.name ?? 'this'} for follow-up?`}
-        description="Use this when something looks wrong but the decision is not yours to make right now. It joins the follow-up queue instead of being hidden."
-        confirmLabel="Add to queue"
-        loading={raiseFlag.isPending}
-        confirmDisabled={flagNote.trim().length < FLAG_NOTE_MIN_LENGTH}
-        onConfirm={() => {
-          if (!flagTarget) return;
-          raiseFlag.mutate(
-            {
-              target_type: flagTarget.target_type,
-              target_id: flagTarget.target_id,
-              note: flagNote,
-            },
-            { onSuccess: () => setFlagTarget(null) },
-          );
+          setGuidelinesOpen(open);
+          if (!open && params.get('guidelines')) {
+            const next = new URLSearchParams(params);
+            next.delete('guidelines');
+            setParams(next, { replace: true });
+          }
         }}
       >
-        <Textarea
-          className="admin-products-page__reason"
-          placeholder="What should the next person look at?"
-          value={flagNote}
-          onChange={(event) => setFlagNote(event.target.value)}
-        />
-      </ConfirmDialog>
+        <DialogContent className="admin-products-page__guidelines">
+          <DialogHeader>
+            <DialogTitle>Price guidelines</DialogTitle>
+          </DialogHeader>
+          <PriceGuidelinesPanel />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -15,10 +15,7 @@ import {
   KeyRound,
   BadgeCheck,
   Carrot,
-  ListChecks,
   ReceiptText,
-  Scale,
-  Sparkles,
 } from 'lucide-react';
 
 import { ThemeToggle } from '../components/layout/ThemeToggle';
@@ -44,12 +41,9 @@ const navItems = [
   { to: '/admin/farmers', label: 'Farmers', icon: Warehouse, end: false },
   { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
   { to: '/admin/orders', label: 'Orders', icon: ReceiptText, end: false },
-  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'open_ai_flags' },
-  { to: '/admin/ai-decisions', label: 'AI decisions', icon: Sparkles, end: false, badge: 'unchecked_ai_decisions' },
-  { to: '/admin/queue', label: 'Follow-up queue', icon: ListChecks, end: false },
+  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'approvals' },
   { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree, end: false },
-  { to: '/admin/price-guidelines', label: 'Price guidelines', icon: Scale, end: false },
   { to: '/admin/products', label: 'Products', icon: Carrot, end: false },
   { to: '/admin/moderation', label: 'Reviews', icon: ShieldAlert, end: false },
   { to: '/admin/reports', label: 'Reports', icon: FileBarChart, end: false },
@@ -62,8 +56,7 @@ const navItems = [
 function SideNav({ collapsed }                        ) {
   const aiStats = useAIReviewStats(30);
   const badges = {
-    open_ai_flags: aiStats.data?.open_ai_flags ?? 0,
-    unchecked_ai_decisions: aiStats.data?.unchecked_ai_decisions ?? 0,
+    approvals: (aiStats.data?.open_ai_flags ?? 0) + (aiStats.data?.unchecked_ai_decisions ?? 0),
   };
   return (
     <nav className="admin-layout__nav">
