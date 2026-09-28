@@ -44,11 +44,9 @@ const SUMMARISED_KEYS = new Set([
   'email',
   'reason',
   'affected_orders',
-  // Already spelled out in words by auditSubject; leaving it here too printed ["full_name"].
   'changed_fields',
   'from',
   'to',
-  // Shown as its own row below, with the numbers written the way an order is referred to.
   'cancelled_order_ids',
   'cancelled_order_ids_truncated',
 ]);
@@ -66,8 +64,6 @@ function extraDetails(log) {
     ]);
 }
 
-// A takedown cancels other people's orders. The count alone cannot answer a shopper asking
-// why theirs disappeared, so the row carries the ids and this prints them.
 function cancelledOrders(log) {
   const ids = log.details?.cancelled_order_ids;
   if (!Array.isArray(ids) || !ids.length) return null;
@@ -137,8 +133,6 @@ export default function AdminAuditLogsPage() {
         <Button type='submit' size='sm'>
           Apply
         </Button>
-        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
-            learns one place to look rather than one per screen. */}
         <Button
           type="button"
           size="sm"

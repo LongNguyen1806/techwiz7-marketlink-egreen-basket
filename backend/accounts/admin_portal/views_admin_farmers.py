@@ -138,8 +138,6 @@ class AdminFarmerDetailView(APIView):
         profile, changed = update_farmer_profile(
             farmer_id=id, validated=dict(serializer.validated_data), actor=request.user
         )
-        # An edit that changed nothing is not worth an audit row; it would only add noise to
-        # the security log an admin has to read through.
         if changed:
             log_request_event(
                 request,
@@ -174,7 +172,6 @@ class _FarmerActionView(APIView):
         return api_response(message=message, request=request, data=data)
 
     def _audit(self, request, *, action: str, farmer_id: int, details: dict) -> None:
-        # Written after the business transaction so a rollback cannot erase the trail.
         log_request_event(
             request, action=action, status_code=200, details={"farmer_id": farmer_id, **details}
         )
@@ -247,7 +244,6 @@ class AdminFarmerExportView(APIView):
     )
     def get(self, request) -> StreamingHttpResponse:
         params = request.query_params
-        # Same filters as the list, so what downloads is what is on screen.
         farmers = list_farmers_for_admin(
             status=params.get("status"),
             q=params.get("q"),

@@ -59,7 +59,6 @@ const navItems = [
 ];
 
 function SideNav({ collapsed }                        ) {
-  // Open AI flags: listings the AI review wants an admin to look at.
   const aiStats = useAIReviewStats(30);
   const badges = {
     open_ai_flags: aiStats.data?.open_ai_flags ?? 0,

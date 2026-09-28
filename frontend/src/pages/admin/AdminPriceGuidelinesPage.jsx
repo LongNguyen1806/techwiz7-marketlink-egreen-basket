@@ -38,7 +38,6 @@ function FieldError({ error }) {
 
 FieldError.propTypes = { error: PropTypes.shape({ message: PropTypes.string }) };
 
-/** Add form (no guideline) or inline edit form (existing guideline). */
 function GuidelineForm({ guideline, categories, prefill, onDone }) {
   const save = useSavePriceGuideline();
   const isEdit = Boolean(guideline);
@@ -147,11 +146,6 @@ GuidelineForm.propTypes = {
   onDone: PropTypes.func,
 };
 
-/**
- * What a sensible listing costs per category and unit. The AI listing review flags anything
- * outside these ranges (and anything far from what other stalls charge) for a closer look.
- * Outside a range is never blocked: it is a hint for the admin who decides.
- */
 export default function AdminPriceGuidelinesPage() {
   const guidelinesQuery = usePriceGuidelines();
   const categoriesQuery = useAdminCategories();
@@ -187,7 +181,6 @@ export default function AdminPriceGuidelinesPage() {
         <h2 className="page-primitive__heading" id="pg-add-title">
           <Plus aria-hidden className="admin-price-guidelines__icon" /> Add a guideline
         </h2>
-        {/* Keyed on the prefill so "Add" from a category below resets the form to it. */}
         <GuidelineForm
           key={`${formRound}-${prefill ? `${prefill.category}-${prefill.unit}` : 'blank'}`}
           categories={categories}

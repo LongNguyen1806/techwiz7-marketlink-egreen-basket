@@ -50,8 +50,6 @@
   width: 100%;
 }
 
-/* The flagged content, quoted under the note. Indented and quieter than the note, because
-   the note is what an admin wrote and this is what they were writing about. */
 .admin-queue-page__preview {
   margin-top: var(--space-1);
   border-left: 2px solid var(--color-border);
@@ -81,16 +79,12 @@
   text-decoration: underline;
 }
 
-/* The note that was written when the item was flagged, repeated at the top of the panel so
-   the admin reads what they are meant to be checking before the item itself. */
 .admin-queue-page__panel-note {
   margin-bottom: var(--space-3);
   font-size: var(--text-sm);
   color: var(--color-muted-foreground);
 }
 
-
-/* The decision lives under the item it is about, so both are on screen at once. */
 .admin-queue-page__panel-form {
   display: flex;
   flex-direction: column;

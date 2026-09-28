@@ -15,8 +15,6 @@ export function useReorderCategories() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (ids) => adminApi.reorderCategories(ids),
-    // Returned, not fired and forgotten: the drag stays pending until the refreshed list is
-    // in the cache, so the page never shows the optimistic order next to stale counts.
     onSuccess: () => {
       toast.success('Category order saved');
       return queryClient.invalidateQueries({

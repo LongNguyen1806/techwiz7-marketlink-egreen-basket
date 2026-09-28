@@ -34,7 +34,6 @@ export default function AdminFarmersPage() {
   const status = isStatus(statusParam) ? statusParam : undefined;
   const [q, setQ] = useState(params.get('q') ?? '');
   const csv = useCsvDownload('farmers');
-  // One request per pause in typing, not one per keystroke.
   const searchTerm = useDebouncedValue(q);
   const [page, setPage] = useState(1);
 
@@ -43,8 +42,6 @@ export default function AdminFarmersPage() {
   const [reason, setReason] = useState('');
   const [impactText, setImpactText] = useState('');
 
-  // Sorting lives in the URL alongside the filters, so a sorted view survives a refresh and
-  // can be shared as a link.
   const ordering = params.get('ordering') || undefined;
   const sortBy = (next) => {
     const updated = new URLSearchParams(params);
@@ -66,7 +63,6 @@ export default function AdminFarmersPage() {
     if (searchTerm) next.set('q', searchTerm);
     else next.delete('q');
     if (next.toString() === params.toString()) return;
-    // replace, not push: otherwise every settled keystroke becomes a Back button step.
     setParams(next, { replace: true });
   }, [searchTerm, params, setParams]);
 
@@ -113,8 +109,6 @@ export default function AdminFarmersPage() {
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
-            // Reset here rather than in the effect: this is where the intent is, and it
-            // saves the extra render that setting state during an effect costs.
             setPage(1);
           }}
           className="page-primitive__input-narrow"
@@ -136,8 +130,6 @@ export default function AdminFarmersPage() {
             </option>
           ))}
         </select>
-        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
-            learns one place to look rather than one per screen. */}
         <Button
           size="sm"
           variant="ghost"

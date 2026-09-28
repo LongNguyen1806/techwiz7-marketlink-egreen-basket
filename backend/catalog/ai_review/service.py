@@ -38,12 +38,8 @@ from system.models import FlagTarget, ModerationFlag
 logger = logging.getLogger("marketlink")
 
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="marketlink-ai-review")
-# A review stuck as UNAVAILABLE is tried again by the sweep after this long.
 UNAVAILABLE_RETRY_AFTER = timedelta(minutes=10)
 FLAG_NOTE_PREFIX = "AI review:"
-
-
-# ---------------------------------------------------------------------------- inputs
 
 
 def _read_image(product: Product) -> tuple[bytes | None, str | None]:
@@ -94,17 +90,12 @@ def _category_names() -> list[str]:
     return list(Category.objects.filter(is_active=True).order_by("display_order", "name").values_list("name", flat=True))
 
 
-# ---------------------------------------------------------------------------- one review
-
-
 def evaluate(listing: ListingInput, *, kind: str = AIReviewKind.LISTING, use_ai: bool = True) -> dict:
     """Both layers over one listing, without saving anything (used by review, precheck, eval)."""
     started = time.monotonic()
     findings: list[Finding] = [] if kind == AIReviewKind.WEEKLY_IMAGE else rules.run_rules(listing)
     ai_error, ai_used, suggested, summary, model_name = None, False, None, "", ""
     if use_ai and kind == AIReviewKind.LISTING and verdict_for(findings) == AIVerdict.LIKELY_VIOLATION:
-        # The rules already found a likely violation; asking the model cannot make it cleaner,
-        # and on the free tier every request counts.
         use_ai = False
         ai_error = "the rule checks already found a likely violation, so the AI was not asked (saves quota)"
     if use_ai:
@@ -116,7 +107,6 @@ def evaluate(listing: ListingInput, *, kind: str = AIReviewKind.LISTING, use_ai:
             ai_error = str(exc)
 
     verdict = verdict_for(findings)
-    # The rules found nothing but the model could not be asked: not a clean bill of health.
     if not ai_used and use_ai and verdict == AIVerdict.PASS:
         verdict = AIVerdict.UNAVAILABLE
     if not summary:
@@ -190,7 +180,6 @@ def review_product(product_id: int, *, kind: str = AIReviewKind.LISTING, force: 
 def _act_on_listing(product_id: int, review: ProductAIReview) -> None:
     """#6: approve a clean pass, hold a likely violation, leave the rest to an admin."""
     if review.verdict == AIVerdict.LIKELY_VIOLATION:
-        # Already off sale while PENDING; the flag raised above puts it in the queue.
         review.auto_action, review.auto_action_at = AIAutoAction.HELD, timezone.now()
         review.save(update_fields=["auto_action", "auto_action_at"])
         return
@@ -203,7 +192,6 @@ def _act_on_listing(product_id: int, review: ProductAIReview) -> None:
             .filter(pk=product_id, review_status=ReviewStatus.PENDING, is_archived=False)
             .first()
         )
-        # An admin may have decided in the seconds the model took; theirs stands.
         if product is None:
             return
         now = timezone.now()
@@ -245,7 +233,6 @@ def _tell_admins_of_approval(product: Product) -> None:
         if unread is None:
             notify(recipient=admin, event_type=NotificationType.AI_AUTO_APPROVED, context=context)
         else:
-            # Moved to the top of the list with the new count, still a single row.
             Notification.objects.filter(pk=unread.pk).update(
                 title=title, message=message, target_url=target_url, created_at=timezone.now()
             )
@@ -262,7 +249,6 @@ def _alert_admins(product: Product, review: ProductAIReview) -> None:
         target_type=FlagTarget.PRODUCT, target_id=product.pk, resolved_at__isnull=True
     ).exists()
     if not already_open:
-        # raised_by stays empty: the system raised it, and the note says so.
         ModerationFlag.objects.create(
             target_type=FlagTarget.PRODUCT,
             target_id=product.pk,
@@ -292,7 +278,6 @@ def record_admin_decision(product_id: int, decision: str, actor=None) -> None:
         review.admin_decision = decision
         review.admin_decided_at = timezone.now()
         fields = ["admin_decision", "admin_decided_at"]
-        # Deciding a listing the AI already decided counts as having checked it (#8).
         if review.auto_action and review.admin_checked_at is None:
             review.admin_checked_at, review.admin_checked_by = review.admin_decided_at, actor
             fields += ["admin_checked_at", "admin_checked_by"]
@@ -310,14 +295,11 @@ def close_ai_flags(product_id: int, *, resolution: str, actor=None) -> int:
     ).update(resolved_at=timezone.now(), resolved_by=actor, resolution=resolution[:500])
 
 
-# ---------------------------------------------------------------------------- scheduling
-
-
 def _run_in_background(product_id: int) -> None:
     close_old_connections()
     try:
         review_product(product_id)
-    except Exception:  # never let a review failure reach the farmer's request
+    except Exception:
         logger.exception("AI listing review failed for product %s", product_id)
     finally:
         close_old_connections()

@@ -100,7 +100,6 @@ def auto_lock_summary(customer_id: int) -> dict | None:
     )
     if entry is None:
         return None
-    # A later manual lock replaces the automatic one as the reason for the account being off.
     manual_after = AuditLog.objects.filter(
         action=AuditAction.CUSTOMER_DEACTIVATED,
         details__customer_id=customer_id,

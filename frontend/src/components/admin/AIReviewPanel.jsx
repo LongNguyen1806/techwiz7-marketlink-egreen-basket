@@ -25,7 +25,6 @@ function riskLevel(score) {
   return 'low';
 }
 
-/** "Rules" or "AI": which layer said it, so an admin knows how much to weigh it. */
 function SourceTag({ source }) {
   const isAI = source === 'ai';
   const Icon = isAI ? Bot : ListChecks;
@@ -39,11 +38,6 @@ function SourceTag({ source }) {
 
 SourceTag.propTypes = { source: PropTypes.string.isRequired };
 
-/**
- * The AI's advice on one listing, next to the admin's Approve / Refuse buttons.
- *
- * Advice only: nothing here approves, refuses or hides. The admin reads it and decides.
- */
 export function AIReviewPanel({ review, photoCheck, onRecheck, rechecking = false }) {
   const [expanded, setExpanded] = useState(false);
 

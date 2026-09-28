@@ -51,7 +51,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Anything above zero is work, so it reads as work rather than as another statistic. */
 .admin-dashboard-page__task--live {
   border-color: var(--color-primary);
 }
@@ -68,10 +67,6 @@
   font-size: var(--text-sm);
 }
 
-/* ---- Orders by status --------------------------------------------------- */
-
-/* The donut sizes itself from the card, and the total sits in the hole. Position relative so
-   that centred overlay has something to anchor to. */
 .admin-dashboard-page__donut {
   position: relative;
   height: 13rem;
@@ -100,10 +95,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Column count follows how wide this card actually is, not how wide the screen is. On a
-   tablet the card spans the page and two columns fit comfortably; from 1024px the card sits
-   beside the line chart at roughly a third of the width, and two columns there is what was
-   cutting "Completed" down to "Compl...". */
 .admin-dashboard-page__legend {
   display: grid;
   grid-template-columns: 1fr;
@@ -145,15 +136,12 @@
   color: var(--color-muted-foreground);
 }
 
-/* Fixed width so the percentages line up in a column instead of drifting with the counts. */
 .admin-dashboard-page__legend-share {
   width: 2.25rem;
   text-align: right;
   color: var(--color-muted-foreground);
   font-variant-numeric: tabular-nums;
 }
-
-/* ---- Orders by month ---------------------------------------------------- */
 
 .admin-dashboard-page__month-header {
   display: flex;

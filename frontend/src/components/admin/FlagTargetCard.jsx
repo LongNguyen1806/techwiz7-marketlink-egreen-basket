@@ -10,8 +10,6 @@ import { formatVnd } from '@/utils/formatters';
 
 import './FlagTargetCard.css';
 
-// Each kind of flagged thing already has an admin endpoint that can return exactly one row,
-// so this reads the existing ones rather than adding a lookup of its own.
 const LOADERS = {
   PRODUCT: async (id) => {
     const page = await adminApi.getModerationProducts({ product_id: id });
@@ -147,12 +145,6 @@ const BODIES = {
   CUSTOMER: CustomerBody,
 };
 
-/**
- * The flagged thing itself, read without leaving the queue.
- *
- * Sending the admin off to another screen means coming back to an empty search box and the
- * filters reset, which for a queue worked item by item is the whole cost of the decision.
- */
 export function FlagTargetCard({ flag }) {
   const loader = LOADERS[flag?.target_type];
   const query = useQuery({

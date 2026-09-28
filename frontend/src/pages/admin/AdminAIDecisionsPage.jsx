@@ -48,7 +48,6 @@ const ACTION = {
   HELD: { label: 'Held by AI', variant: 'destructive' },
 };
 
-// #8: every listing the AI put on sale or kept off sale by itself, so a person can look.
 export default function AdminAIDecisionsPage() {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);

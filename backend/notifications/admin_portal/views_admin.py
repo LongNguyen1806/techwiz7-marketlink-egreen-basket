@@ -119,5 +119,4 @@ class AnnouncementDetailView(RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         self.get_object().delete()
-        # 204 carries no body (Pass 4B §2.1).
         return Response(status=status.HTTP_204_NO_CONTENT)

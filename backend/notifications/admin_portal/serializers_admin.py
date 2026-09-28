@@ -8,8 +8,6 @@ CONTENT_MAX_LENGTH = 1000
 
 
 class AnnouncementAdminReadSerializer(serializers.ModelSerializer):
-    # Admin accounts are provisioned by IT and have no profile row, so the email is
-    # the only human identifier available for "who posted this".
     created_by_name = serializers.EmailField(source="created_by.email", read_only=True, default=None)
 
     class Meta:

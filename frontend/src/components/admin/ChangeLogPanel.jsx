@@ -21,7 +21,6 @@ function shown(value) {
   return String(value);
 }
 
-
 export function ChangeLogPanel({ model, id }) {
   const query = useAdminChangeLog(model, id);
 

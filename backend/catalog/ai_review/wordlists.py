@@ -16,7 +16,6 @@ inside "grass" or "assam", and "dm" does not fire inside a longer word.
 import re
 import unicodedata
 
-# ---------------------------------------------------------------------------- normalisation
 
 _LEET = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i"})
 _SEPARATORS = re.compile(r"[\s._\-*+~^'\"`|/\\]+")
@@ -46,14 +45,9 @@ def marked_words(text: str) -> list[str]:
     return [word for word in re.split(r"[^\w]+", normalised) if word]
 
 
-# ---------------------------------------------------------------------------- lists
-
-# Offensive language. English and Vietnamese, including common teencode abbreviations.
 PROFANITY_ASCII = {
-    # English
     "fuck", "fucking", "fucker", "motherfucker", "shit", "bullshit", "bitch", "cunt", "asshole",
     "bastard", "dick", "pussy", "whore", "slut", "nigger", "faggot", "retard", "ass", "wtf",
-    # Vietnamese without marks that cannot be mistaken for a produce word
     "dit me", "dit con me", "du ma", "du me", "dcm", "dmm", "dkm", "vcl", "vkl", "clgt", "cmm",
     "dm", "vl", "occho", "oc cho", "thang cho", "con di", "cave",
 }
@@ -61,26 +55,21 @@ PROFANITY_EXACT = {
     "địt", "đụ", "lồn", "cặc", "buồi", "đéo", "đĩ", "đm", "đcm", "đmm",
 }
 
-# Things a farmers' market must not sell, in English and Vietnamese.
 PROHIBITED_ASCII = {
-    # vehicles and electronics
     "motorbike", "motorcycle", "scooter", "car", "iphone", "samsung", "smartphone", "laptop",
     "tablet", "television", "headphone", "honda", "yamaha", "xe may", "xe dap dien", "dien thoai",
     "may tinh", "tivi", "tai nghe", "laptop cu",
-    # weapons, drugs and gambling
     "gun", "pistol", "rifle", "ammo", "ammunition", "cannabis", "marijuana", "cocaine", "heroin",
     "meth", "kratom", "ma tuy", "can sa", "thuoc lac", "ke da", "dan duoc", "ca do", "lo de",
 }
 PROHIBITED_EXACT = {"súng", "đạn", "cần sa", "ma túy", "ma tuý"}
 
-# Allowed at some markets but worth an admin's eye.
 RESTRICTED_ASCII = {
     "vodka", "whisky", "whiskey", "cigarette", "cigar", "vape", "tobacco", "pesticide",
     "thuoc la", "thuoc tru sau", "thuoc diet co", "ruou manh",
 }
 RESTRICTED_EXACT = {"rượu", "thuốc lá"}
 
-# Moving the sale off the platform.
 CONTACT_WORDS = {"zalo", "facebook", "fb", "telegram", "whatsapp", "viber", "messenger", "inbox", "ib", "sdt", "hotline"}
 
 CONTACT_PATTERNS = (
@@ -110,7 +99,6 @@ def _contains(text: str, ascii_terms: set[str], exact_terms: set[str]) -> list[s
     hits = []
     for term in ascii_terms:
         if " " in term:
-            # Multi-word terms: as a phrase, or run together ("ditme", "d i t m e").
             if f" {term} " in f" {joined} " or (len(term) > 5 and term.replace(" ", "") in compact):
                 hits.append(term)
         elif len(term) <= 4:

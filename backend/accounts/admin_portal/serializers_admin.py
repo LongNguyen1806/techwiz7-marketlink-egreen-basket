@@ -11,7 +11,6 @@ REASON_MAX_LENGTH = 500
 
 
 class AdminFarmerRowSerializer(serializers.ModelSerializer):
-    # farmer_profiles is keyed by user_id, so the profile pk is the user id.
     id = serializers.IntegerField(source="user_id", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
@@ -92,7 +91,6 @@ class AdminCustomerDetailSerializer(AdminCustomerRowSerializer):
 
     @extend_schema_field(AutoLockSerializer(allow_null=True))
     def get_auto_lock(self, profile) -> dict | None:
-        # Set when the system, not an admin, locked the account after repeated no-shows.
         summary = auto_lock_summary(profile.user_id)
         return AutoLockSerializer(summary).data if summary else None
 
@@ -138,14 +136,10 @@ class AdminFarmerEditSerializer(serializers.ModelSerializer):
         fields = ["stall_name", "contact_person", "phone", "description", "order_cutoff_hours"]
         extra_kwargs = {field: {"required": False} for field in fields}
 
-    # The same rules as registration (FarmerRegisterAuthSerializer): an admin edit must not
-    # let through what signing up would refuse.
     stall_name = serializers.CharField(min_length=2, max_length=100, required=False)
     contact_person = serializers.CharField(min_length=2, max_length=100, required=False)
 
     def validate_phone(self, value: str) -> str:
-        # Declaring the field here would drop the model's UniqueValidator, so uniqueness is
-        # checked in the service against the normalised number instead (D-028).
         if not value or not value.strip():
             raise serializers.ValidationError("A phone number is required.")
         return clean_phone(value)
@@ -159,7 +153,6 @@ class AdminCustomerEditSerializer(serializers.ModelSerializer):
         fields = ["full_name", "phone", "address"]
         extra_kwargs = {field: {"required": False} for field in fields}
 
-    # The same rules as registration (CustomerRegisterWriteSerializer).
     full_name = serializers.CharField(min_length=2, max_length=100, required=False)
     address = serializers.CharField(min_length=5, max_length=255, required=False)
 

@@ -29,8 +29,6 @@ const TARGET_LABEL = {
 };
 
 const QUEUE_FILTERS = [
-  // Same debounced box as every other admin table: FilterBar waits for typing to stop and
-  // the query runs with staleTime 0, so a stale page of results can never come back.
   { name: 'q', label: 'Search note or number', type: 'search' },
   {
     name: 'target_type',
@@ -52,8 +50,6 @@ const RESOLUTION_MIN_LENGTH = 5;
 
 export default function AdminQueuePage() {
   const [filters, setFilters] = useState({});
-  // Read in a panel over the queue rather than on another screen: leaving the page throws
-  // away the search and the filters, and this list is worked through one item at a time.
   const [reviewing, setReviewing] = useState(null);
   const [resolution, setResolution] = useState('');
   const queryClient = useQueryClient();
@@ -117,8 +113,6 @@ export default function AdminQueuePage() {
                   </span>
                 </div>
                 <p className="admin-queue-page__note">{flag.note}</p>
-                {/* The reported content itself, and the way to it. Deciding without looking
-                    is guesswork, and a number alone means hunting for the row by hand. */}
                 {flag.target_preview ? (
                   <p className="admin-queue-page__preview">{flag.target_preview}</p>
                 ) : (
@@ -174,8 +168,6 @@ export default function AdminQueuePage() {
           <FlagTargetCard flag={reviewing} />
 
           {reviewing?.target_url ? (
-            // A new tab, not this one: the queue keeps its search and its filters, and the
-            // admin comes back to the panel still open on the same item.
             <a
               className="admin-queue-page__link"
               href={reviewing.target_url}
@@ -193,8 +185,6 @@ export default function AdminQueuePage() {
               {reviewing.resolution}
             </p>
           ) : (
-            // The whole decision happens here. Closing the panel to open a second dialog put
-            // the item being judged out of sight at the moment of judging it.
             <form
               className="admin-queue-page__panel-form"
               onSubmit={(event) => {

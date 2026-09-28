@@ -24,7 +24,6 @@ import { Textarea } from '@/components/ui/Textarea';
 
 import './AdminCustomersPage.css';
 
-// AD-12 requires 5 to 500 characters; checking here saves a round trip.
 const REASON_MIN_LENGTH = 5;
 
 const CUSTOMER_FILTERS = [

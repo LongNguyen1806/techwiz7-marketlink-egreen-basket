@@ -92,8 +92,6 @@ class MarketAdminReadSerializer(serializers.ModelSerializer):
         )
         return ClosureSerializer(rows, many=True).data
 
-    # A bare `-> None` hint tells the schema generator nothing, so the nullable type
-    # each field keeps in MarketSummary is declared explicitly.
     @extend_schema_field(serializers.FloatField(allow_null=True))
     def get_distance_km(self, market):
         return None
@@ -104,9 +102,6 @@ class MarketAdminReadSerializer(serializers.ModelSerializer):
 
 
 class MarketAdminWriteSerializer(serializers.ModelSerializer):
-    # Declaring `name` replaces the auto-built field and with it the model's
-    # UniqueValidator, so it is restored explicitly. The lookup runs under the column's
-    # utf8mb4_0900_as_ci collation: accent-sensitive, case-insensitive.
     name = serializers.CharField(
         min_length=NAME_MIN_LENGTH,
         max_length=NAME_MAX_LENGTH,
@@ -141,7 +136,6 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_image(self, value):
-        # NFR-01: same checks as farmer uploads (type, 2MB, real content); the re-encoded copy is stored.
         if not value:
             return value
         try:

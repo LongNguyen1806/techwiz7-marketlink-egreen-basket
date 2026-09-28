@@ -27,10 +27,7 @@ const STATUSES = [
   'NO_SHOW',
 ];
 
-// Read only. Accepting, declining and cancelling stay with the stall and the shopper; this
-// screen exists so support can answer a question about an order without changing it.
 export default function AdminOrdersPage() {
-  // ?q= lets another page (a customer's missed orders) open this list on one order.
   const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
@@ -102,8 +99,6 @@ export default function AdminOrdersPage() {
           onChange={(event) => setTo(event.target.value)}
           className="page-primitive__input-auto"
         />
-        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
-            learns one place to look rather than one per screen. */}
         <Button
           size="sm"
           variant="ghost"

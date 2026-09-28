@@ -6,13 +6,11 @@ import { QUERY_KEYS } from '@/config/constants';
 import { STALE } from '@/constants/staleTimes';
 import { adminApi } from '../../../api/admin/adminApi';
 
-// A re-run changes the queue row it belongs to and the agreement figures.
 function invalidateAIViews(queryClient) {
   void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_MODERATION_PRODUCTS()[0]] });
   void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_AI_REVIEW_STATS()[0]] });
 }
 
-/** How the AI's advice compared with admin decisions over the last `days` days. */
 export function useAIReviewStats(days = 30) {
   return useQuery({
     queryKey: QUERY_KEYS.ADMIN_AI_REVIEW_STATS(days),
@@ -26,7 +24,6 @@ export function useAIRecheck() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: adminApi.recheckProductWithAI,
-    // The model can take several seconds; the row shows its own spinner meanwhile.
     onSuccess: (product) => {
       const verdict = product?.ai_review?.verdict;
       toast.success(verdict ? `AI review finished: ${verdict.replaceAll('_', ' ').toLowerCase()}` : 'AI review finished');
@@ -45,7 +42,6 @@ export function usePriceGuidelines() {
   });
 }
 
-/** Create or update one guideline. Silent: the form shows field errors itself. */
 export function useSavePriceGuideline() {
   const queryClient = useQueryClient();
   return useMutation({

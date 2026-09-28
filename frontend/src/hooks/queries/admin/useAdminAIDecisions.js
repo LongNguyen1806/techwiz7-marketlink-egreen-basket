@@ -7,7 +7,6 @@ import { adminApi } from '../../../api/admin/adminApi';
 
 const KEY = ['admin', 'ai-decisions'];
 
-// Everything a decision touches: the list, the sidebar badge, and the product queues.
 function refresh(queryClient) {
   void queryClient.invalidateQueries({ queryKey: KEY });
   void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_AI_REVIEW_STATS()[0]] });
@@ -23,7 +22,6 @@ export function useAIDecisions(params) {
   });
 }
 
-/** The admin looked and lets the AI's decision stand. */
 export function useCheckAIDecision() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -36,10 +34,6 @@ export function useCheckAIDecision() {
   });
 }
 
-/**
- * Undo what the AI did: take an approved listing off sale (reject with a reason), or put a held
- * one on sale (approve). Either one also counts as checked on the server.
- */
 export function useOverrideAIDecision() {
   const queryClient = useQueryClient();
   return useMutation({

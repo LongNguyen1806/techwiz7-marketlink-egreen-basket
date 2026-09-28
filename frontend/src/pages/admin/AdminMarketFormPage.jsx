@@ -40,11 +40,8 @@ const CONFIRM_WORD = "confirm";
 const MIN_ADDRESS_LENGTH = 5;
 const FOUND_ZOOM = 17;
 
-// The columns hold six decimals (about 10 cm); a dragged pin gives many more, which the API refuses.
 const toCoordinate = (value) => Math.round(value * 1e6) / 1e6;
 
-// MapContainer only reads `center` once, so a pin placed from the address would sit off-screen.
-// This moves the view there, and only then: a click or a drag is already where the admin looks.
 function FlyTo({ target }) {
   const map = useMap();
   useEffect(() => {
@@ -53,8 +50,6 @@ function FlyTo({ target }) {
   return null;
 }
 
-// The form has no photo field, so the photo is never sent: the stored one stays. Sending the
-// URL back would be refused, the API only takes an uploaded file there.
 function toPayload(values) {
   return {
     name: values.name,
@@ -110,12 +105,10 @@ export default function AdminMarketFormPage() {
   const marketQuery = useAdminMarket(marketId, isEdit);
   const save = useSaveAdminMarket(isEdit ? marketId : undefined);
   const preview = useMarketEditImpact(marketId);
-  // Set when a save reaches other people; the save waits for the admin to confirm it.
   const [pending, setPending] = useState(null);
   const [typed, setTyped] = useState("");
   const geocode = useGeocodeAddress();
   const [flyTarget, setFlyTarget] = useState(null);
-  // What the pin says about itself, shown under the address: found, not found, or moved by hand.
   const [pinNote, setPinNote] = useState(null);
   const [lookedUp, setLookedUp] = useState("");
   const form = useForm({
@@ -205,7 +198,6 @@ export default function AdminMarketFormPage() {
       commit(payload);
       return;
     }
-    // A new address or schedule reaches shoppers and stalls, so it is shown before it is sent.
     preview.mutate(payload, {
       onSuccess: (impact) => {
         const reaches =
@@ -247,7 +239,6 @@ export default function AdminMarketFormPage() {
                   label='Address'
                   requiredMark
                   {...form.register("address", {
-                    // Leaving the box looks the address up once; retyping the same text does not.
                     onBlur: (event) => {
                       const address = event.target.value.trim();
                       if (address !== lookedUp) findAddress();
@@ -340,7 +331,6 @@ export default function AdminMarketFormPage() {
         description='Here is who this change reaches. Each person gets one notice.'
         confirmLabel='Save and notify'
         loading={save.isPending}
-        // Moving orders is the part that changes someone's plans, so that one asks for the word.
         confirmDisabled={moving > 0 && typed.trim().toLowerCase() !== CONFIRM_WORD}
         onConfirm={() => {
           if (!pending) return;

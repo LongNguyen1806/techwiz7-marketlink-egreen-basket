@@ -42,8 +42,6 @@ function defaultRange() {
   };
 }
 
-// A full dong figure at the end of a bar is a dozen characters wide and pushes the plot area
-// to nothing. The tooltip still gives the exact number.
 function compactVnd(value) {
   const amount = Number(value) || 0;
   if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)} tỷ`;
@@ -66,8 +64,6 @@ export default function AdminReportsPage() {
   const marketsQuery = useAdminMarkets();
   const reportQuery = useAdminReports(applied);
 
-  // Both charts want the biggest bar at the top, and revenue arrives as a decimal string
-  // that a chart axis cannot measure.
   const report = reportQuery.data;
   const ordersByStatus = useMemo(
     () =>
@@ -173,9 +169,6 @@ export default function AdminReportsPage() {
           </select>
         </div>
         <Button onClick={onApply}>Apply</Button>
-        {/* Every filter row in the admin ends with this button, enabled or not, so an admin
-            learns one place to look rather than one per screen. Here "clear" means the
-            default range, because a report with no dates at all is not a report. */}
         <Button
           variant="ghost"
           className="filter-bar__clear"
@@ -208,8 +201,6 @@ export default function AdminReportsPage() {
               </CardHeader>
               <CardContent className="page-primitive__chart-card-body">
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* Bars run sideways: eight status names along the bottom either overlap
-                      or have to be tilted, and neither reads well. */}
                   <BarChart
                     layout="vertical"
                     data={ordersByStatus}
@@ -246,8 +237,6 @@ export default function AdminReportsPage() {
               </CardHeader>
               <CardContent className="page-primitive__chart-card-body">
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* Same reasoning, plus market names are longer than status names and the
-                      money labels need room at the end of each bar. */}
                   <BarChart
                     layout="vertical"
                     data={revenueByMarket}

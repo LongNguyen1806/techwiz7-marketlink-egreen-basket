@@ -138,16 +138,12 @@ export default function AdminMarketsPage() {
         }}
         title={`Close ${closing?.name ?? 'this market'}?`}
         description={
-          // A stall trades at exactly one market, so closing the market also suspends every
-          // stall at it until the market reopens. The dialog has to say so before the click.
           'Every order still open at this market will be cancelled and the stock returned. ' +
           'Each stall here is suspended until the market reopens, and put back when it does.'
         }
         confirmLabel="Close market"
         destructive
         loading={toggle.isPending}
-        // Closing cancels real orders and emails everyone at the market, so it asks for the
-        // word to be typed rather than relying on one well-aimed click.
         confirmDisabled={
           typed.trim().toLowerCase() !== CONFIRM_WORD ||
           reason.trim().length < REASON_MIN_LENGTH

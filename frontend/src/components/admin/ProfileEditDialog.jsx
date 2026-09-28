@@ -13,8 +13,6 @@ import { Textarea } from '../ui/Textarea';
 import { ApiError } from '../../lib/ApiError';
 import '../../styles/admin/ProfileEditDialog.css';
 
-// The rules registration uses, checked before the save so the admin sees them at once.
-// The server checks the same rules again; this only saves a round trip.
 export const VN_PHONE = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 
 function problemWith(field, raw) {
@@ -38,8 +36,6 @@ export function ProfileEditDialog({
   onOpenChange,
   title,
   note,
-  // Shown but never editable: the email is what the account signs in with, and there is no
-  // endpoint for changing someone else's.
   signInEmail,
   fields = [],
   pending = false,

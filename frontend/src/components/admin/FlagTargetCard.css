@@ -1,7 +1,3 @@
-/* The shared admin primitives. Every route is a lazy chunk with its own stylesheet, so a
-   page that uses page-primitive__* classes has to pull them in here: landing straight on
-   this route would otherwise render it unstyled, and it only looked fine because another
-   page had already loaded them. */
 @import '../../styles/common/page-primitives.css';
 
 .flag-target {
@@ -39,8 +35,6 @@
   margin: 0;
 }
 
-/* Label left, value right, on one baseline. The values are the part being judged, so they
-   take the space and wrap rather than being cut off. */
 .flag-target__row {
   display: grid;
   grid-template-columns: 7.5rem 1fr;

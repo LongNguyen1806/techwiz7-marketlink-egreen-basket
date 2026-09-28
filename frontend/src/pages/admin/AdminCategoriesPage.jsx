@@ -59,9 +59,6 @@ function SortableRow({ cat, onDelete }) {
 
 export default function AdminCategoriesPage() {
   const query = useAdminCategories();
-  // Both pieces of state start from the same cached value. Starting `items` at [] while
-  // `syncedData` already held the cache made the sync guard below false on the very first
-  // render, so arriving with a warm cache left the list permanently empty.
   const [items, setItems] = useState(() => query.data ?? []);
   const [syncedData, setSyncedData] = useState(query.data);
   const [deleting, setDeleting] = useState(null);
@@ -75,8 +72,6 @@ export default function AdminCategoriesPage() {
     if (query.data) setItems(query.data);
   }
 
-  // Which icon belongs to which category, so the picker can show the spoken-for ones as
-  // spoken for instead of letting the admin pick one and be refused by the API.
   const takenIcons = Object.fromEntries(items.map((cat) => [cat.icon, cat.name]));
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -90,9 +85,6 @@ export default function AdminCategoriesPage() {
     const oldIndex = items.findIndex((i) => i.id === active.id);
     const newIndex = items.findIndex((i) => i.id === over.id);
     const next = arrayMove(items, oldIndex, newIndex);
-    // The optimistic order above is what the admin sees; the refetch the mutation triggers
-    // brings back the rows with their product counts, which the individual PATCH replies
-    // do not carry.
     setItems(next);
     reorder.mutate(next.map((i) => i.id));
   };

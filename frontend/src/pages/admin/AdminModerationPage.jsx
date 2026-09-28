@@ -22,8 +22,6 @@ import { Textarea } from '@/components/ui/Textarea';
 
 import './AdminModerationPage.css';
 
-// AD-23 and AD-24 both require 5 to 500 characters; refusing shorter text here saves a round
-// trip that would come back as a 400.
 const REASON_MIN_LENGTH = 5;
 const FLAG_NOTE_MIN_LENGTH = 5;
 
@@ -73,9 +71,6 @@ const REVIEW_SORT = [
 ];
 
 export default function AdminModerationPage() {
-  // The follow-up queue links here with the exact review it wants. Read once into the initial
-  // filter state rather than kept in sync: the admin may widen the filter afterwards, and the
-  // URL should not keep dragging them back to one row.
   const [params, setParams] = useSearchParams();
   const [pinned] = useState(() => ({
     review_id: params.get('review_id') ?? undefined,

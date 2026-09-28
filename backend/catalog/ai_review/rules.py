@@ -13,10 +13,8 @@ from catalog.models import PriceGuideline, Product, ReviewStatus, Unit
 
 RULES_VERSION = "rules-v1"
 
-# The peer check needs enough comparable listings to mean anything.
 PEER_MINIMUM = 5
 PEER_RATIO = Decimal("5")
-# Far outside the guideline is no longer "unusual" but almost certainly wrong.
 GUIDELINE_FAR_RATIO = Decimal("10")
 
 _UNIT_LABEL = {value: label.lower() for value, label in Unit.choices}
@@ -88,7 +86,6 @@ def check_price(listing: ListingInput) -> list[Finding]:
                 f"for {listing.category_name}.",
             ))
 
-    # Against what other stalls charge for the same category and unit (approved listings only).
     peers = Product.objects.filter(
         category_id=listing.category_id,
         unit=listing.unit,

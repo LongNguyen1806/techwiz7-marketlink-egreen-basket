@@ -67,7 +67,6 @@ def _clear_hidden(product: Product) -> None:
     )
 
 
-# Both actions are idempotent: AD-21 lists no error code, so re-hiding just updates the reason.
 @transaction.atomic
 def hide_product(*, product_id: int, reason: str, actor) -> Product:
     product = Product.objects.select_for_update().get(pk=product_id)
@@ -102,16 +101,9 @@ def block_product(*, product_id: int, reason: str, actor) -> tuple[Product, list
     """
     product = Product.objects.select_for_update().get(pk=product_id)
 
-    # Materialised and sorted by id before any of them is touched, which is the lock order
-    # the rest of the codebase uses (orders, then products) and what keeps two admins acting
-    # on overlapping orders from deadlocking.
     order_ids = list(_open_orders_for(product_id).order_by("id").values_list("id", flat=True))
-    # A change request dies with the order it belonged to, as in the market closure cascade.
     Order.objects.filter(pk__in=order_ids).exclude(pending_change=None).update(pending_change=None)
     for order_id in order_ids:
-        # No new transition code: DECLINED from any open status already exists and already
-        # admits ADMIN (T3, T4, T12). Only the stamped reason differs from a suspension,
-        # which is why transition_order takes one.
         transition_order(
             order_id=order_id,
             to_status=OrderStatus.DECLINED,
@@ -130,9 +122,6 @@ def block_product(*, product_id: int, reason: str, actor) -> tuple[Product, list
             "reason": reason,
         },
     )
-    # The ids, not just how many: a takedown cancels other people's orders, and six months
-    # later the only way to answer "why was my order cancelled" is to find this row and read
-    # which orders it named.
     return product, order_ids
 
 
@@ -166,12 +155,6 @@ def open_order_counts(*, product_ids) -> dict[int, int]:
         .values_list("items__product_id", "total")
     )
     return dict(rows)
-
-
-# --------------------------------------------------------------------- review
-# A listing is written by a stall and shown to shoppers by an admin. Approving is the common
-# case and takes one click; rejecting has to say why, because the stall can only fix what it
-# has been told about.
 
 
 @transaction.atomic
@@ -211,7 +194,6 @@ def _set_review(product: Product, *, status: str, note: str | None, actor) -> No
     product.save(
         update_fields=["review_status", "review_note", "reviewed_at", "reviewed_by", "updated_at"]
     )
-    # Kept next to the AI's advice, so the admin screen can show how often the two agree.
     record_admin_decision(product.pk, status, actor)
 
 

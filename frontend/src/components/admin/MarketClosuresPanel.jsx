@@ -23,8 +23,6 @@ function formatRange(startDate, endDate) {
   return startDate === endDate ? startDate : `${startDate} → ${endDate}`;
 }
 
-// D-023: a closure covers a date range. The server also refuses a period that overlaps an
-// existing one or that covers an open order, so those errors arrive as a toast.
 export function MarketClosuresPanel({ marketId }) {
   const [deleting, setDeleting] = useState(null);
   const [startDate, setStartDate] = useState('');

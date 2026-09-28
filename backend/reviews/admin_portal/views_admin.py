@@ -106,7 +106,6 @@ class _ReviewModerationView(APIView):
 
     def _respond(self, request, *, review_id: int, action: str, message: str) -> Response:
         review = get_review_for_admin(review_type=self.review_type, review_id=review_id)
-        # Audit rows are written after the business transaction so a rollback cannot erase them.
         log_request_event(
             request,
             action=action,

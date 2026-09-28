@@ -25,8 +25,6 @@ def _int(raw: str | None) -> int | None:
         return None
 
 
-# Read-only on purpose. D-033 says the admin does not act on individual orders; this exists so
-# support can answer a question about one, which is a different thing from changing it.
 class AdminOrderListView(ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = OrderSummaryReadSerializer

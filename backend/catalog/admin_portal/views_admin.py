@@ -100,7 +100,6 @@ class CategoryDetailView(RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(category, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # Re-read through the selector so product_count is annotated again.
         updated = self.get_queryset().get(pk=category.pk)
         return api_response(
             message="Category updated.",
@@ -110,12 +109,9 @@ class CategoryDetailView(RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         delete_category(category_id=self.get_object().pk)
-        # 204 carries no body (Pass 4B §2.1), so this one response skips the envelope.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# How many cancelled order ids one audit row will carry. Beyond this the list stops being
-# something a person reads and the JSON column starts paying for it.
 AUDIT_ID_LIMIT = 200
 
 
@@ -158,8 +154,6 @@ def _product_context(products) -> dict:
         "held_quantities": get_open_held_quantities(product_ids=ids),
         "pending_quantities": get_pending_quantities(product_ids=ids),
         "markets": markets_for_products(product_ids=ids),
-        # What a block would cancel, shown on the row so the admin sees the cost before
-        # opening the dialog.
         "open_order_counts": open_order_counts(product_ids=ids),
     }
 
@@ -228,7 +222,6 @@ class _ProductModerationView(APIView):
         audit_extra: dict | None = None,
     ) -> Response:
         product = get_product_for_admin(product_id=product_id)
-        # Audit rows are written after the business transaction so a rollback cannot erase them.
         log_request_event(
             request,
             action=action,
@@ -315,9 +308,6 @@ class ProductBlockView(_ProductModerationView):
             action=AuditAction.PRODUCT_BLOCKED,
             message="Product blocked.",
             extra={"affected_orders": len(cancelled)},
-            # Which orders, not just how many. The count says the takedown was costly; the
-            # ids are what lets someone answer a shopper asking why theirs disappeared.
-            # Capped so one enormous takedown cannot bloat the log row.
             audit_extra={
                 "cancelled_order_ids": cancelled[:AUDIT_ID_LIMIT],
                 **(
@@ -338,8 +328,6 @@ class ProductUnblockView(_ProductModerationView):
     def post(self, request, id: int) -> Response:
         _require_product(id)
         unblock_product(product_id=id)
-        # Deliberately not "restored": the cancelled orders stay cancelled, and the message
-        # should not suggest otherwise.
         return self._respond(
             request,
             product_id=id,
@@ -390,9 +378,6 @@ def _require_product(product_id: int) -> int:
     if not Product.objects.filter(pk=product_id).exists():
         raise ResourceNotFoundError("Product not found.")
     return product_id
-
-
-# ------------------------------------------------------------------ AI-assisted listing review
 
 
 class ProductAIRecheckView(APIView):

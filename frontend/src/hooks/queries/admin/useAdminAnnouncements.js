@@ -6,8 +6,6 @@ import { adminApi } from '../../../api/admin/adminApi';
 
 export function useAdminAnnouncements(params = {}) {
   return useQuery({
-    // The filters are part of the key, so each combination is cached on its own; staleTime 0
-    // and the placeholder keep a filtered list fresh without blanking it between changes.
     queryKey: ['admin', 'announcements', params],
     queryFn: () => adminApi.getAnnouncements(params),
     staleTime: 0,

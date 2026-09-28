@@ -12,7 +12,6 @@ export function useRaiseFlag() {
     onSuccess: () => {
       toast.success('Added to the follow-up queue');
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_FLAGS()[0]] });
-      // The dashboard counts open flags, so it is now out of date.
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_DASHBOARD });
     },
     onError: (error) => toast.error(ApiError.fromUnknown(error).friendlyMessage),

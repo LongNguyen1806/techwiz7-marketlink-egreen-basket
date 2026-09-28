@@ -14,9 +14,6 @@ export function useAdminCustomers(params = {}) {
   return useQuery({
     queryKey: ['admin', 'customers', params],
     queryFn: () => adminApi.getCustomers(params),
-    // A list being searched and moderated: always ask the server (staleTime 0), and keep the
-    // previous rows on screen while the next query runs, so the table does not blink empty
-    // between keystrokes. The typing itself is debounced by the page.
     staleTime: 0,
     placeholderData: (previous) => previous,
   });

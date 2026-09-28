@@ -48,7 +48,6 @@ def _flag(raw: str | None) -> bool | None:
 
 
 def _confirmed(raw) -> bool:
-    # JSON sends a real boolean, a multipart form (the one with the photo) sends text.
     return raw is True or str(raw).strip().lower() in ("true", "1")
 
 
@@ -95,8 +94,6 @@ class MarketListCreateView(ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         market = create_market(validated=dict(serializer.validated_data))
-        # Every audit call below sits after its service returned, so the row is written only on
-        # success and only once the service's own transaction has committed (v1.8, AD-15 -> AD-17).
         log_request_event(
             request,
             action=AuditAction.MARKET_CREATED,
@@ -134,8 +131,6 @@ class MarketDetailView(RetrieveUpdateAPIView):
         market = self.get_object()
         serializer = self.get_serializer(market, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        # A change that leaves orders outside the schedule is refused until the admin has seen
-        # the count in the preview and sent confirm_affected_orders back with the save.
         _, impact = update_market(
             market_id=market.pk,
             validated=dict(serializer.validated_data),
@@ -155,7 +150,6 @@ class MarketDetailView(RetrieveUpdateAPIView):
                 "notified": summary["customers_to_notify"] + summary["stalls_to_notify"],
             },
         )
-        # Re-read through the selector so the counts and prefetches are back in place.
         data = MarketAdminReadSerializer(get_market_for_admin(market_id=market.pk)).data
         data["deactivated_slot_count"] = summary["slots_to_disable"]
         data["orders_to_reschedule"] = summary["orders_to_reschedule"]
@@ -304,7 +298,6 @@ class MarketClosureListCreateView(ListCreateAPIView):
         ]
     )
     def list(self, request, *args, **kwargs):
-        # AD-31 returns Closure[] with no [P] marker, so data is a plain list.
         serializer = ClosureSerializer(self.get_queryset(), many=True)
         return api_response(message="OK", request=request, data=serializer.data)
 
@@ -334,5 +327,4 @@ class MarketClosureDeleteView(APIView):
         if not MarketClosure.objects.filter(pk=id).exists():
             raise ResourceNotFoundError("Closure period not found.")
         delete_closure(closure_id=id)
-        # 204 carries no body (Pass 4B §2.1), so this response skips the envelope.
         return Response(status=status.HTTP_204_NO_CONTENT)

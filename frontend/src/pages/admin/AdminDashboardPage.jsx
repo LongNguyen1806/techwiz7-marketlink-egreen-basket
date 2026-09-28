@@ -31,8 +31,6 @@ import { orderStatusColor } from '@/utils/statusColors';
 
 import './AdminDashboardPage.css';
 
-// Counts an admin can act on today, each linking to the screen that acts on it. Separate
-// from the totals below, which describe the platform rather than ask for anything.
 const ATTENTION = [
   {
     key: 'stalls_awaiting_approval',
@@ -50,7 +48,6 @@ const ATTENTION = [
   { key: 'markets_closed', label: 'Markets closed', to: '/admin/markets' },
 ];
 
-// Inside one month the axis only needs the day number; the month and year are in the title.
 function dayOfMonth(value) {
   const [, , day] = String(value).split('-');
   return day ? String(Number(day)) : value;
@@ -71,8 +68,6 @@ function currentMonthKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Stepping by months on a Date is the one arithmetic the platform's dates need and the one
-// that setMonth gets wrong at year ends, so it is done on the parts.
 function shiftMonth(key, delta) {
   const [year, month] = key.split('-').map(Number);
   const index = year * 12 + (month - 1) + delta;
@@ -84,8 +79,6 @@ function monthTitle(key) {
   return `${MONTH_NAMES[month - 1]} ${year}`;
 }
 
-// A zero is already drawn on the axis line; printing it over twenty of them buries the days
-// that actually had orders.
 function countLabel({ x, y, value }) {
   if (!value) return null;
   return (
@@ -119,17 +112,13 @@ export default function AdminDashboardPage() {
     { label: 'Awaiting approval', value: data.totals.farmers_pending },
     { label: 'Shoppers', value: data.totals.customers },
     { label: 'Active markets', value: data.totals.markets_active },
-    // The chart below covers 30 days, so this total says out loud that it does not.
     { label: 'Orders all time', value: data.totals.orders },
   ];
 
-  // Spelt out here so the legend, the donut and the tooltip all read the same. Biggest slice
-  // first, so the eye and the legend follow the same order.
   const ordersByStatus = data.orders_by_status
     .map((row) => ({
       ...row,
       name: orderStatusLabel(row.status),
-      // The legend has a number and a percentage beside it, so it uses the short form.
       shortName: orderStatusShortLabel(row.status),
       color: orderStatusColor(row.status),
     }))
@@ -195,8 +184,6 @@ export default function AdminDashboardPage() {
               >
                 <ChevronLeft className="page-primitive__icon-sm" />
               </Button>
-              {/* Any of the twelve months of the year the admin is looking at, without
-                  clicking back through them one at a time. */}
               <select
                 className="page-primitive__select admin-dashboard-page__month-select"
                 aria-label="Month"
@@ -216,8 +203,6 @@ export default function AdminDashboardPage() {
                 size="icon"
                 variant="outline"
                 aria-label="Next month"
-                // There is nothing to see past today, and the endpoint refuses a year beyond
-                // the next one anyway.
                 disabled={month >= currentMonthKey()}
                 onClick={() => setMonth((current) => shiftMonth(current, 1))}
               >
@@ -298,16 +283,11 @@ export default function AdminDashboardPage() {
                   <Tooltip formatter={(value, name) => [`${value} (${share(value)}%)`, name]} />
                 </PieChart>
               </ResponsiveContainer>
-              {/* The hole is the natural place for the one number the chart is about, and it
-                  saves the slice labels that were colliding with the legend. */}
               <div className="admin-dashboard-page__donut-centre">
                 <b>{totalOrders}</b>
                 <span>orders</span>
               </div>
             </div>
-            {/* Hand-written rather than the charting library's own legend: this one carries a
-                count and a share per row and lines them up in a grid, which that component
-                cannot do. */}
             <ul className="admin-dashboard-page__legend">
               {ordersByStatus.map((row) => (
                 <li key={row.status}>
