@@ -52,7 +52,7 @@ class TestFarmerSignUpStartsASession:
     def test_me_shape_matches_the_other_portals(self, api):
         user = _register(api).json()["data"]["user"]
 
-        assert set(user) == {"id", "email", "role", "display_name", "farmer_status"}
+        assert set(user) == {"id", "email", "role", "display_name", "farmer_status", "avatar"}
         assert user["display_name"] == "Sunrise Stall"
 
 

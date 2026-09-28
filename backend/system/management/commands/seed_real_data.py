@@ -130,8 +130,6 @@ CATEGORY_DATA = [
     ("Tea & Coffee", "leaf", 5),
 ]
 
-# Admin price guidelines per category and unit: (min price, max price, max stock), in USD.
-# Wide enough for every sample listing above; the motorbike in the review queue is far outside.
 PRICE_GUIDELINES = {
     "Fresh Vegetables": {
         Unit.KG: ("0.30", "10.00", 2000),

@@ -22,7 +22,7 @@ class _Ident(SimpleRateThrottle):
 
     rate = "1/day"
 
-    def get_cache_key(self, request, view):  # pragma: no cover - not used as a throttle
+    def get_cache_key(self, request, view):  # pragma: no cover
         return None
 
 

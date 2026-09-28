@@ -373,6 +373,21 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertNotIn("Holiday", product.image.name)
         product.image.delete(save=False)
 
+    def test_removing_the_photo_clears_it_and_sends_the_listing_back_for_review(self):
+        self.prod1.image.save("tomato.png", io.BytesIO(create_test_image("PNG")), save=True)
+        stored = self.prod1.image.name
+        self.client.force_authenticate(user=self.farmer_user)
+
+        res = self.client.patch(f"/api/farmer/products/{self.prod1.id}/", {"image": None}, format="json")
+
+        self.prod1.image.storage.delete(stored)
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNone(res.data["data"]["image"])
+        self.assertTrue(res.data["data"]["sent_for_review"])
+        self.prod1.refresh_from_db()
+        self.assertFalse(self.prod1.image)
+        self.assertEqual(self.prod1.review_status, ReviewStatus.PENDING)
+
     def test_farmer_product_shape_and_held_quantity(self):
         now = timezone.now()
         market = Market.objects.create(

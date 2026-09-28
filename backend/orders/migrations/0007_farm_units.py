@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 
-# Order lines keep the unit they were bought in; rename the old "piece" code with the catalog (0014).
 MODELS = ("OrderItem", "HistoricalOrderItem")
 
 

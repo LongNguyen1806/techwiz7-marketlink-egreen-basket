@@ -59,6 +59,10 @@
   object-fit: cover;
 }
 
+.farmer-product-form-page__remove-photo {
+  margin-bottom: var(--space-3);
+}
+
 .farmer-product-form-page__file-input {
   margin-top: var(--space-3);
   width: 100%;

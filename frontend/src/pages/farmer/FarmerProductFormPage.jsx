@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
@@ -45,9 +45,11 @@ function buildPayload(values, { isEdit, dirtyFields }) {
   const keys = isEdit ? Object.keys(dirtyFields) : FORM_FIELDS;
   const payload = {};
   keys.forEach((key) => {
+    if (key === 'remove_image') return;
     if (key === 'image' && !values.image) return;
     payload[key] = values[key];
   });
+  if (isEdit && values.remove_image && !values.image) payload.image = null;
   return payload;
 }
 
@@ -105,7 +107,9 @@ export default function FarmerProductFormPage() {
 
   const { blocker, allowNavigation } = useUnsavedChangesGuard(isDirty && !save.isSuccess);
   const previewUrl = useObjectUrl(watch('image'));
-  const shownImage = previewUrl ?? product?.image ?? null;
+  const removeImage = watch('remove_image');
+  const shownImage = previewUrl ?? (removeImage ? null : product?.image) ?? null;
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   
   const categoryOptions = useMemo(() => {
@@ -115,7 +119,18 @@ export default function FarmerProductFormPage() {
   }, [categoriesQuery.data, product]);
 
   const pickImage = (file) => {
-    if (file) setValue('image', file, { shouldDirty: true, shouldValidate: true });
+    if (!file) return;
+    setValue('image', file, { shouldDirty: true, shouldValidate: true });
+    setValue('remove_image', false, { shouldDirty: true });
+  };
+
+  const removePhoto = () => {
+    setFileInputKey((key) => key + 1);
+    if (watch('image')) {
+      setValue('image', null, { shouldDirty: true, shouldValidate: true });
+      return;
+    }
+    setValue('remove_image', true, { shouldDirty: true });
   };
 
   const onSubmit = handleSubmit((values) =>
@@ -181,11 +196,28 @@ export default function FarmerProductFormPage() {
             }}
           >
             {shownImage ? (
-              <LazyImage src={shownImage} alt="Product photo preview" className="farmer-product-form-page__preview" />
+              <>
+                <LazyImage src={shownImage} alt="Product photo preview" className="farmer-product-form-page__preview" />
+                {!locked ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="farmer-product-form-page__remove-photo"
+                    onClick={removePhoto}
+                  >
+                    Remove photo
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
+            {removeImage && !previewUrl ? (
+              <p className="page-primitive__muted-xs">The current photo will be removed when you save.</p>
             ) : null}
             <p className="farmer-product-form-page__dropzone-title">Drag and drop an image or choose a file</p>
             <p className="page-primitive__muted-xs">JPG, PNG or WEBP, up to {maxUploadMb} MB</p>
             <Input
+              key={fileInputKey}
               type="file"
               accept={IMAGE_TYPES.join(',')}
               aria-label="Product photo"

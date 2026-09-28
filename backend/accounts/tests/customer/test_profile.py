@@ -1,6 +1,9 @@
+import io
 from unittest import mock
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
 
 from accounts.auth.tokens import issue_tokens
 from accounts.services.customer_registration_service import register_customer
@@ -37,6 +40,7 @@ class TestGetProfile:
             "phone": "0912345678",
             "address": "12 Market Street, District 1",
             "email": "alice@example.com",
+            "image": None,
         }
 
     def test_requires_login(self, api):
@@ -115,3 +119,58 @@ class TestUpdateProfile:
 
     def test_other_roles_are_forbidden(self, api, farmer):
         assert _patch(api, farmer, {"full_name": "Bob"}).status_code == 403
+
+
+def _photo(name="me.png", fmt="PNG", content_type="image/png"):
+    buffer = io.BytesIO()
+    Image.new("RGB", (8, 8), "green").save(buffer, fmt)
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
+
+
+def _upload(api, user, file):
+    return api.patch(URL, {"image": file}, format="multipart", **_auth(user))
+
+
+@pytest.mark.django_db
+class TestProfilePhoto:
+    def test_upload_shows_in_profile_and_account_menu(self, api, customer):
+        response = _upload(api, customer, _photo())
+
+        assert response.status_code == 200
+        url = response.json()["data"]["image"]
+        assert "/media/customers/" in url
+        assert api.get("/api/auth/me/", **_auth(customer)).json()["data"]["avatar"] == url
+        customer.customer_profile.refresh_from_db()
+        customer.customer_profile.image.delete(save=False)
+
+    def test_replacing_or_removing_deletes_the_old_file(self, api, customer, django_capture_on_commit_callbacks):
+        _upload(api, customer, _photo())
+        profile = customer.customer_profile
+        profile.refresh_from_db()
+        first = profile.image.name
+        storage = profile.image.storage
+
+        with django_capture_on_commit_callbacks(execute=True):
+            _upload(api, customer, _photo("new.png"))
+        profile.refresh_from_db()
+        second = profile.image.name
+        assert second != first
+        assert not storage.exists(first)
+
+        with django_capture_on_commit_callbacks(execute=True):
+            response = _patch(api, customer, {"image": None})
+        assert response.status_code == 200
+        assert response.json()["data"]["image"] is None
+        profile.refresh_from_db()
+        assert not profile.image
+        assert not storage.exists(second)
+
+    def test_a_file_that_is_not_an_image_is_rejected(self, api, customer):
+        fake = SimpleUploadedFile("me.png", b"<html>not an image</html>", content_type="image/png")
+
+        response = _upload(api, customer, fake)
+
+        assert response.status_code == 400
+        assert "image" in response.json()["errors"]
+        customer.customer_profile.refresh_from_db()
+        assert not customer.customer_profile.image

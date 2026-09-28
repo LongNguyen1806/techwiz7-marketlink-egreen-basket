@@ -17,7 +17,7 @@ def _database_status() -> str:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
-    except Exception:  # noqa: BLE001 - any failure means the database is unreachable
+    except Exception:  # noqa: BLE001
         return "error"
     return "ok"
 
@@ -27,7 +27,7 @@ def _cache_status() -> str:
         cache = caches["default"]
         cache.set("health:ping", "ok", 5)
         return "ok" if cache.get("health:ping") == "ok" else "error"
-    except Exception:  # noqa: BLE001 - report the cache as down instead of failing the probe
+    except Exception:  # noqa: BLE001
         return "error"
 
 

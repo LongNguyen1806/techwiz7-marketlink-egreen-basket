@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { ordersApi } from '../../../services/customer/ordersApi';
 import { ApiError } from '../../../lib/ApiError';
 import { useCartStore } from '../../../stores/cart.store';
+import { toCartLine } from '../../common/useAddToCart';
 
 
 export function useReorder() {
@@ -13,17 +14,7 @@ export function useReorder() {
   return useMutation({
     mutationFn: ordersApi.reorderPreview,
     onSuccess: ({ items, skipped }) => {
-      items.forEach(({ product, quantity }) => {
-        addItem({
-          product_id: product.id,
-          farmer_id: product.farmer.id,
-          farmer_stall_name: product.farmer.stall_name,
-          name: product.name,
-          unit: product.unit,
-          price: product.price,
-          image: product.image,
-        }, quantity);
-      });
+      items.forEach(({ product, quantity }) => addItem(toCartLine(product), quantity));
 
       if (skipped.length > 0) {
         const names = skipped.map((row) => row.product_name).join(', ');

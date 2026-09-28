@@ -47,7 +47,7 @@ def safely(check, *args, **kwargs) -> ModerationFlag | None:
     """Run a check from a hook; never let the queue break the action that triggered it."""
     try:
         return check(*args, **kwargs)
-    except Exception:  # noqa: BLE001 - the queue is best effort, the action is not
+    except Exception:  # noqa: BLE001
         logger.exception("Automatic follow-up flag failed: %s", getattr(check, "__name__", check))
         return None
 

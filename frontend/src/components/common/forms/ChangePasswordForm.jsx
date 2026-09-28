@@ -5,7 +5,7 @@ import { FormAlert } from './FormAlert';
 import { FormField } from './FormField';
 import { useServerErrors } from './useServerErrors';
 import { useChangePassword } from '../../../hooks/authentication/useAuth';
-import { changePasswordSchema } from '../../../services/common/auth.schemas';
+import { changePasswordSchema } from '../../../schemas/common/auth.schema';
 import './ChangePasswordForm.css';
 
 const FIELDS = ['current_password', 'new_password', 'confirm_password'];

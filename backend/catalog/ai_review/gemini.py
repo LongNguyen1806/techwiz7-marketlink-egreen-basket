@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from django.conf import settings
 
 from catalog.ai_review.types import Finding, ListingInput, Severity
-from marketlink_core.gemini import (  # noqa: F401 - re-exported for callers and tests
+from marketlink_core.gemini import (  # noqa: F401
     MAX_RATE_LIMIT_WAIT_S,
     RETRY_DELAYS_S,
     AIUnavailable,

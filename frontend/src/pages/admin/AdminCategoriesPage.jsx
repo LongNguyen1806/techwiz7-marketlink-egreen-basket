@@ -79,7 +79,6 @@ export default function AdminCategoriesPage() {
   }
 
   const takenIcons = Object.fromEntries(items.map((cat) => [cat.icon, cat.name]));
-  // The button shows an icon from the start: the chosen one, or else the first one still free.
   const chosenIcon = form.watch("icon");
   const iconValue = chosenIcon && !takenIcons[chosenIcon] ? chosenIcon : freeIcons(takenIcons)[0] ?? "";
   useEffect(() => {

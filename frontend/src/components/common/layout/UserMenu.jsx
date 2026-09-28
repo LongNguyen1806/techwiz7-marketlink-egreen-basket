@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Heart, KeyRound, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
-import { Avatar, AvatarFallback } from '../../ui/Avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import {
   DropdownMenu,
@@ -49,6 +49,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Account menu" className="user-menu__trigger">
           <Avatar className="user-menu__avatar">
+            {user.avatar ? <AvatarImage src={user.avatar} alt="" /> : null}
             <AvatarFallback className="user-menu__avatar-fallback">
               {initials(user.display_name, user.email)}
             </AvatarFallback>

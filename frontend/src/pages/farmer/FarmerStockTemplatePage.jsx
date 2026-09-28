@@ -28,7 +28,6 @@ const MAX_STOCK = 99999;
 
 const isOut = (row) => row.current_stock === 0;
 const hasWeekly = (row) => row.weekly_default_quantity !== null;
-// new_stock is worked out by the server: weekly stock minus what accepted orders already hold.
 const willChange = (row) => hasWeekly(row) && row.new_stock !== row.current_stock;
 
 const weeklyText = (value) => (value === null || value === undefined ? '' : String(value));
@@ -39,7 +38,6 @@ function stockBadge(row) {
   return null;
 }
 
-// Digits only: a number input would still accept "e", "-" or "." and hand back an empty value.
 const digitsOnly = (text) => text.replace(/\D/g, '').slice(0, String(MAX_STOCK).length);
 
 function parseQuantity(text) {
@@ -238,7 +236,6 @@ export default function FarmerStockTemplatePage() {
   const withWeekly = shownRows.filter(hasWeekly);
   const changing = shownRows.filter(willChange);
   const changingEverywhere = rows.filter(willChange);
-  // Send ids only when the filter hides some changing rows; otherwise apply to everything.
   const applyIds = changing.length === changingEverywhere.length ? undefined : changing.map((row) => row.product_id);
 
   const confirmApply = () => {

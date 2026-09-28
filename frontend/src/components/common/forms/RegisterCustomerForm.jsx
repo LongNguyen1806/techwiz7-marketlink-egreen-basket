@@ -7,7 +7,7 @@ import { FormAlert } from './FormAlert';
 import { FormField } from './FormField';
 import { useServerErrors } from './useServerErrors';
 import { useRegisterCustomer } from '../../../hooks/authentication/useAuth';
-import { registerCustomerSchema } from '../../../services/common/auth.schemas';
+import { registerCustomerSchema } from '../../../schemas/common/auth.schema';
 import './RegisterForms.css';
 
 const FIELDS = ['email', 'full_name', 'phone', 'address', 'password', 'confirm_password'];

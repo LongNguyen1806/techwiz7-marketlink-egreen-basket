@@ -230,7 +230,6 @@ export function useApplyWeeklyTemplate() {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateProducts();
   return useMutation({
-    // Pass product ids to apply one row; call with nothing to apply every product.
     mutationFn: (productIds) => farmerApi.applyWeeklyTemplate(productIds),
     onSuccess: ({ updated_count: updated, restock_notified: restocked }) => {
       notify.success(`Stock updated for ${updated} product${updated === 1 ? '' : 's'}`);

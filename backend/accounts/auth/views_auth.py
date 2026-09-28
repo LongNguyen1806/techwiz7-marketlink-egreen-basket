@@ -39,7 +39,7 @@ class FarmerRegisterView(APIView):
         )
         return api_response(
             message="Registration successful. Your account is awaiting administrator approval.",
-            data=build_auth_payload(user),
+            data=build_auth_payload(user, request),
             status_code=status.HTTP_201_CREATED,
             request=request,
         )

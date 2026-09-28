@@ -30,7 +30,6 @@ function sameRange(a, b) {
   return a.from === b.from && a.to === b.to;
 }
 
-// Revenue per week, each bar labelled with the Monday it starts on.
 function byWeek(days) {
   const weeks = new Map();
   days.forEach((day) => {

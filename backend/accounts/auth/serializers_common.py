@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from accounts.auth.tokens import issue_tokens
 from accounts.phone import normalize_phone
+from markets.farmer_selectors import image_url
 
 PHONE_PATTERN = r"^(0|\+84)(3|5|7|8|9)\d{8}$"
 
@@ -61,6 +62,12 @@ class MeReadSerializer(serializers.Serializer):
     role = serializers.CharField(source="role.code")
     display_name = serializers.SerializerMethodField()
     farmer_status = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+
+    def get_avatar(self, user) -> str | None:
+        """The customer's photo or the farmer's stall photo, for the account menu."""
+        profile = getattr(user, "customer_profile", None) or getattr(user, "farmer_profile", None)
+        return image_url(profile.image, self.context.get("request")) if profile is not None else None
 
     def get_display_name(self, user) -> str:
         profile = getattr(user, "customer_profile", None) or getattr(user, "farmer_profile", None)
@@ -73,5 +80,5 @@ class MeReadSerializer(serializers.Serializer):
         return farmer_profile.status if farmer_profile else None
 
 
-def build_auth_payload(user) -> dict:
-    return {**issue_tokens(user), "user": MeReadSerializer(user).data}
+def build_auth_payload(user, request=None) -> dict:
+    return {**issue_tokens(user), "user": MeReadSerializer(user, context={"request": request}).data}

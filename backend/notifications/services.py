@@ -77,7 +77,7 @@ def _push_realtime(user_id: int, payload: dict[str, Any]) -> None:
         async_to_sync(channel_layer.group_send)(
             user_group(user_id), {"type": "notify", "data": payload}
         )
-    except Exception:  # noqa: BLE001 - the row is already saved; the bell reloads it later
+    except Exception:  # noqa: BLE001
         logger.exception("WebSocket push failed for user %s", user_id)
 
 
@@ -101,7 +101,7 @@ def _send_disconnect(group: str) -> None:
         return
     try:
         async_to_sync(channel_layer.group_send)(group, {"type": "force.disconnect"})
-    except Exception:  # noqa: BLE001 - access tokens still expire; the socket carries no data back
+    except Exception:  # noqa: BLE001
         logger.exception("WebSocket disconnect failed for group %s", group)
 
 
@@ -143,5 +143,5 @@ def _send_email(to_email: str, subject: str, template: str, context: dict[str, A
 def _deliver(email: EmailMultiAlternatives) -> None:
     try:
         email.send(fail_silently=False)
-    except Exception:  # noqa: BLE001 - email is a secondary channel; in-app already delivered
+    except Exception:  # noqa: BLE001
         logger.exception("Email delivery failed to %s", email.to)

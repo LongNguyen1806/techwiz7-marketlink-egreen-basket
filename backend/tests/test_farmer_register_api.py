@@ -50,6 +50,7 @@ class FarmerRegisterAPITestCase(TestCase):
                 "role": RoleCode.FARMER,
                 "display_name": "Fresh Garden",
                 "farmer_status": FarmerStatus.PENDING,
+                "avatar": None,
             },
         )
         self.assertTrue(user.check_password("garden2026"))

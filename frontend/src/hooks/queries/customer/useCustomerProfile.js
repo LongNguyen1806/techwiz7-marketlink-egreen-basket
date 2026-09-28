@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { customerApi } from '../../../services/customer/customerApi';
-import { QUERY_KEYS } from '../../../constants';
+import { QUERY_KEYS, authKeys } from '../../../constants';
 
 
 export function useCustomerProfile() {
@@ -19,7 +19,7 @@ export function useUpdateCustomerProfile() {
     mutationFn: customerApi.updateProfile,
     onSuccess: (profile) => {
       queryClient.setQueryData(QUERY_KEYS.CUSTOMER_PROFILE, profile);
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ME });
+      queryClient.invalidateQueries({ queryKey: authKeys.me() });
       toast.success('Profile saved');
     },
   });

@@ -153,7 +153,7 @@ def notify_restock_for_product(*, product: Product) -> int:
                         "farmer_name": farmer_name,
                     },
                 )
-        except Exception:  # noqa: BLE001 - restock alerts are best effort (D-025)
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "RESTOCK notification failed for product %s, customer %s", product.id, fav.customer_id
             )

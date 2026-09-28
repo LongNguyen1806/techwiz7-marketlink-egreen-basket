@@ -6,5 +6,5 @@ class AccountsConfig(AppConfig):
     name = 'accounts'
 
     def ready(self):
-        from accounts import checks  # noqa: F401  (registers the system check)
-        from accounts.auth import schema  # noqa: F401  (registers the OpenAPI auth scheme)
+        from accounts import checks  # noqa: F401
+        from accounts.auth import schema  # noqa: F401

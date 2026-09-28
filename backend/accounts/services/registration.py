@@ -76,7 +76,7 @@ def register_farmer(
 
     try:
         coordinates = geocode_address(address)
-    except Exception:  # noqa: BLE001 - geocoding is best effort
+    except Exception:  # noqa: BLE001
         logger.exception("Geocoding after farmer registration failed")
         coordinates = None
     if coordinates:

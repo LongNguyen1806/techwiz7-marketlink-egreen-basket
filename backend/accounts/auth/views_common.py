@@ -60,7 +60,7 @@ class LoginView(RecordableThrottleViewMixin, APIView):
         log_request_event(request, action=AuditAction.LOGIN, status_code=200, user=user,
                            details=self.audit_details or None)
         update_last_login(None, user)
-        return api_response(message="Login successful", data=build_auth_payload(user), request=request)
+        return api_response(message="Login successful", data=build_auth_payload(user, request), request=request)
 
 
 class AdminLoginView(LoginView):
@@ -115,7 +115,7 @@ class MeView(APIView):
 
     @extend_schema(responses={200: MeReadSerializer, 401: None}, summary="The signed-in account")
     def get(self, request):
-        return api_response(message="OK", data=MeReadSerializer(request.user).data, request=request)
+        return api_response(message="OK", data=MeReadSerializer(request.user, context={"request": request}).data, request=request)
 
 
 class ChangePasswordView(APIView):

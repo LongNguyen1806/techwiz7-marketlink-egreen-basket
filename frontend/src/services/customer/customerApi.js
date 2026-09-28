@@ -1,5 +1,12 @@
 import axiosClient from '../../lib/axiosClient';
 
+function toRequestBody(payload) {
+  if (!(payload.image instanceof File)) return payload;
+  const form = new FormData();
+  Object.entries(payload).forEach(([key, value]) => form.append(key, value));
+  return form;
+}
+
 
 export const customerApi = {
   
@@ -16,7 +23,7 @@ export const customerApi = {
 
   
   updateProfile: async (payload) => {
-    const { data } = await axiosClient.patch('/customer/profile/', payload);
+    const { data } = await axiosClient.patch('/customer/profile/', toRequestBody(payload));
     return data;
   },
 };

@@ -46,6 +46,7 @@ class TestRegisterCustomer:
             "role": "CUSTOMER",
             "display_name": "Alice Nguyen",
             "farmer_status": None,
+            "avatar": None,
         }
         assert body["data"]["refresh"]
 

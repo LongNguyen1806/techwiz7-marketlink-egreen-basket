@@ -435,5 +435,5 @@ def _lock_after_no_show(customer_id: int) -> None:
 
     try:
         lock_if_repeated_no_shows(customer_id)
-    except Exception:  # noqa: BLE001 - a failed lock must not surface as a failed no-show
+    except Exception:  # noqa: BLE001
         logger.exception("Automatic no-show lock failed for customer %s", customer_id)

@@ -72,7 +72,7 @@ def make_client(timeout_ms: int):
     try:
         from google import genai
         from google.genai import types
-    except ImportError as exc:  # pragma: no cover - dependency is in requirements.txt
+    except ImportError as exc:  # pragma: no cover
         raise AIUnavailable("The google-genai package is not installed.") from exc
     return genai.Client(api_key=settings.GEMINI_API_KEY, http_options=types.HttpOptions(timeout=timeout_ms))
 

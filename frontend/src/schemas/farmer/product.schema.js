@@ -61,6 +61,7 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .refine((file) => !file || !imageFileError(file, maxUploadMb), {
         error: (issue) => imageFileError(issue.input, maxUploadMb) ?? 'Choose a valid image',
       }),
+    remove_image: z.boolean(),
   }).superRefine(({ min_per_order: min, max_per_order: max }, ctx) => {
     if (max !== null && Number.isInteger(min) && Number.isInteger(max) && min > max) {
       ctx.addIssue({ code: 'custom', path: ['min_per_order'], message: 'Min per order cannot be more than max per order' });
@@ -81,6 +82,7 @@ export const PRODUCT_DEFAULTS = {
   is_available: true,
   market_ids: [],
   image: null,
+  remove_image: false,
 };
 
 export function productToFormValues(product) {
@@ -97,5 +99,6 @@ export function productToFormValues(product) {
     is_available: product.is_available,
     market_ids: (product.markets ?? []).map((market) => market.market_id),
     image: null,
+    remove_image: false,
   };
 }

@@ -20,6 +20,7 @@ class TestMe:
             "role": "CUSTOMER",
             "display_name": "Alice Nguyen",
             "farmer_status": None,
+            "avatar": None,
         }
 
     def test_requires_token(self, api):

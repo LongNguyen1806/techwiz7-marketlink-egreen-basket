@@ -5,7 +5,7 @@ import { FormAlert } from "../../components/common/forms/FormAlert";
 import { FormField } from "../../components/common/forms/FormField";
 import { useServerErrors } from "../../components/common/forms/useServerErrors";
 import { useAdminLogin } from "../../hooks/authentication/useAuth";
-import { loginSchema } from "../../services/common/auth.schemas";
+import { loginSchema } from "../../schemas/common/auth.schema";
 import "../../styles/admin/AdminLoginPage.css";
 
 const FIELDS = ["email", "password"];

@@ -136,7 +136,7 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
         except BusinessValidationError as exc:
             if exc.code != ErrorCode.INVALID_STATUS_TRANSITION:
                 _handle_order_failure(order_id, "cancel the unrescheduled order")
-        except Exception:  # noqa: BLE001 - see W3.2
+        except Exception:  # noqa: BLE001
             _handle_order_failure(order_id, "cancel the unrescheduled order")
 
     overdue_placed = Order.objects.filter(status=OrderStatus.PLACED, pickup_start_at__lte=now)
@@ -156,7 +156,7 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
             if exc.code != ErrorCode.INVALID_STATUS_TRANSITION:
                 _handle_order_failure(order_id, "expire")
             continue
-        except Exception:  # noqa: BLE001 - one broken order must not block the others (W3.2)
+        except Exception:  # noqa: BLE001
             _handle_order_failure(order_id, "expire")
             continue
         expired += 1
@@ -172,7 +172,7 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
     for order_id in list(overdue_changes.order_by("id").values_list("id", flat=True)):
         try:
             _expire_change_request(order_id)
-        except Exception:  # noqa: BLE001 - see W3.2 above
+        except Exception:  # noqa: BLE001
             _handle_order_failure(order_id, "expire the change request")
 
     return expired

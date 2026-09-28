@@ -40,7 +40,7 @@ def geocode_address(address: str | None) -> tuple[Decimal, Decimal] | None:
         headers={"User-Agent": settings.NOMINATIM_USER_AGENT, "Accept-Language": "en"},
     )
     try:
-        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310 - fixed https URL from settings
+        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310
             results = json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError):
         logger.warning("Geocoding request failed", exc_info=True)

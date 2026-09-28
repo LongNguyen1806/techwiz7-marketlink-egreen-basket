@@ -2,13 +2,10 @@
 
 from django.db import migrations, models
 
-# "Piece" was left over from the bakery category; produce sold one by one is "each" (trái / quả).
 MODELS = ("Product", "HistoricalProduct", "PriceGuideline")
 
 
 def piece_to_each(apps, schema_editor):
-    # Guidelines of a category that is gone (an old seed truncated categories with foreign key
-    # checks off) break the update below and can never be used; drop them first.
     Category = apps.get_model("catalog", "Category")
     apps.get_model("catalog", "PriceGuideline").objects.exclude(
         category_id__in=Category.objects.values("id")

@@ -21,13 +21,15 @@ class CustomerProfileView(APIView):
 
     def get(self, request):
         profile = request.user.customer_profile
-        return api_response(message="Profile retrieved", data=CustomerProfileReadSerializer(profile).data, request=request)
+        data = CustomerProfileReadSerializer(profile, context={"request": request}).data
+        return api_response(message="Profile retrieved", data=data, request=request)
 
     def patch(self, request):
         serializer = CustomerProfileWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         profile = update_customer_profile(user=request.user, data=serializer.validated_data)
-        return api_response(message="Profile updated", data=CustomerProfileReadSerializer(profile).data, request=request)
+        data = CustomerProfileReadSerializer(profile, context={"request": request}).data
+        return api_response(message="Profile updated", data=data, request=request)
 
 
 class CustomerDashboardView(APIView):

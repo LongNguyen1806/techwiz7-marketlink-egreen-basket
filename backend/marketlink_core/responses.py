@@ -97,7 +97,7 @@ def _log_access_denied(request: Any) -> None:
 
     try:
         log_request_event(request, action=AuditAction.ACCESS_DENIED, status_code=403)
-    except Exception:  # noqa: BLE001 - an audit failure must never mask the 403 itself
+    except Exception:  # noqa: BLE001
         logger.exception("Failed to write ACCESS_DENIED audit log")
 
 
