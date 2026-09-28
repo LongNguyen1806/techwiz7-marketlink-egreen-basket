@@ -46,6 +46,7 @@ class OrderSummaryReadSerializer(serializers.ModelSerializer):
     is_overdue = serializers.SerializerMethodField()
     is_expiring_soon = serializers.SerializerMethodField()
     has_pending_change = serializers.SerializerMethodField()
+    needs_new_pickup = serializers.SerializerMethodField()
     customer = serializers.SerializerMethodField()
     farmer = serializers.SerializerMethodField()
     market = serializers.SerializerMethodField()
@@ -56,7 +57,7 @@ class OrderSummaryReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            "id", "status", "is_overdue", "is_expiring_soon", "has_pending_change", "version", "customer", "farmer", "market",
+            "id", "status", "is_overdue", "is_expiring_soon", "has_pending_change", "needs_new_pickup", "version", "customer", "farmer", "market",
             "stall_label", "pickup_date", "pickup_start_at", "pickup_end_at", "cutoff_at", "item_count",
             "total_amount", "created_at",
         ]
@@ -74,6 +75,9 @@ class OrderSummaryReadSerializer(serializers.ModelSerializer):
     def get_has_pending_change(self, order) -> bool:
         # D-030: an ACCEPTED order with a change request waiting for the farmer.
         return order.pending_change is not None
+
+    def get_needs_new_pickup(self, order) -> bool:
+        return needs_new_pickup(order)
 
     def get_customer(self, order) -> dict:
         profile = order.customer.customer_profile
@@ -123,6 +127,9 @@ SYSTEM_REASON_TEXT = {
     "FARMER_SUSPENDED_BY_ADMIN": "The farmer's stall is no longer accepting orders.",
     "CUSTOMER_LOCKED_BY_ADMIN": "The order was closed because the account was locked.",
     "MARKET_CLOSED_BY_ADMIN": "The order was cancelled because the market has closed.",
+    "MARKET_SCHEDULE_CHANGED_BY_ADMIN": (
+        "The order was cancelled because the market no longer opens at this pickup time."
+    ),
 }
 
 
@@ -174,9 +181,22 @@ def _has_review(obj, related_name: str) -> bool:
     return True
 
 
+def needs_new_pickup(order) -> bool:
+    return order.reschedule_requested_at is not None and order.status in (
+        OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.READY_FOR_PICKUP,
+    )
+
+
+def reschedule_actions(order) -> list[str]:
+    edit = "REQUEST_CHANGE" if order.status == OrderStatus.ACCEPTED else "MODIFY"
+    return [edit, "RESCHEDULE", "CANCEL"]
+
+
 def customer_allowed_actions(order, *, review_state: dict | None, now=None) -> list[str]:
     """Pass 4B §3.4 / §5.3: what the customer may do now; the frontend only renders these buttons."""
     now = now or timezone.now()
+    if needs_new_pickup(order):
+        return reschedule_actions(order)
     before_cutoff = now < order.cutoff_at
     if order.status == OrderStatus.PLACED:
         return ["MODIFY", "CANCEL"] if before_cutoff else []
@@ -312,6 +332,8 @@ class CustomerOrderDetailSerializer(serializers.ModelSerializer):
     def get_allowed_actions(self, obj: Order) -> list[str]:
         actions: list[str] = []
         now = timezone.now()
+        if needs_new_pickup(obj):
+            return reschedule_actions(obj)
         if obj.status in (OrderStatus.PLACED, OrderStatus.ACCEPTED) and now < obj.cutoff_at:
             actions.append("MODIFY")
             actions.append("CANCEL")

@@ -1,0 +1,104 @@
+name: CI
+
+# Runs on pull requests into main so a branch is checked before it lands, and again on main
+# itself as a backstop. Nothing here deploys; it only reports.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        # MySQL 8 specifically: the schema relies on the utf8mb4_0900 collations, which
+        # MySQL 5.7 and MariaDB do not have.
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: marketlink_db
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      SECRET_KEY: ci-only-not-a-real-secret
+      DEBUG: "True"
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DB_NAME: marketlink_db
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      # No Redis service: the settings fall back to local-memory caches when this is False,
+      # and nothing under test depends on a shared cache.
+      USE_REDIS: "False"
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+      # Emails are sent on a thread pool by default, which a test can finish before.
+      EMAIL_ASYNC: "False"
+      AI_CHAT_ENABLED: "False"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        working-directory: backend
+        # Catches a model edited without makemigrations, which would break deploy, not tests.
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Django system check
+        working-directory: backend
+        run: python manage.py check
+
+      - name: API schema must stay clean
+        working-directory: backend
+        # The schema is a graded deliverable, so a warning is a failure. --fail-on-warn is
+        # drf-spectacular's own gate; sniffing its output would depend on which stream it
+        # happens to use.
+        run: python manage.py spectacular --file /tmp/schema.yml --fail-on-warn
+
+      - name: Tests
+        working-directory: backend
+        run: python -m pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

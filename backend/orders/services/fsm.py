@@ -38,6 +38,9 @@ SYSTEM_REASON_TEXT = {
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN: "The farmer's stall has been suspended by an administrator.",
     ChangeReason.CUSTOMER_LOCKED_BY_ADMIN: "The customer's account has been locked by an administrator.",
     ChangeReason.MARKET_CLOSED_BY_ADMIN: "The market has been closed by an administrator.",
+    ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN: (
+        "The market changed its opening days or hours, and this pickup time is no longer in them."
+    ),
     ChangeReason.PRODUCT_BLOCKED_BY_ADMIN: "An item in this order was removed by an administrator.",
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
@@ -48,6 +51,7 @@ ADMIN_DECLINE_REASONS = (
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN,
     ChangeReason.MARKET_CLOSED_BY_ADMIN,
     ChangeReason.PRODUCT_BLOCKED_BY_ADMIN,
+    ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN,
 )
 ADMIN_CANCEL_REASONS = (ChangeReason.CUSTOMER_LOCKED_BY_ADMIN,)
 
@@ -337,7 +341,13 @@ def _check_preconditions(
         return reason
 
     if actor_role == _R.CUSTOMER:
-        if code in (Transition.T5, Transition.T6) and now >= order.cutoff_at:
+        # An order waiting for a new pickup time can always be dropped: the shopper is only
+        # past the cutoff because the market moved, not because they left it late.
+        if (
+            code in (Transition.T5, Transition.T6)
+            and now >= order.cutoff_at
+            and order.reschedule_requested_at is None
+        ):
             raise UnprocessableEntityError(
                 "The cutoff time for changing this order has passed.", code=ErrorCode.CUTOFF_PASSED
             )
@@ -396,7 +406,7 @@ def _send_notifications(
     code = rule.code
 
     if not notify_customer and code in (Transition.T3, Transition.T4, Transition.T12):
-        # The caller tells the customer itself (AD-17 sends one MARKET_CLOSED per customer).
+        # The caller tells the customer itself: one MARKET_CLOSED or MARKET_UPDATED per customer.
         return
     if code == Transition.T2:
         notify(recipient=customer, event_type=NotificationType.ORDER_ACCEPTED, context=context)

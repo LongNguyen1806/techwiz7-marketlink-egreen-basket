@@ -13,7 +13,7 @@ from tests_support.factories import make_customer, make_farmer, make_market, mak
 
 URL = "/api/customer/orders/"
 SUMMARY_KEYS = {
-    "id", "status", "is_overdue", "is_expiring_soon", "has_pending_change", "version", "customer", "farmer", "market", "stall_label", "pickup_date",
+    "id", "status", "is_overdue", "is_expiring_soon", "has_pending_change", "needs_new_pickup", "version", "customer", "farmer", "market", "stall_label", "pickup_date",
     "pickup_start_at", "pickup_end_at", "cutoff_at", "item_count", "total_amount", "created_at",
 }
 

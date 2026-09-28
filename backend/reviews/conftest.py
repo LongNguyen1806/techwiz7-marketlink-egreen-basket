@@ -32,7 +32,8 @@ def market(db):
 
 @pytest.fixture
 def product(db, approved_farmer):
-    category = Category.objects.create(name="Vegetables", display_order=1)
+    # Icons are unique per category now, so a fixture cannot leave it to the default.
+    category = Category.objects.create(name="Vegetables", icon="carrot", display_order=1)
     return Product.objects.create(
         farmer=approved_farmer,
         category=category,

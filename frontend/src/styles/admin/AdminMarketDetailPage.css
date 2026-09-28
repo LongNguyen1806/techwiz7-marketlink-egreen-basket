@@ -1,0 +1,77 @@
+@import '../common/page-primitives.css';
+
+.admin-market-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.admin-market-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-market-detail__body {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .admin-market-detail__body {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 1fr);
+  }
+}
+
+.admin-market-detail__card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-market-detail__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.admin-market-detail__row {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.admin-market-detail__row dt {
+  color: var(--color-muted-foreground);
+}
+
+.admin-market-detail__row dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.admin-market-detail__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.admin-market-detail__closures {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.admin-market-detail__map {
+  height: 20rem;
+}
+
+@media (max-width: 480px) {
+  .admin-market-detail__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}

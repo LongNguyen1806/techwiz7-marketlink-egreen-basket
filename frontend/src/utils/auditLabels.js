@@ -14,6 +14,8 @@ const ACTIONS = {
   CUSTOMER_ACTIVATED: { label: 'Unlocked a customer', tone: 'good' },
   PRODUCT_HIDDEN: { label: 'Hid a product', tone: 'warning' },
   PRODUCT_RESTORED: { label: 'Restored a product', tone: 'good' },
+  PRODUCT_BLOCKED: { label: 'Took a product down', tone: 'danger' },
+  PRODUCT_UNBLOCKED: { label: 'Put a product back on sale', tone: 'good' },
   REVIEW_HIDDEN: { label: 'Hid a review', tone: 'warning' },
   REVIEW_RESTORED: { label: 'Restored a review', tone: 'good' },
   MARKET_CREATED: { label: 'Added a market', tone: 'neutral' },
@@ -84,6 +86,12 @@ export function auditSubject(log) {
   const affected = text(d, 'affected_orders');
   if (affected && affected !== '0') {
     parts.push(`${affected} order${affected === '1' ? '' : 's'} closed`);
+  }
+  // The ids themselves are on the detail panel; the summary line only says there are some,
+  // because a row in a table cannot carry two hundred numbers.
+  const cancelled = d['cancelled_order_ids'];
+  if (Array.isArray(cancelled) && cancelled.length && !affected) {
+    parts.push(`${cancelled.length} order${cancelled.length === 1 ? '' : 's'} cancelled`);
   }
 
   return parts.join(' · ') || '—';

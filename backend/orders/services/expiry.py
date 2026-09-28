@@ -8,13 +8,21 @@ from marketlink_core.exceptions import BusinessValidationError, ErrorCode
 from marketlink_core.history import save_with_history
 from notifications.models import NotificationType
 from notifications.services import notify
-from orders.models import ActorRole, Order, OrderStatus, OrderStatusHistory
+from orders.models import (
+    OPEN_STATUSES,
+    ActorRole,
+    ChangeReason,
+    Order,
+    OrderStatus,
+    OrderStatusHistory,
+)
 from orders.services.fsm import run_with_retry_if_top_level, transition_order
 from orders.services.notification_context import build_order_context
 
 logger = logging.getLogger("marketlink")
 
 CHANGE_EXPIRED_REASON = "The farmer did not respond before the pickup time."
+STOCK_BACK_NOTE = "The items are back in your stock."
 
 
 def _in_caller_transaction() -> bool:
@@ -77,9 +85,63 @@ def _expire_change_request(order_id: int) -> bool:
     return run_with_retry_if_top_level(_execute)
 
 
+def _cancel_unrescheduled(order_id: int) -> None:
+    """The market moved, no new time was settled, and the old one has come."""
+    # Read before the decline clears it: a request still waiting means the shopper did answer.
+    stall_silent = Order.objects.filter(pk=order_id, pending_change__isnull=False).exists()
+    why = (
+        "the stall did not confirm the new pickup time"
+        if stall_silent
+        else "no new pickup time was chosen"
+    )
+    order = transition_order(
+        order_id=order_id,
+        to_status=OrderStatus.DECLINED,
+        actor=None,
+        actor_role=ActorRole.ADMIN,
+        admin_change_reason=ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN,
+        # Told below in words that fit; ORDER_DECLINED would blame the stall.
+        notify_customer=False,
+    )
+    context = {**build_order_context(order), "why": why}
+    notify(
+        recipient=order.customer,
+        event_type=NotificationType.ORDER_RESCHEDULE_MISSED,
+        context={**context, "target_url": f"/customer/orders/{order.pk}", "stock_note": ""},
+    )
+    notify(
+        recipient=order.farmer.user,
+        event_type=NotificationType.ORDER_RESCHEDULE_MISSED,
+        context={
+            **context,
+            "target_url": f"/farmer/orders/{order.pk}",
+            "stock_note": STOCK_BACK_NOTE if order.status != OrderStatus.PLACED else "",
+        },
+    )
+
+
 def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
     """A-005 lazy sweep. Each order runs in its own transaction; returns the number expired."""
     now = timezone.now()
+
+    # 0. Orders still waiting for a new pickup time once the old one has come (Q2: declined,
+    # stock back). First, so step 1 does not expire them as if the stall had ignored them.
+    unrescheduled = Order.objects.filter(
+        status__in=OPEN_STATUSES,
+        reschedule_requested_at__isnull=False,
+        pickup_start_at__lte=now,
+    )
+    if farmer_id is not None:
+        unrescheduled = unrescheduled.filter(farmer_id=farmer_id)
+    for order_id in list(unrescheduled.order_by("id").values_list("id", flat=True)):
+        try:
+            with transaction.atomic():
+                _cancel_unrescheduled(order_id)
+        except BusinessValidationError as exc:
+            if exc.code != ErrorCode.INVALID_STATUS_TRANSITION:
+                _handle_order_failure(order_id, "cancel the unrescheduled order")
+        except Exception:  # noqa: BLE001 - see W3.2
+            _handle_order_failure(order_id, "cancel the unrescheduled order")
 
     # 1. Expire PLACED orders whose pickup has started (A-005, D-029: stock unchanged)
     overdue_placed = Order.objects.filter(status=OrderStatus.PLACED, pickup_start_at__lte=now)

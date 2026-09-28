@@ -160,6 +160,24 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class MarketGeocodeSerializer(serializers.Serializer):
+    found = serializers.BooleanField()
+    latitude = serializers.FloatField(allow_null=True)
+    longitude = serializers.FloatField(allow_null=True)
+
+
+class MarketEditImpactSerializer(serializers.Serializer):
+    """The preview the edit form shows before a save that moves or reschedules a market."""
+
+    changed_fields = serializers.ListField(child=serializers.CharField())
+    location_changed = serializers.BooleanField()
+    schedule_changed = serializers.BooleanField()
+    orders_to_reschedule = serializers.IntegerField()
+    slots_to_disable = serializers.IntegerField()
+    customers_to_notify = serializers.IntegerField()
+    stalls_to_notify = serializers.IntegerField()
+
+
 class MarketCloseSerializer(serializers.Serializer):
     """AD-17. The reason is recorded and shown to everyone; the note is emailed to the stalls."""
 

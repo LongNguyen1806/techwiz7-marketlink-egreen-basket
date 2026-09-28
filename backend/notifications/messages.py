@@ -123,6 +123,21 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         required=("market_name", "order_count", "reason", "target_url"),
         email_template="market_closed",
     ),
+    NotificationType.MARKET_UPDATED: NotificationSpec(
+        title="{market_name} has changed",
+        message="{changes} {order_note} {slot_note}",
+        target_url="{target_url}",
+        required=("market_name", "changes", "target_url"),
+    ),
+    NotificationType.ORDER_RESCHEDULE_MISSED: NotificationSpec(
+        title="Order #{order_id} was cancelled",
+        message=(
+            "{market_name} changed its schedule and {why} before {pickup_label}, so the "
+            "order was cancelled. {stock_note}"
+        ),
+        target_url="{target_url}",
+        required=("order_id", "market_name", "pickup_label", "target_url"),
+    ),
     NotificationType.PRODUCT_BLOCKED: NotificationSpec(
         title="{product_name} was taken down",
         message=(

@@ -4,7 +4,8 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from marketlink_core.exceptions import ResourceNotFoundError
+from accounts.geocoding import geocode_address
+from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
 from markets.admin_portal.serializers_admin import (
@@ -13,6 +14,8 @@ from markets.admin_portal.serializers_admin import (
     ClosureWriteSerializer,
     MarketAdminReadSerializer,
     MarketAdminWriteSerializer,
+    MarketEditImpactSerializer,
+    MarketGeocodeSerializer,
 )
 from markets.models import Market, MarketClosure
 from markets.selectors import (
@@ -26,6 +29,7 @@ from markets.services.market_service import (
     activate_market,
     create_market,
     deactivate_market,
+    preview_market_update,
     update_market,
 )
 from system.models import AuditAction
@@ -41,6 +45,11 @@ def _flag(raw: str | None) -> bool | None:
     if lowered in ("false", "0"):
         return False
     return None
+
+
+def _confirmed(raw) -> bool:
+    # JSON sends a real boolean, a multipart form (the one with the photo) sends text.
+    return raw is True or str(raw).strip().lower() in ("true", "1")
 
 
 def _require_market(market_id: int) -> int:
@@ -125,25 +134,83 @@ class MarketDetailView(RetrieveUpdateAPIView):
         market = self.get_object()
         serializer = self.get_serializer(market, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        # Taken before update_market(), which pops operating_days out of the dict it is given.
-        changed_fields = sorted(serializer.validated_data)
-        _, deactivated_slot_count = update_market(
-            market_id=market.pk, validated=dict(serializer.validated_data)
+        # A change that leaves orders outside the schedule is refused until the admin has seen
+        # the count in the preview and sent confirm_affected_orders back with the save.
+        _, impact = update_market(
+            market_id=market.pk,
+            validated=dict(serializer.validated_data),
+            actor=request.user,
+            confirm_affected=_confirmed(request.data.get("confirm_affected_orders")),
         )
+        summary = impact.summary()
         log_request_event(
             request,
             action=AuditAction.MARKET_UPDATED,
             status_code=200,
             details={
                 "market_id": market.pk,
-                "changed_fields": changed_fields,
-                "deactivated_slot_count": deactivated_slot_count,
+                "changed_fields": summary["changed_fields"],
+                "deactivated_slot_count": summary["slots_to_disable"],
+                "orders_to_reschedule": summary["orders_to_reschedule"],
+                "notified": summary["customers_to_notify"] + summary["stalls_to_notify"],
             },
         )
         # Re-read through the selector so the counts and prefetches are back in place.
         data = MarketAdminReadSerializer(get_market_for_admin(market_id=market.pk)).data
-        data["deactivated_slot_count"] = deactivated_slot_count
+        data["deactivated_slot_count"] = summary["slots_to_disable"]
+        data["orders_to_reschedule"] = summary["orders_to_reschedule"]
+        data["notified"] = summary["customers_to_notify"] + summary["stalls_to_notify"]
         return api_response(message="Market updated.", request=request, data=data)
+
+
+class MarketGeocodeView(APIView):
+    """Where an address is, so the market form can drop its pin there.
+
+    Looked up here rather than in the browser: Nominatim allows one request a second for the
+    whole app and wants the app named in the User-Agent, and accounts.geocoding already
+    does both (D-032). The admin still drags the pin to the exact spot before saving.
+    """
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        parameters=[OpenApiParameter("q", str, required=True, description="The address.")],
+        responses={200: MarketGeocodeSerializer, 400: None},
+        summary="Find the coordinates of an address",
+    )
+    def get(self, request) -> Response:
+        query = (request.query_params.get("q") or "").strip()
+        if len(query) < 5:
+            raise BusinessValidationError(
+                errors={"q": ["Type at least 5 characters of the address."]}
+            )
+        found = geocode_address(query)
+        data = {"found": found is not None, "latitude": None, "longitude": None}
+        if found is not None:
+            data["latitude"], data["longitude"] = float(found[0]), float(found[1])
+        return api_response(message="OK", request=request, data=data)
+
+
+class MarketEditImpactView(APIView):
+    """What a save would do, without saving: the admin confirms these numbers first."""
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        request=MarketAdminWriteSerializer,
+        responses={200: MarketEditImpactSerializer, 400: None, 404: None},
+        summary="Preview what editing a market would change",
+    )
+    def post(self, request, id: int) -> Response:
+        market = Market.objects.filter(pk=id).first()
+        if market is None:
+            raise ResourceNotFoundError("Market not found.")
+        serializer = MarketAdminWriteSerializer(market, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        impact = preview_market_update(
+            market=market, validated=dict(serializer.validated_data)
+        )
+        return api_response(message="OK", request=request, data=impact.summary())
 
 
 class _MarketStateView(APIView):

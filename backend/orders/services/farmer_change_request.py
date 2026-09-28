@@ -166,6 +166,11 @@ def approve_change_request(
                 order.note = change.note
                 update_fields.append("note")
 
+            # The new time was the answer to a market schedule change: the order fits again.
+            if schedule is not None and order.reschedule_requested_at is not None:
+                order.reschedule_requested_at = None
+                update_fields.append("reschedule_requested_at")
+
             order.pending_change = None
             order.version += 1
             save_with_history(order, update_fields=update_fields, reason=history_reason)
