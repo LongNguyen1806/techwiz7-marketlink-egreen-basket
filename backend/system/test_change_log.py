@@ -219,3 +219,15 @@ def test_a_shoppers_profile_now_has_a_trail_too(admin_client, customer_user, adm
         {"field": "full_name", "old": "Test Customer", "new": "Linh Pham"}
     ]
     assert response.data["data"][0]["user"]["email"] == admin_user.email
+
+
+@pytest.mark.django_db
+def test_a_record_saved_without_history_is_an_empty_list_not_a_404(admin_client, farmer_user):
+    # seed_demo writes with bulk_create, which simple-history does not see.
+    profile = farmer_user.farmer_profile
+    profile.history.all().delete()
+
+    response = admin_client.get(_url("farmer_profile", profile.user_id))
+
+    assert response.status_code == 200
+    assert response.data["data"] == []

@@ -13,6 +13,26 @@ import { Textarea } from '../ui/Textarea';
 import { ApiError } from '../../lib/ApiError';
 import '../../styles/admin/ProfileEditDialog.css';
 
+// The rules registration uses, checked before the save so the admin sees them at once.
+// The server checks the same rules again; this only saves a round trip.
+export const VN_PHONE = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+
+function problemWith(field, raw) {
+  const value = (raw ?? '').trim();
+  if (field.required && !value) return `${field.label} is required.`;
+  if (!value) return null;
+  if (field.minLength && value.length < field.minLength) {
+    return `${field.label} must be at least ${field.minLength} characters.`;
+  }
+  if (field.maxLength && value.length > field.maxLength) {
+    return `${field.label} must be at most ${field.maxLength} characters.`;
+  }
+  if (field.pattern && !field.pattern.test(value.replace(/[\s.-]/g, ''))) {
+    return field.patternMessage ?? `${field.label} is not valid.`;
+  }
+  return null;
+}
+
 export function ProfileEditDialog({
   open,
   onOpenChange,
@@ -45,6 +65,15 @@ export function ProfileEditDialog({
         .filter((field) => values[field.name] !== field.value)
         .map((field) => [field.name, values[field.name]]),
     );
+    const problems = Object.fromEntries(
+      fields
+        .map((field) => [field.name, problemWith(field, values[field.name])])
+        .filter(([, problem]) => problem),
+    );
+    if (Object.keys(problems).length > 0) {
+      setErrors(problems);
+      return;
+    }
     if (Object.keys(changed).length === 0) {
       onOpenChange(false);
       return;

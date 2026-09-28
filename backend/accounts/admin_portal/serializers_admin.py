@@ -1,4 +1,8 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+
+from accounts.auth.serializers_common import clean_phone
+from accounts.services.no_show_lock import auto_lock_summary
 
 from accounts.models import CustomerProfile, FarmerProfile
 
@@ -62,15 +66,35 @@ class AdminCustomerRowSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class AutoLockOrderSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    stall_name = serializers.CharField()
+    market_name = serializers.CharField()
+    pickup_date = serializers.DateField()
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class AutoLockSerializer(serializers.Serializer):
+    locked_at = serializers.DateTimeField()
+    orders = AutoLockOrderSerializer(many=True)
+
+
 class AdminCustomerDetailSerializer(AdminCustomerRowSerializer):
     recent_orders = serializers.SerializerMethodField()
+    auto_lock = serializers.SerializerMethodField()
 
     class Meta(AdminCustomerRowSerializer.Meta):
-        fields = [*AdminCustomerRowSerializer.Meta.fields, "address", "recent_orders"]
+        fields = [*AdminCustomerRowSerializer.Meta.fields, "address", "recent_orders", "auto_lock"]
         read_only_fields = fields
 
     def get_recent_orders(self, profile) -> list[dict]:
         return self.context.get("recent_orders", [])
+
+    @extend_schema_field(AutoLockSerializer(allow_null=True))
+    def get_auto_lock(self, profile) -> dict | None:
+        # Set when the system, not an admin, locked the account after repeated no-shows.
+        summary = auto_lock_summary(profile.user_id)
+        return AutoLockSerializer(summary).data if summary else None
 
 
 class OpenOrderBreakdownSerializer(serializers.Serializer):
@@ -114,12 +138,17 @@ class AdminFarmerEditSerializer(serializers.ModelSerializer):
         fields = ["stall_name", "contact_person", "phone", "description", "order_cutoff_hours"]
         extra_kwargs = {field: {"required": False} for field in fields}
 
+    # The same rules as registration (FarmerRegisterAuthSerializer): an admin edit must not
+    # let through what signing up would refuse.
+    stall_name = serializers.CharField(min_length=2, max_length=100, required=False)
+    contact_person = serializers.CharField(min_length=2, max_length=100, required=False)
+
     def validate_phone(self, value: str) -> str:
         # Declaring the field here would drop the model's UniqueValidator, so uniqueness is
         # checked in the service against the normalised number instead (D-028).
         if not value or not value.strip():
             raise serializers.ValidationError("A phone number is required.")
-        return value
+        return clean_phone(value)
 
 
 class AdminCustomerEditSerializer(serializers.ModelSerializer):
@@ -129,3 +158,10 @@ class AdminCustomerEditSerializer(serializers.ModelSerializer):
         model = CustomerProfile
         fields = ["full_name", "phone", "address"]
         extra_kwargs = {field: {"required": False} for field in fields}
+
+    # The same rules as registration (CustomerRegisterWriteSerializer).
+    full_name = serializers.CharField(min_length=2, max_length=100, required=False)
+    address = serializers.CharField(min_length=5, max_length=255, required=False)
+
+    def validate_phone(self, value: str) -> str:
+        return clean_phone(value)
