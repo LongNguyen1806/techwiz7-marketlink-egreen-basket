@@ -1,10 +1,14 @@
 import { PublicLayout } from '../../layouts/PublicLayout';
+import { NotForFarmers } from '../guards';
 import { customerRoutes } from './customer.routes';
 
 const page = (load) => async () => ({ Component: (await load()).default });
 
 
 export const publicRoutes = [
+  {
+    element: <NotForFarmers />,
+    children: [
   {
     element: <PublicLayout />,
     children: [
@@ -53,6 +57,8 @@ export const publicRoutes = [
         lazy: page(() => import('../../pages/guest/SitemapPage')),
       },
       ...customerRoutes,
+    ],
+  },
     ],
   },
 ];

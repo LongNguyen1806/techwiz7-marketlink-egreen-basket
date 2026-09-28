@@ -19,7 +19,7 @@ function readId(value) {
     return null;
 }
 function isUnit(value) {
-    return value === 'KG' || value === 'BUNCH' || value === 'PIECE' || value === 'PACK';
+    return ['KG', 'BUNCH', 'EACH', 'BAG', 'BOX', 'PACK'].includes(value);
 }
 function isAvailability(value) {
     return value === 'IN_STOCK' || value === 'OUT_OF_STOCK' || value === 'UNAVAILABLE';

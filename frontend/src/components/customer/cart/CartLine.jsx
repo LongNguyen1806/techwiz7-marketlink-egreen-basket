@@ -8,7 +8,7 @@ import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { MAX_QUANTITY, isOrderable, lineMax, lineMin } from '../../../stores/cart.store';
 import { formatMoney } from '../../../utils/formatters';
-import { unitLabel } from '../../../utils/labels';
+import { orderWindowLabel, quantityLabel, unitLabel } from '../../../utils/labels';
 import { moneyToNumber } from '../../../utils/helpers/domain';
 import { cn } from '../../../lib/cn';
 import './CartLine.css';
@@ -27,17 +27,14 @@ export function CartLine({ line, onQuantityChange, onRemove }) {
 
       <div className="cart-line__main">
         <Link to={`/products/${line.product_id}`} className="cart-line__name">{line.name}</Link>
-        <PriceTag amount={line.price} unit={line.unit} className="cart-line__price" />
+        <PriceTag amount={line.price} unit={unitLabel(line.unit)} className="cart-line__price" />
         {!orderable ? <Badge variant="secondary">Unavailable</Badge> : null}
         {short ? (
-          <p className="cart-line__warning">{`Only ${stock} ${line.unit} left`}</p>
+          <p className="cart-line__warning">{`Only ${quantityLabel(stock, line.unit)} left`}</p>
         ) : null}
         {orderable && (lineMin(line) > 1 || line.max_per_order) ? (
           <p className="cart-line__limit">
-            {[lineMin(line) > 1 ? `Min ${lineMin(line)}` : null, line.max_per_order ? `Max ${line.max_per_order}` : null]
-              .filter(Boolean)
-              .join(' · ')}{' '}
-            {unitLabel(line.unit)} per order
+            {orderWindowLabel({ min: lineMin(line), max: line.max_per_order, unit: line.unit })}
           </p>
         ) : null}
       </div>

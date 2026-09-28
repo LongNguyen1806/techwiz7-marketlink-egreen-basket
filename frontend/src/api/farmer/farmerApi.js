@@ -178,8 +178,9 @@ export const farmerApi = {
   },
 
   
-  applyWeeklyTemplate: async () => {
-    const { data } = await axiosClient.post('/farmer/products/apply-weekly-template/');
+  applyWeeklyTemplate: async (productIds) => {
+    const body = productIds ? { product_ids: productIds } : {};
+    const { data } = await axiosClient.post('/farmer/products/apply-weekly-template/', body);
     return data;
   },
 
@@ -189,6 +190,11 @@ export const farmerApi = {
   
   getDashboard: async ({ from, to } = {}, { signal } = {}) => {
     const { data } = await axiosClient.get('/farmer/dashboard/', { params: { from, to }, signal });
+    return data;
+  },
+
+  getStats: async ({ from, to } = {}, { signal } = {}) => {
+    const { data } = await axiosClient.get('/farmer/dashboard/stats/', { params: { from, to }, signal });
     return data;
   },
 

@@ -4,7 +4,7 @@ import { ROLES } from '../../constants/roles';
 import { ROUTES } from '../../constants/routes';
 import { notify } from '../../lib/toast';
 import { useCartStore } from '../../stores/cart.store';
-import { unitLabel } from '../../utils/labels';
+import { quantityLabel } from '../../utils/labels';
 import { useAuth } from '../authentication/useAuth';
 
 
@@ -49,13 +49,13 @@ export function useAddToCart() {
       const minimum = product.min_per_order ?? 1;
       const cap = product.max_per_order;
       if (inCart + quantity < minimum) {
-        notify.info(`${product.name}: minimum ${minimum} ${unitLabel(product.unit)} per order`, {
+        notify.info(`${product.name}: minimum ${quantityLabel(minimum, product.unit)} per order`, {
           description: `We added ${minimum} to your cart.`,
         });
         return true;
       }
       if (cap && inCart + quantity > cap) {
-        notify.info(`${product.name}: at most ${cap} ${unitLabel(product.unit)} per order`, {
+        notify.info(`${product.name}: at most ${quantityLabel(cap, product.unit)} per order`, {
           description: `Your cart now has the maximum of ${cap}.`,
         });
         return true;

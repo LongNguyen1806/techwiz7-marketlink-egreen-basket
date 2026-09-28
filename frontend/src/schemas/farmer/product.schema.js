@@ -4,7 +4,7 @@ import { textField } from '../common/auth.schema';
 
 
 
-export const PRODUCT_UNITS = ['KG', 'BUNCH', 'PIECE', 'PACK'];
+export const PRODUCT_UNITS = ['KG', 'BUNCH', 'EACH', 'BAG', 'BOX', 'PACK'];
 export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const DEFAULT_MAX_UPLOAD_MB = 2;
 

@@ -26,7 +26,7 @@ from orders.farmer.serializers_farmer import (
     RejectChangeRequestSerializer,
 )
 from orders.models import ActorRole, Order, OrderItem, OrderStatus, OrderStatusHistory
-from orders.services.dashboard import build_farmer_dashboard, resolve_date_range
+from orders.services.dashboard import build_farmer_dashboard, build_farmer_stats, resolve_date_range
 from orders.services.expiry import expire_overdue_orders
 from orders.services.farmer_change_request import approve_change_request, reject_change_request
 from orders.services.farmer_order_items import mark_order_item_sold_out
@@ -473,3 +473,15 @@ class FarmerDashboardView(FarmerBaseOrderView):
             data["upcoming"], many=True, context={"request": request}
         ).data
         return api_response(message="OK", data=data, request=request)
+
+
+class FarmerStatsView(FarmerBaseOrderView):
+    def get(self, request: Request) -> Response:
+        """FA-01b: the Stats page (sales, best sellers, markets, statuses) over a chosen range."""
+        date_range = resolve_date_range(request.query_params.get("from"), request.query_params.get("to"))
+        farmer = FarmerProfile.objects.filter(pk=request.user.pk).first()
+        if farmer is None:
+            raise ResourceNotFoundError("Farmer profile not found.", code=ErrorCode.NOT_FOUND)
+        expire_overdue_orders(farmer_id=farmer.pk)  # D-009: expired orders counted as expired
+
+        return api_response(message="OK", data=build_farmer_stats(farmer=farmer, date_range=date_range), request=request)

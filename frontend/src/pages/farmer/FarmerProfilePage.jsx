@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { LazyImage } from '../../components/common/LazyImage';
@@ -15,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 import { Textarea } from '../../components/ui/Textarea';
-import { ROUTES } from '../../constants/routes';
 import { useObjectUrl } from '../../hooks/common/useObjectUrl';
 import { useUnsavedChangesGuard } from '../../hooks/common/useUnsavedChangesGuard';
 import { useFarmerProfile, useUpdateFarmerProfile } from '../../hooks/queries/farmer/useFarmerProfile';
@@ -106,13 +104,8 @@ export default function FarmerProfilePage() {
   return (
     <div className="farmer-profile-page">
       <PageHeader
-        title="Stall profile"
+        title="Farmer profile"
         description="This is what shoppers see when they discover and pre-order from you."
-        actions={
-          <Button asChild variant="outline" size="sm">
-            <Link to={ROUTES.FARMER.CHANGE_PASSWORD}>Change password</Link>
-          </Button>
-        }
       />
 
       {photo ? <LazyImage src={photo} alt="" className="farmer-profile-page__banner" /> : null}
@@ -216,7 +209,7 @@ export default function FarmerProfilePage() {
         open={blocker.state === 'blocked'}
         onOpenChange={(open) => !open && blocker.reset?.()}
         title="Leave without saving?"
-        description="Your changes to the stall profile will be lost."
+        description="Your changes to the farmer profile will be lost."
         confirmLabel="Leave page"
         cancelLabel="Keep editing"
         destructive

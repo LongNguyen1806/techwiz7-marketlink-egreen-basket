@@ -48,6 +48,20 @@ export function useFarmerDashboard(range) {
 }
 
 
-export function useFarmerStats() {
-  return useDashboardQuery(lastDaysRange(STATS_RANGE_DAYS), { staleTime: STALE.MINUTE });
+const toStatsData = (data) => ({
+  ...data,
+  revenue_by_day: data.revenue_by_day.map((day) => ({ ...day, revenue: moneyToNumber(day.revenue) })),
+  top_products: data.top_products.map((product) => ({ ...product, revenue: moneyToNumber(product.revenue) })),
+  sales_by_market: data.sales_by_market.map((market) => ({ ...market, revenue: moneyToNumber(market.revenue) })),
+});
+
+export function useFarmerStats(range) {
+  return useQuery({
+    queryKey: farmerKeys.dashboard.stats(range),
+    queryFn: ({ signal }) => farmerApi.getStats(range, { signal }),
+    select: toStatsData,
+    placeholderData: keepPreviousData,
+    staleTime: STALE.MINUTE,
+    enabled: !dateRangeError(range),
+  });
 }

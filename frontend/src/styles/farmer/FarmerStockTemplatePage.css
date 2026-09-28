@@ -3,5 +3,103 @@
 .farmer-stock-template-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
+}
+
+.farmer-stock-template-page__btn-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.farmer-stock-template-page__kpis {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .farmer-stock-template-page__kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.farmer-stock-template-page__apply-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-primary-50);
+  padding: var(--space-4);
+}
+
+.dark .farmer-stock-template-page__apply-bar {
+  border-color: var(--color-primary-800);
+  background-color: color-mix(in srgb, var(--color-primary-950) 40%, transparent);
+}
+
+.farmer-stock-template-page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.farmer-stock-template-page__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.farmer-stock-template-page__chip:hover {
+  border-color: var(--color-primary-500);
+}
+
+.farmer-stock-template-page__chip.is-active {
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+}
+
+.farmer-stock-template-page__chip-count {
+  min-width: 1.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-muted);
+  padding: 0 var(--space-2);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-stock-template-page__chip.is-active .farmer-stock-template-page__chip-count {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.farmer-stock-template-page__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.farmer-stock-template-page__qty-input {
+  width: 6rem;
+}
+
+.farmer-stock-template-page__row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
 }

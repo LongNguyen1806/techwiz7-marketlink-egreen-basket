@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { Clock } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { formatDateTime, formatMoney, formatPickupWindow } from '../../utils/formatters';
-import { unitLabel } from '../../utils/labels';
+import { quantityLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerChangeRequestPanel.css';
 
 export function FarmerChangeRequestPanel({ order }) {
@@ -43,7 +43,6 @@ export function FarmerChangeRequestPanel({ order }) {
       {change.items ? (
         <ul className="farmer-change-request__items">
           {requested.map((item) => {
-            const unit = unitLabel(item.unit);
             const extra = item.quantity - item.current_quantity;
             const short = extra > item.stock_available;
             return (
@@ -59,7 +58,7 @@ export function FarmerChangeRequestPanel({ order }) {
                   </p>
                   {short ? (
                     <p className="farmer-change-request__warn">
-                      Needs {extra} more {unit}, only {item.stock_available} left in stock
+                      Needs {quantityLabel(extra, item.unit)} more, only {quantityLabel(item.stock_available, item.unit)} left in stock
                     </p>
                   ) : null}
                 </div>
@@ -70,7 +69,7 @@ export function FarmerChangeRequestPanel({ order }) {
                       : 'farmer-change-request__qty'
                   }
                 >
-                  {`${item.current_quantity} → ${item.quantity} ${unit}`}
+                  {`${item.current_quantity} → ${quantityLabel(item.quantity, item.unit)}`}
                 </span>
               </li>
             );
@@ -81,7 +80,7 @@ export function FarmerChangeRequestPanel({ order }) {
                 {item.product_name}
               </p>
               <span className="farmer-change-request__qty">
-                {`${item.quantity} ${unitLabel(item.unit)} → Removed`}
+                {`${quantityLabel(item.quantity, item.unit)} → Removed`}
               </span>
             </li>
           ))}

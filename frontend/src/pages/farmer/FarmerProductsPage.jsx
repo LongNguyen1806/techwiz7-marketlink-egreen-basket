@@ -37,7 +37,7 @@ import {
 import { useFarmerMarkets } from '../../hooks/queries/farmer/useFarmerMarkets';
 import { useFarmerProfile } from '../../hooks/queries/farmer/useFarmerProfile';
 import { useCategories } from '../../hooks/queries/guest/usePublicCatalog';
-import { unitLabel } from '../../utils/labels';
+import { orderWindowLabel as orderLimits, unitLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerProductsPage.css';
 
 const STATUS_CHIPS = [
@@ -66,11 +66,7 @@ const STOCK_SAVE_DELAY_MS = 600;
 const MAX_STOCK = 99999;
 
 function orderWindowLabel(product) {
-  const unit = unitLabel(product.unit);
-  const parts = [];
-  if (product.min_per_order > 1) parts.push(`Min ${product.min_per_order}`);
-  if (product.max_per_order) parts.push(`Max ${product.max_per_order}`);
-  return `${parts.join(' · ')} ${unit} per order`;
+  return orderLimits({ min: product.min_per_order, max: product.max_per_order, unit: product.unit });
 }
 
 function statusOf(product) {
@@ -190,7 +186,9 @@ function ProductRow({ product, selected, onSelect, onArchive, onBulk }) {
         <MarketsCell product={product} />
       </td>
       <td className="page-primitive__table-td">
-        <Badge variant={status.variant}>{status.label}</Badge>
+        <Badge variant={status.variant} className="farmer-products-page__status">
+          {status.label}
+        </Badge>
       </td>
       <td className="page-primitive__table-td">
         <div className="page-primitive__actions-row">

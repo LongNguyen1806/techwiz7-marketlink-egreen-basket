@@ -23,7 +23,7 @@ const LINKS_BY_ROLE = {
     { to: ROUTES.CUSTOMER.CHANGE_PASSWORD, label: 'Change password', icon: KeyRound },
   ],
   [ROLES.FARMER]: [
-    { to: ROUTES.FARMER.PROFILE, label: 'Stall profile', icon: UserRound },
+    { to: ROUTES.FARMER.PROFILE, label: 'Farmer profile', icon: UserRound },
     { to: ROUTES.FARMER.HOME, label: 'Stall overview', icon: LayoutDashboard },
     { to: ROUTES.FARMER.CHANGE_PASSWORD, label: 'Change password', icon: KeyRound },
   ],

@@ -5,7 +5,7 @@ import '../../styles/common/PriceTag.css';
 export function PriceTag({ amount, unit, className, }) {
     return (<span className={cn('price-tag', className)}>
       {formatMoney(amount)}
-      {unit ? <span className="price-tag__unit">/{unit}</span> : null}
+      {unit ? <span className="price-tag__unit">{unit === 'each' ? ' each' : `/${unit}`}</span> : null}
     </span>);
 }
 

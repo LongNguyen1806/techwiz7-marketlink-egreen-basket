@@ -95,9 +95,9 @@ FARMERS = [
             },
         ],
         "products": [
-            ("Fruits", "Green-skin Pomelo", Unit.PIECE, "2.80", 30, 30),
+            ("Fruits", "Green-skin Pomelo", Unit.EACH, "2.80", 30, 30),
             ("Fruits", "Dragon Fruit", Unit.KG, "1.90", 45, 50),
-            ("Fruits", "Coconut", Unit.PIECE, "0.90", 50, 60),
+            ("Fruits", "Coconut", Unit.EACH, "0.90", 50, 60),
             ("Bakery", "Coconut Candy", Unit.PACK, "2.20", 15, 20),
             ("Others", "Organic Honey", Unit.PACK, "7.50", 0, 10),
         ],

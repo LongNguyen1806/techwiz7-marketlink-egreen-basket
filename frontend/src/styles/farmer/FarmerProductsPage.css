@@ -116,6 +116,10 @@
   font-weight: var(--weight-semibold);
 }
 
+.farmer-products-page__status {
+  white-space: nowrap;
+}
+
 .farmer-products-page__more-icon {
   width: 1.125rem;
   height: 1.125rem;

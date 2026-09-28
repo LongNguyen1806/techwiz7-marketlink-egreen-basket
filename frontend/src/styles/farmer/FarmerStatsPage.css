@@ -5,3 +5,106 @@
   flex-direction: column;
   gap: var(--space-6);
 }
+
+.farmer-stats-page__range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.farmer-stats-page__dates {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.farmer-stats-page__dates .input-field {
+  width: 11rem;
+}
+
+.farmer-stats-page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.farmer-stats-page__chip {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.farmer-stats-page__chip:hover {
+  border-color: var(--color-primary-500);
+}
+
+.farmer-stats-page__chip.is-active {
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+}
+
+.farmer-stats-page__note {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-stats-page__note--up {
+  color: var(--color-primary-600);
+}
+
+.farmer-stats-page__note--down {
+  color: var(--color-danger);
+}
+
+.farmer-stats-page__two-col {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 1024px) {
+  .farmer-stats-page__two-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.farmer-stats-page__share-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.farmer-stats-page__share-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.farmer-stats-page__share-track {
+  margin-top: var(--space-1);
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-muted);
+  overflow: hidden;
+}
+
+.farmer-stats-page__share-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-600);
+}
+
+.farmer-stats-page__footnote {
+  margin-top: var(--space-3);
+}

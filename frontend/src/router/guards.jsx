@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { PageSkeleton } from '../components/feedback/PageSkeleton';
+import { ROLES } from '../constants/roles';
 import { ROUTES, homePathForRole } from '../constants/routes';
 import { loginPathFor, useAuth, usePortal } from '../hooks/authentication/useAuth';
 
@@ -28,6 +29,15 @@ export function GuestOnly() {
   if (isLoading) return <PageSkeleton />;
   if (isError) return <AccountLoadError onRetry={refetch} />;
   return <Navigate to={homePathForRole(user.role)} replace />;
+}
+
+
+export function NotForFarmers() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  if (!isAuthenticated) return <Outlet />;
+  if (isLoading) return <PageSkeleton />;
+  if (user?.role === ROLES.FARMER) return <Navigate to={ROUTES.FARMER.HOME} replace />;
+  return <Outlet />;
 }
 
 

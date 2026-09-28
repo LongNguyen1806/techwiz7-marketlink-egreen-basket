@@ -217,7 +217,7 @@ class FarmerProductsAPITestCase(TestCase):
             "name": "Sweet Corn",
             "category_id": self.category.id,
             "price": "4.00",
-            "unit": Unit.PIECE,
+            "unit": Unit.EACH,
             "stock_quantity": 30,
         }
         res_pending = self.client.post("/api/farmer/products/", payload)
@@ -341,7 +341,7 @@ class FarmerProductsAPITestCase(TestCase):
             "name": "Sweet Corn",
             "category_id": self.category.id,
             "price": "4.00",
-            "unit": Unit.PIECE,
+            "unit": Unit.EACH,
             "stock_quantity": 30,
         }
         responses = [
@@ -573,6 +573,50 @@ class FarmerProductsAPITestCase(TestCase):
         res = self.client.post("/api/farmer/products/apply-weekly-template/", {})
         self.assertEqual(res.status_code, 403)
         self.assertEqual(res.data["code"], ErrorCode.FARMER_SUSPENDED)
+
+    def test_fa17_rows_carry_category_and_markets_for_filtering(self):
+        ProductMarket.objects.filter(product=self.prod2).delete()
+        self.client.force_authenticate(user=self.farmer_user)
+        rows = self.client.get("/api/farmer/products/weekly-template-preview/").data["data"]["rows"]
+        by_id = {row["product_id"]: row for row in rows}
+
+        self.assertEqual(by_id[self.prod1.id]["category"], {"id": self.category.id, "name": "Vegetables"})
+        self.assertEqual(by_id[self.prod1.id]["market_ids"], [self.home_market.id])
+        self.assertEqual(by_id[self.prod2.id]["market_ids"], [])
+
+    def test_fa18_apply_one_product_leaves_the_others_alone(self):
+        self.client.force_authenticate(user=self.farmer_user)
+        res = self.client.post(
+            "/api/farmer/products/apply-weekly-template/", {"product_ids": [self.prod2.id]}, format="json"
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"]["updated_count"], 1)
+        self.prod1.refresh_from_db()
+        self.prod2.refresh_from_db()
+        self.assertEqual(self.prod2.stock_quantity, 15)
+        self.assertEqual(self.prod1.stock_quantity, 20)  # its weekly stock is 25, but it was not chosen
+
+    def test_fa18_apply_skips_another_farmers_product(self):
+        other_product = Product.objects.create(
+            review_status=ReviewStatus.APPROVED,
+            farmer=self.pending_farmer_profile,
+            category=self.category,
+            name="Other Farm Beans",
+            price=Decimal("1.00"),
+            unit=Unit.KG,
+            stock_quantity=3,
+            weekly_default_quantity=40,
+        )
+        self.client.force_authenticate(user=self.farmer_user)
+        res = self.client.post(
+            "/api/farmer/products/apply-weekly-template/", {"product_ids": [other_product.id]}, format="json"
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"]["updated_count"], 0)
+        other_product.refresh_from_db()
+        self.assertEqual(other_product.stock_quantity, 3)
 
     # ---- Listing review after an edit, and the per-order cap ----
 

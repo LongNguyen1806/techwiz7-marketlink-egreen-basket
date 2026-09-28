@@ -204,15 +204,42 @@ export function useArchiveProduct() {
   });
 }
 
+export function useUpdateInventoryItem() {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidateProducts();
+
+  return useMutation({
+    mutationFn: ({ id, stock_quantity, weekly_default_quantity }) => {
+      const payload = {};
+      if (stock_quantity !== undefined) payload.stock_quantity = stock_quantity;
+      if (weekly_default_quantity !== undefined) payload.weekly_default_quantity = weekly_default_quantity;
+      return farmerApi.updateProduct(id, payload);
+    },
+    onSuccess: (product) => {
+      notify.success(`Updated ${product.name}`);
+      notifyRestock(product.restock_notified ?? 0);
+    },
+    onSettled: () => {
+      invalidate();
+      void queryClient.invalidateQueries({ queryKey: farmerKeys.products.weeklyTemplate() });
+    },
+  });
+}
+
 export function useApplyWeeklyTemplate() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateProducts();
   return useMutation({
-    mutationFn: farmerApi.applyWeeklyTemplate,
+    // Pass product ids to apply one row; call with nothing to apply every product.
+    mutationFn: (productIds) => farmerApi.applyWeeklyTemplate(productIds),
     onSuccess: ({ updated_count: updated, restock_notified: restocked }) => {
       notify.success(`Stock updated for ${updated} product${updated === 1 ? '' : 's'}`);
       notifyRestock(restocked ?? 0);
     },
-    onSettled: invalidate,
+    onSettled: () => {
+      invalidate();
+      void queryClient.invalidateQueries({ queryKey: farmerKeys.products.weeklyTemplate() });
+    },
   });
 }
 

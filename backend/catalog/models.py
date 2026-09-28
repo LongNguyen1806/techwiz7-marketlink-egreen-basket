@@ -9,10 +9,14 @@ from marketlink_core.models import BaseModel, CreatedAtModel, HistoryRequestMeta
 
 
 class Unit(models.TextChoices):
-    KG = "KG", "Kilogram"
-    BUNCH = "BUNCH", "Bunch"
-    PIECE = "PIECE", "Piece"
-    PACK = "PACK", "Pack"
+    """How farm produce is sold at a Vietnamese market."""
+
+    KG = "KG", "Kilogram"  # weighed: most vegetables and fruit
+    BUNCH = "BUNCH", "Bunch"  # bó / nải: leafy greens, herbs, bananas
+    EACH = "EACH", "Each"  # trái / quả: pomelo, melon, gourd
+    BAG = "BAG", "Bag"  # túi: rice, beans, nuts, salt, sugar, coffee
+    BOX = "BOX", "Box"  # hộp: strawberries, grapes
+    PACK = "PACK", "Pack"  # gói: spices, tea
 
 
 class ModerationAction(models.TextChoices):

@@ -5,12 +5,10 @@ import {
   BarChart3,
   Boxes,
   CalendarClock,
-  Home,
   LayoutDashboard,
   Menu,
   MessageSquare,
   Package,
-  Settings,
   Store,
   UserRound,
 } from 'lucide-react';
@@ -34,12 +32,11 @@ const NAV_ITEMS = [
   { to: ROUTES.FARMER.HOME, label: 'Overview', icon: LayoutDashboard, end: true },
   { to: ROUTES.FARMER.ORDERS, label: 'Orders', icon: Package },
   { to: ROUTES.FARMER.PRODUCTS, label: 'Products', icon: Boxes },
-  { to: ROUTES.FARMER.STOCK_TEMPLATE, label: 'Stock template', icon: CalendarClock },
+  { to: ROUTES.FARMER.STOCK_TEMPLATE, label: 'Weekly stock', icon: CalendarClock },
   { to: ROUTES.FARMER.MARKETS, label: 'Markets & slots', icon: Store },
   { to: ROUTES.FARMER.REVIEWS, label: 'Reviews', icon: MessageSquare },
   { to: ROUTES.FARMER.STATS, label: 'Stats', icon: BarChart3 },
-  { to: ROUTES.FARMER.PROFILE, label: 'Stall profile', icon: UserRound },
-  { to: ROUTES.FARMER.CHANGE_PASSWORD, label: 'Change password', icon: Settings },
+  { to: ROUTES.FARMER.PROFILE, label: 'Farmer profile', icon: UserRound },
 ];
 
 function SideNav({ collapsed }) {
@@ -133,11 +130,6 @@ export function FarmerLayout() {
           <div className="farmer-layout__header-actions">
             <NotificationBell listPath={ROUTES.FARMER.NOTIFICATIONS} />
             <ThemeToggle />
-            <Button asChild variant="ghost" size="icon" aria-label="MarketLink home">
-              <Link to={ROUTES.HOME}>
-                <Home className="farmer-layout__nav-icon" />
-              </Link>
-            </Button>
             <UserMenu />
           </div>
         </header>

@@ -269,17 +269,36 @@ def preview_weekly_template(*, farmer: FarmerProfile) -> dict[str, Any]:
 
     # 2. Query products with weekly default quantity or all unarchived products
     products = list(
-        Product.objects.filter(farmer=farmer, is_archived=False).order_by("name", "id")
+        Product.objects.filter(farmer=farmer, is_archived=False).select_related("category").order_by("name", "id")
     )
     product_ids = [p.id for p in products]
+    # Markets each product is sold at, so the page can filter by market.
+    market_ids: dict[int, list[int]] = {}
+    for product_id, market_id in (
+        ProductMarket.objects.filter(product_id__in=product_ids)
+        .order_by("farmer_market__market_id")
+        .values_list("product_id", "farmer_market__market_id")
+    ):
+        market_ids.setdefault(product_id, []).append(market_id)
 
     held_dict = get_weekly_pattern_held_quantities(product_ids=product_ids)
     pending_dict = get_pending_quantities(product_ids=product_ids)
+    sold_dict = dict(
+        OrderItem.objects.filter(
+            order__farmer=farmer,
+            order__status=OrderStatus.COMPLETED,
+            product_id__in=product_ids,
+        )
+        .values("product_id")
+        .annotate(sold=Sum("quantity"))
+        .values_list("product_id", "sold")
+    )
 
     rows = []
     for p in products:
         held = held_dict.get(p.id, 0)
         pending = pending_dict.get(p.id, 0)
+        sold = sold_dict.get(p.id, 0)
         tpl = p.weekly_default_quantity
         if tpl is not None:
             new_stock = max(tpl - held, 0)
@@ -290,9 +309,13 @@ def preview_weekly_template(*, farmer: FarmerProfile) -> dict[str, Any]:
             {
                 "product_id": p.id,
                 "name": p.name,
+                "unit": p.unit,
+                "category": {"id": p.category_id, "name": p.category.name},
+                "market_ids": market_ids.get(p.id, []),
                 "weekly_default_quantity": tpl,
                 "held_quantity": held,
                 "pending_quantity": pending,
+                "sold_quantity": sold,
                 "current_stock": p.stock_quantity,
                 "new_stock": new_stock,
                 "is_available": p.is_available,
@@ -317,10 +340,12 @@ def preview_weekly_template(*, farmer: FarmerProfile) -> dict[str, Any]:
     }
 
 
-def apply_weekly_template(*, farmer: FarmerProfile) -> dict[str, int]:
+def apply_weekly_template(*, farmer: FarmerProfile, product_ids: list[int] | None = None) -> dict[str, int]:
     """
     FA-18: Applies weekly stock template with row-locking and triggers restock alerts (D-008, D-025, D-029).
     new_stock = max(weekly_default_quantity - held_quantity, 0).
+    product_ids limits it to those products (one row on the Weekly stock page); None means all of them.
+    Ids of another farmer's or archived products are skipped.
     Lock order (Pass 4A): 1. lazy sweep (own transactions) -> 2. products of the farmer.
     """
     expire_overdue_orders(farmer_id=farmer.pk)
@@ -328,11 +353,12 @@ def apply_weekly_template(*, farmer: FarmerProfile) -> dict[str, int]:
     def _execute() -> dict[str, int]:
         with transaction.atomic():
             # Lock products of this farmer by id (Pass 4A lock order)
-            products = list(
-                Product.objects.select_for_update(of=("self",))
-                .filter(farmer=farmer, is_archived=False, weekly_default_quantity__isnull=False)
-                .order_by("id")
+            templated = Product.objects.select_for_update(of=("self",)).filter(
+                farmer=farmer, is_archived=False, weekly_default_quantity__isnull=False
             )
+            if product_ids is not None:
+                templated = templated.filter(id__in=product_ids)
+            products = list(templated.order_by("id"))
             if not products:
                 return {"updated_count": 0, "restock_notified": 0}
 

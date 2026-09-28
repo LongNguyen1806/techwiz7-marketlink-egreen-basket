@@ -40,6 +40,7 @@ export const farmerKeys = {
   dashboard: {
     all: () => ['farmer', 'dashboard'],
     range: (range = {}) => ['farmer', 'dashboard', range],
+    stats: (range = {}) => ['farmer', 'dashboard', 'stats', range],
   },
   orders: {
     all: () => ['farmer', 'orders'],

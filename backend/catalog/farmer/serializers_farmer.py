@@ -196,6 +196,14 @@ class FarmerProductBulkSerializer(serializers.Serializer):
         return attrs
 
 
+class WeeklyTemplateApplySerializer(serializers.Serializer):
+    """Leave product_ids out to apply the weekly stock to every product."""
+
+    product_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, allow_empty=False, max_length=BULK_LIMIT
+    )
+
+
 class WeeklyTemplateRowSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     name = serializers.CharField()

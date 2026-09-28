@@ -21,7 +21,7 @@ export function useUpdateFarmerProfile() {
     mutationFn: farmerApi.updateProfile,
     onSuccess: ({ deactivated_slot_count: deactivated, ...profile }) => {
       queryClient.setQueryData(farmerKeys.profile(), profile);
-      notify.success('Stall profile saved');
+      notify.success('Farmer profile saved');
       if (deactivated > 0) {
         notify.warning(`${deactivated} pickup slot${deactivated === 1 ? ' was' : 's were'} turned off`, {
           description: 'They fall on days you no longer work. Turn them back on from Markets if needed.',

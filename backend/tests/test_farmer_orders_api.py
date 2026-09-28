@@ -493,7 +493,7 @@ class FarmerOrdersAPITestCase(TestCase):
             category=self.category,
             name="Unrelated Melon",
             price=Decimal("10.00"),
-            unit=Unit.PIECE,
+            unit=Unit.EACH,
             stock_quantity=50,
         )
 

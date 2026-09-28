@@ -20,7 +20,7 @@ import {
   declineOrderSchema,
   rejectChangeSchema,
 } from '../../schemas/farmer/order.schema';
-import { unitLabel } from '../../utils/labels';
+import { quantityLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerOrderActions.css';
 
 const A = ORDER_ACTIONS;
@@ -148,7 +148,7 @@ function DeclineDialog({ order, open, onOpenChange, onSubmit, loading }) {
                         }
                       />
                       <span>
-                        {item.product_name} · {item.quantity} {unitLabel(item.unit)}
+                        {item.product_name} · {quantityLabel(item.quantity, item.unit)}
                       </span>
                     </label>
                   </li>

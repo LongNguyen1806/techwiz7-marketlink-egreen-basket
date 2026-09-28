@@ -304,7 +304,7 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
               : "This market doesn't open on any of your working days. "}
             Change your working days in{' '}
             <Link to={ROUTES.FARMER.PROFILE} className="page-primitive__link-underline">
-              Stall profile
+              Farmer profile
             </Link>
             .
           </p>

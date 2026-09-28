@@ -13,7 +13,7 @@ const price = (label) =>
 export const priceGuidelineSchema = z
   .object({
     category: z.number({ error: 'Select a category' }).int().positive('Select a category'),
-    unit: z.enum(['KG', 'BUNCH', 'PIECE', 'PACK'], { error: 'Select a unit' }),
+    unit: z.enum(['KG', 'BUNCH', 'EACH', 'BAG', 'BOX', 'PACK'], { error: 'Select a unit' }),
     min_price: price('lowest usual price'),
     max_price: price('highest usual price'),
     max_stock: z

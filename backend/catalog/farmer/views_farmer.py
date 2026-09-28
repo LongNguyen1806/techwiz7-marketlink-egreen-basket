@@ -17,6 +17,7 @@ from catalog.farmer.serializers_farmer import (
     FarmerProductPrecheckSerializer,
     FarmerProductSerializer,
     FarmerProductUpdateSerializer,
+    WeeklyTemplateApplySerializer,
     order_window_error,
 )
 from catalog.models import Category, Product, ReviewStatus
@@ -439,7 +440,11 @@ class FarmerWeeklyTemplateApplyView(FarmerBaseProductView):
         profile = self._get_farmer_profile(request)
         self._check_can_write(profile, require_approved=True)
 
-        apply_data = apply_weekly_template(farmer=profile)
+        serializer = WeeklyTemplateApplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        apply_data = apply_weekly_template(
+            farmer=profile, product_ids=serializer.validated_data.get("product_ids")
+        )
         return api_response(message="OK", data=apply_data, request=request)
 
 

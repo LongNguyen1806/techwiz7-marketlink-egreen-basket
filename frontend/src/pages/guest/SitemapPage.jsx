@@ -42,7 +42,7 @@ const SECTIONS = [
       { to: ROUTES.FARMER.ORDERS, label: 'Orders & picking list', note: 'seller account' },
       { to: ROUTES.FARMER.PRODUCTS, label: 'Your produce', note: 'seller account' },
       { to: ROUTES.FARMER.MARKETS, label: 'Markets, pickup slots & time off', note: 'seller account' },
-      { to: ROUTES.FARMER.STOCK_TEMPLATE, label: 'Weekly stock template', note: 'seller account' },
+      { to: ROUTES.FARMER.STOCK_TEMPLATE, label: 'Weekly stock', note: 'seller account' },
     ],
   },
   {

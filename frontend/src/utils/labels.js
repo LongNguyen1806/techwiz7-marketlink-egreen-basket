@@ -35,8 +35,17 @@ const AUDIENCE = {
 const UNIT = {
   KG: 'kg',
   BUNCH: 'bunch',
-  PIECE: 'piece',
+  EACH: 'each',
+  BAG: 'bag',
+  BOX: 'box',
   PACK: 'pack',
+};
+
+const UNIT_PLURAL = {
+  BUNCH: 'bunches',
+  BAG: 'bags',
+  BOX: 'boxes',
+  PACK: 'packs',
 };
 
 const REVIEW_TYPE = {
@@ -89,6 +98,24 @@ export function audienceLabel(audience) {
 
 export function unitLabel(unit) {
   return UNIT[unit] ?? humanise(unit).toLowerCase();
+}
+
+// "8 kg", "1 bunch", "3 bunches"; produce sold one by one is just counted ("8").
+export function quantityLabel(quantity, unit) {
+  if (unit === 'EACH') return String(quantity);
+  if (unit === 'KG') return `${quantity} kg`;
+  return `${quantity} ${quantity === 1 ? unitLabel(unit) : UNIT_PLURAL[unit] ?? unitLabel(unit)}`;
+}
+
+// "per kg", "per bunch", but "each" on its own.
+export function perUnitLabel(unit) {
+  return unit === 'EACH' ? 'each' : `per ${unitLabel(unit)}`;
+}
+
+// "Min 2 kg · Max 10 kg per order"
+export function orderWindowLabel({ min, max, unit }) {
+  const parts = [min > 1 ? `Min ${quantityLabel(min, unit)}` : null, max ? `Max ${quantityLabel(max, unit)}` : null];
+  return `${parts.filter(Boolean).join(' · ')} per order`;
 }
 
 export function reviewTypeLabel(type) {

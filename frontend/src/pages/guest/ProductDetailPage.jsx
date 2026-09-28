@@ -21,7 +21,7 @@ import {
   usePublicProducts,
 } from '../../hooks/queries/guest/usePublicCatalog';
 import { formatDate } from '../../utils/formatters';
-import { dayOfWeekLabel, unitLabel } from '../../utils/labels';
+import { dayOfWeekLabel, orderWindowLabel, quantityLabel, unitLabel } from '../../utils/labels';
 import '../../styles/guest/ProductDetailPage.css';
 
 const LOW_STOCK = 10;
@@ -152,8 +152,7 @@ function PurchaseBox({ product, onAddToCart }) {
   const enoughStock = product.stock_quantity >= minimum;
   const canAdd = product.availability === 'IN_STOCK' && product.stock_quantity > 0 && enoughStock;
   const maxQuantity = Math.max(minimum, Math.min(product.stock_quantity, product.max_per_order ?? MAX_QUANTITY, MAX_QUANTITY));
-  const unit = unitLabel(product.unit);
-  const windowParts = [minimum > 1 ? `Min ${minimum}` : null, product.max_per_order ? `Max ${product.max_per_order}` : null].filter(Boolean);
+  const hasWindow = minimum > 1 || Boolean(product.max_per_order);
 
   return (
     <div>
@@ -166,11 +165,12 @@ function PurchaseBox({ product, onAddToCart }) {
       </div>
       {product.availability === 'IN_STOCK' && !enoughStock ? (
         <p className="page-primitive__muted-xs">
-          Only {product.stock_quantity} {unit} left, below the minimum of {minimum} {unit} per order.
+          Only {quantityLabel(product.stock_quantity, product.unit)} left, below the minimum of{' '}
+          {quantityLabel(minimum, product.unit)} per order.
         </p>
-      ) : windowParts.length ? (
+      ) : hasWindow ? (
         <p className="page-primitive__muted-xs">
-          {windowParts.join(' · ')} {unit} per order
+          {orderWindowLabel({ min: minimum, max: product.max_per_order, unit: product.unit })}
         </p>
       ) : null}
     </div>
