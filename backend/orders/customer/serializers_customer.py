@@ -175,12 +175,19 @@ def needs_new_pickup(order) -> bool:
     )
 
 
+def reschedule_actions(order) -> list[str]:
+    edit = "REQUEST_CHANGE" if order.status == OrderStatus.ACCEPTED else "MODIFY"
+    return [edit, "RESCHEDULE", "CANCEL"]
+
+
 def customer_allowed_actions(order, *, review_state: dict | None, now=None) -> list[str]:
     """Pass 4B §3.4 / §5.3: what the customer may do now; the frontend only renders these buttons."""
     now = now or timezone.now()
     # Moved by the market: only a new pickup time or cancelling, whatever the old cutoff said.
+    # The edit form opens as usual (the server lets only the time change): MODIFY applies it,
+    # REQUEST_CHANGE sends it to the stall to approve. RESCHEDULE tells the page why.
     if needs_new_pickup(order):
-        return ["RESCHEDULE", "CANCEL"]
+        return reschedule_actions(order)
     before_cutoff = now < order.cutoff_at
     if order.status == OrderStatus.PLACED:
         return ["MODIFY", "CANCEL"] if before_cutoff else []
@@ -313,7 +320,7 @@ class CustomerOrderDetailSerializer(serializers.ModelSerializer):
         actions: list[str] = []
         now = timezone.now()
         if needs_new_pickup(obj):
-            return ["RESCHEDULE", "CANCEL"]
+            return reschedule_actions(obj)
         if obj.status in (OrderStatus.PLACED, OrderStatus.ACCEPTED) and now < obj.cutoff_at:
             actions.append("MODIFY")
             actions.append("CANCEL")

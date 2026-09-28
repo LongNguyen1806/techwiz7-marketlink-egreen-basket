@@ -86,7 +86,14 @@ def _expire_change_request(order_id: int) -> bool:
 
 
 def _cancel_unrescheduled(order_id: int) -> None:
-    """The market moved, the shopper never picked a new time, and the old one has come."""
+    """The market moved, no new time was settled, and the old one has come."""
+    # Read before the decline clears it: a request still waiting means the shopper did answer.
+    stall_silent = Order.objects.filter(pk=order_id, pending_change__isnull=False).exists()
+    why = (
+        "the stall did not confirm the new pickup time"
+        if stall_silent
+        else "no new pickup time was chosen"
+    )
     order = transition_order(
         order_id=order_id,
         to_status=OrderStatus.DECLINED,
@@ -96,7 +103,7 @@ def _cancel_unrescheduled(order_id: int) -> None:
         # Told below in words that fit; ORDER_DECLINED would blame the stall.
         notify_customer=False,
     )
-    context = build_order_context(order)
+    context = {**build_order_context(order), "why": why}
     notify(
         recipient=order.customer,
         event_type=NotificationType.ORDER_RESCHEDULE_MISSED,

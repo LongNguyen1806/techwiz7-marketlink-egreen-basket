@@ -235,9 +235,9 @@ def modify_order(
 
         order.version += 1
 
-        # An accepted order moved by the market's schedule change takes its new time straight
-        # away: the stall already agreed to the order, and the move was not the shopper's idea.
-        if order.status == OrderStatus.ACCEPTED and not rescheduling:
+        # An accepted order moved by the market's schedule change goes the usual way too: the new
+        # time is a request the stall approves. The order stays marked until it does.
+        if order.status == OrderStatus.ACCEPTED:
             # ACCEPTED orders preserve current state and store pending_change for farmer review (D-030)
             pending_items = None
             if new_items_dict is not None:

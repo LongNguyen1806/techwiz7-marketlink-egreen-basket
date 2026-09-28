@@ -1,6 +1,7 @@
 """The shopper's side of a market schedule change: pick a new pickup time, or cancel.
 
-Q1: an accepted order takes the new time straight away, no stall approval.
+Q1: a placed order takes the new time straight away; an accepted one sends it to the stall
+    as a change request, and stays marked until the stall approves.
 Q2: left alone, the order is declined when its old pickup time comes.
 Q3: the old cutoff does not lock the shopper out, but the new time must pass every rule:
     not in the past, before the stall's cutoff, a market day, inside the market's hours.
@@ -16,6 +17,10 @@ from markets.conftest import MONDAY, WEDNESDAY
 from notifications.models import Notification, NotificationType
 from orders.models import ActorRole, ChangeReason, OrderStatus, OrderStatusHistory
 from orders.services.expiry import expire_overdue_orders
+from orders.services.farmer_change_request import (
+    approve_change_request,
+    reject_change_request,
+)
 from orders.services.fsm import transition_order
 from orders.services.modify import modify_order
 
@@ -84,16 +89,56 @@ class TestPickingANewTime:
         assert order.pickup_slot_id == monday_slot.pk
         assert timezone.localtime(order.pickup_start_at).time() == time(7, 0)
 
-    def test_an_accepted_order_moves_without_the_stall_approving(self, make_order, monday_slot):
-        order = _flag(make_order(pickup_date=_next(WEDNESDAY), status=OrderStatus.ACCEPTED))
+    def test_an_accepted_order_asks_the_stall_first(self, make_order, monday_slot):
+        old_day = _next(WEDNESDAY)
+        order = _flag(make_order(pickup_date=old_day, status=OrderStatus.ACCEPTED),
+                      past_cutoff=True)
 
         _reschedule(order, monday_slot, _next(MONDAY))
 
         order.refresh_from_db()
-        assert order.status == OrderStatus.ACCEPTED
-        assert order.pending_change is None
+        assert order.pickup_date == old_day
+        assert order.pending_change["pickup_slot_id"] == monday_slot.pk
+        assert order.pending_change["pickup_date"] == _next(MONDAY).isoformat()
+        # Still waiting for a time that fits, until the stall says yes.
+        assert order.reschedule_requested_at is not None
+
+    def test_the_stall_approving_moves_it_and_clears_the_mark(
+        self, make_order, monday_slot, approved_farmer, customer_user
+    ):
+        order = _flag(make_order(pickup_date=_next(WEDNESDAY), status=OrderStatus.ACCEPTED))
+        _reschedule(order, monday_slot, _next(MONDAY))
+        order.refresh_from_db()
+
+        approve_change_request(order_id=order.pk, farmer_id=approved_farmer.pk,
+                               expected_version=order.version, actor=approved_farmer.user)
+
+        order.refresh_from_db()
         assert order.pickup_date == _next(MONDAY)
+        assert order.pending_change is None
         assert order.reschedule_requested_at is None
+        assert Notification.objects.filter(
+            recipient=customer_user, type=NotificationType.ORDER_CHANGE_APPROVED
+        ).exists()
+
+    def test_the_stall_refusing_lets_the_shopper_pick_again(
+        self, make_order, monday_slot, make_slot, approved_farmer
+    ):
+        order = _flag(make_order(pickup_date=_next(WEDNESDAY), status=OrderStatus.ACCEPTED))
+        _reschedule(order, monday_slot, _next(MONDAY))
+        order.refresh_from_db()
+
+        reject_change_request(order_id=order.pk, farmer_id=approved_farmer.pk,
+                              expected_version=order.version, actor=approved_farmer.user,
+                              reason="Too early for us")
+
+        order.refresh_from_db()
+        assert order.pending_change is None
+        assert order.reschedule_requested_at is not None
+        later = make_slot(day_of_week=MONDAY, start=time(10, 0), end=time(11, 0))
+        _reschedule(order, later, _next(MONDAY))
+        order.refresh_from_db()
+        assert order.pending_change["pickup_slot_id"] == later.pk
 
     def test_the_stall_is_told_the_new_time(self, make_order, monday_slot, farmer_user):
         order = _flag(make_order(pickup_date=_next(WEDNESDAY)))
@@ -200,7 +245,25 @@ class TestCancellingOrLettingItLapse:
         for user in (customer_user, farmer_user):
             notice = Notification.objects.get(recipient=user)
             assert notice.type == NotificationType.ORDER_RESCHEDULE_MISSED
+            assert "no new pickup time was chosen" in notice.message
         assert "back in your stock" in Notification.objects.get(recipient=farmer_user).message
+
+    def test_a_request_the_stall_never_answered_says_so(
+        self, make_order, monday_slot, customer_user
+    ):
+        order = _flag(make_order(pickup_date=timezone.localdate() - timedelta(days=1),
+                                 status=OrderStatus.ACCEPTED))
+        order.pending_change = {"items": None, "pickup_date": _next(MONDAY).isoformat(),
+                                "pickup_slot_id": monday_slot.pk, "note": None,
+                                "requested_at": timezone.now().isoformat()}
+        order.save(update_fields=["pending_change"])
+
+        expire_overdue_orders()
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.DECLINED
+        notice = Notification.objects.get(recipient=customer_user)
+        assert "the stall did not confirm the new pickup time" in notice.message
 
     def test_a_placed_one_is_declined_not_expired(self, make_order):
         order = _flag(make_order(pickup_date=timezone.localdate() - timedelta(days=1)))
@@ -217,3 +280,73 @@ class TestCancellingOrLettingItLapse:
 
         order.refresh_from_db()
         assert order.status == OrderStatus.PLACED
+
+
+@pytest.mark.django_db
+class TestThroughTheCustomerApi:
+    """What Long's EditOrderPage sees and sends, once the branches are merged."""
+
+    @pytest.fixture
+    def customer_client(self, api_client, customer_user):
+        api_client.force_authenticate(user=customer_user)
+        return api_client
+
+    def test_an_accepted_order_offers_a_change_request(self, customer_client, make_order):
+        order = _flag(make_order(pickup_date=_next(WEDNESDAY), status=OrderStatus.ACCEPTED),
+                      past_cutoff=True)
+
+        response = customer_client.get(f"/api/customer/orders/{order.pk}/")
+
+        assert response.data["data"]["allowed_actions"] == [
+            "REQUEST_CHANGE", "RESCHEDULE", "CANCEL",
+        ]
+
+    def test_the_order_offers_the_edit_form_even_past_the_old_cutoff(
+        self, customer_client, make_order
+    ):
+        order = _flag(make_order(pickup_date=_next(WEDNESDAY)), past_cutoff=True)
+
+        response = customer_client.get(f"/api/customer/orders/{order.pk}/")
+
+        assert response.status_code == 200
+        data = response.data["data"]
+        assert data["needs_new_pickup"] is True
+        assert data["allowed_actions"] == ["MODIFY", "RESCHEDULE", "CANCEL"]
+
+    def test_the_edit_form_moves_the_order(self, customer_client, make_order, make_slot, open_farmer):
+        # The customer API books today .. today + 6, so the new day is taken from inside that.
+        slot = make_slot(day_of_week=WEDNESDAY, start=time(10, 0), end=time(11, 0))
+        new_day = _next(WEDNESDAY)
+        order = _flag(make_order(pickup_date=new_day), past_cutoff=True)
+        item = _item(order)
+
+        response = customer_client.patch(
+            f"/api/customer/orders/{order.pk}/",
+            {
+                # The form always sends the lines back as they are.
+                "items": [{"product_id": item.product_id, "quantity": 2}],
+                "pickup_slot_id": slot.pk,
+                "pickup_date": new_day.isoformat(),
+            },
+            format="json",
+            HTTP_IF_MATCH=f'"{order.version}"',
+        )
+
+        assert response.status_code == 200, response.data
+        order.refresh_from_db()
+        assert order.reschedule_requested_at is None
+        assert order.pickup_slot_id == slot.pk
+        assert timezone.localtime(order.pickup_start_at).time() == time(10, 0)
+
+    def test_saving_without_a_new_time_says_what_is_missing(
+        self, customer_client, make_order
+    ):
+        order = _flag(make_order(pickup_date=_next(WEDNESDAY)))
+
+        response = customer_client.patch(
+            f"/api/customer/orders/{order.pk}/", {"note": "see you"}, format="json",
+            HTTP_IF_MATCH=f'"{order.version}"',
+        )
+
+        assert response.status_code == 400
+        assert "pickup_slot_id" in response.data["errors"]

@@ -1,5 +1,7 @@
 from django.db.models import Count, Prefetch
 
+from catalog.selectors import public_products
+from catalog.services.stock import get_held_quantities
 from orders.models import Order, OrderItem, OrderStatus, OrderStatusHistory
 
 # C-04 "Open" tab; every other status is "History".
@@ -57,3 +59,35 @@ def customer_order_detail(customer, order_id) -> Order | None:
         )
         .first()
     )
+
+
+def reorder_items(order) -> tuple[list[tuple], list[dict]]:
+    """CU-09 (D-019, A-015): the order's lines split into what can go back in the cart and what cannot.
+
+    Read-only. A product is skipped as UNAVAILABLE when it is no longer publicly on sale, and as
+    OUT_OF_STOCK when no stock is available — the same availability checkout enforces (D-029), so the
+    preview never offers an item checkout would reject. Quantities stay as they were; the cart page warns
+    when one exceeds the stock left.
+    """
+    lines = list(order.items.all())
+    product_ids = [item.product_id for item in lines]
+    on_sale = public_products(in_stock=False).in_bulk(product_ids)
+    held = get_held_quantities(product_ids=product_ids)
+
+    kept, skipped = [], []
+    for item in lines:
+        product = on_sale.get(item.product_id)
+        if product is None or not product.is_available:
+            reason = "UNAVAILABLE"
+        elif product.stock_quantity - held.get(product.pk, 0) < product.min_per_order:
+            # Less left than the stall's minimum per order is as good as sold out for a new order.
+            reason = "OUT_OF_STOCK"
+        else:
+            # The stall may have moved its per-order window since; the cart gets a quantity inside it.
+            quantity = max(item.quantity, product.min_per_order)
+            if product.max_per_order:
+                quantity = min(quantity, product.max_per_order)
+            kept.append((product, quantity))
+            continue
+        skipped.append({"product_id": item.product_id, "product_name": item.product_name, "reason": reason})
+    return kept, skipped

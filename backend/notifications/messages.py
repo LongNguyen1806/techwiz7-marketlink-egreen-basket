@@ -132,8 +132,8 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
     NotificationType.ORDER_RESCHEDULE_MISSED: NotificationSpec(
         title="Order #{order_id} was cancelled",
         message=(
-            "{market_name} changed its schedule and no new pickup time was chosen before "
-            "{pickup_label}, so the order was cancelled. {stock_note}"
+            "{market_name} changed its schedule and {why} before {pickup_label}, so the "
+            "order was cancelled. {stock_note}"
         ),
         target_url="{target_url}",
         required=("order_id", "market_name", "pickup_label", "target_url"),

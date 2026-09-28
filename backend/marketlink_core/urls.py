@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/auth/ws-ticket/", WebSocketTicketView.as_view(), name="ws-ticket"),
     path("api/auth/", include("accounts.auth.urls")),
     # Customer branch.
+    path("api/customer/", include("orders.customer.urls_customer")),
     # Farmer branch.
     path("api/farmer/markets/", include(farmer_market_urls.market_urlpatterns)),
     path("api/farmer/pickup-slots/", include(farmer_market_urls.pickup_slot_urlpatterns)),
