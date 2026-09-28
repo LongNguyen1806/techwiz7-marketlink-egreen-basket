@@ -3,11 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import "leaflet/dist/leaflet.css";
+import { OSM_ATTRIBUTION, OSM_TILE_URL } from "../../lib/map";
 
 import {
   useAdminMarket,
@@ -29,12 +25,6 @@ import { ApiError } from "../../lib/ApiError";
 import { mapServerErrorsToForm } from "../../utils/mapServerErrors";
 
 import "../../styles/admin/AdminMarketFormPage.css";
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 const DAYS = [
   { value: 1, label: "Mon" },
@@ -313,7 +303,7 @@ export default function AdminMarketFormPage() {
         <div className='admin-market-form-page__map'>
           <div className='page-primitive__map-box'>
             <MapContainer center={[latitude, longitude]} zoom={15} className='page-primitive__map-fill'>
-              <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
+              <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
               <Marker
                 position={[latitude, longitude]}
                 draggable

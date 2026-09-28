@@ -1,10 +1,6 @@
 import { useMemo, useState } from 'react';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import L from 'leaflet';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import 'leaflet/dist/leaflet.css';
+import { OSM_ATTRIBUTION, OSM_TILE_URL } from '../../lib/map';
 
 import {
   useAddFarmerMarket,
@@ -23,12 +19,6 @@ import { Input } from '@/components/common/forms/Input';
 import { Switch } from '@/components/common/forms/Switch';
 
 import './FarmerMarketsPage.css';
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 const WEEKDAYS = [
   { value: 1, label: 'Mon' },
@@ -184,10 +174,7 @@ export default function FarmerMarketsPage() {
                   zoom={16}
                   className="page-primitive__map-fill"
                 >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
+                  <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
                   <Marker
                     position={[selected.market.latitude, selected.market.longitude]}
                   />

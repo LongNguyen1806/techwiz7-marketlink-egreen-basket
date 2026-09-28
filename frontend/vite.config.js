@@ -15,6 +15,15 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  // Component tests (npm test): a browser-like DOM, the shared setup, and only src/**/*.test.jsx.
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    include: ['src/**/*.test.{js,jsx}'],
+    css: false,
+    // Forked workers time out on this Windows setup; threads start reliably.
+    pool: 'threads',
+  },
   server: {
     port: 5173,
     host: true,
