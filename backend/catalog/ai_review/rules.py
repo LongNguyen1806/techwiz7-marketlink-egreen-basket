@@ -1,13 +1,14 @@
 """The deterministic layer: instant, free, explainable, and run on every listing.
 
 Numbers (price, unit, stock) are checked here and never by the model: a language model has no
-reliable idea of today's market price and would answer differently each time.
+reliable idea of today's market price and would answer differently each time. What the words
+mean (offensive language, items that are not farm food, contact details to trade elsewhere) is
+left to the model, which reads them in context (gemini.py).
 """
 
 from decimal import Decimal
 from statistics import median
 
-from catalog.ai_review import wordlists
 from catalog.ai_review.types import Finding, ListingInput, Severity
 from catalog.models import PriceGuideline, Product, ReviewStatus, Unit
 
@@ -30,32 +31,6 @@ def _unit(listing: ListingInput) -> str:
 
 def check_text(listing: ListingInput) -> list[Finding]:
     findings = []
-    text = f"{listing.name}\n{listing.description}"
-
-    swear = wordlists.find_profanity(text)
-    if swear:
-        findings.append(_finding(
-            "OFFENSIVE_LANGUAGE", Severity.HIGH,
-            f"Offensive language in the name or description ({', '.join(swear[:3])}).",
-        ))
-    banned = wordlists.find_prohibited(text)
-    if banned:
-        findings.append(_finding(
-            "NOT_FARM_PRODUCE", Severity.HIGH,
-            f"Mentions items a farmers' market cannot sell ({', '.join(banned[:3])}).",
-        ))
-    restricted = wordlists.find_restricted(text)
-    if restricted:
-        findings.append(_finding(
-            "RESTRICTED_ITEM", Severity.MEDIUM,
-            f"Mentions a restricted item ({', '.join(restricted[:3])}); check it is allowed.",
-        ))
-    contact = wordlists.find_contact(text)
-    if contact:
-        findings.append(_finding(
-            "OFF_PLATFORM_CONTACT", Severity.MEDIUM,
-            f"Contains a {', '.join(contact)}; sales must stay on MarketLink.",
-        ))
     if listing.name and not any(ch.isalpha() for ch in listing.name):
         findings.append(_finding("NAME_QUALITY", Severity.LOW, "The name has no letters in it."))
     elif listing.name and listing.name.isupper() and len(listing.name) > 6:

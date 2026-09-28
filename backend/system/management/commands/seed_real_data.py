@@ -574,7 +574,7 @@ class Command(BaseCommand):
             f"  Review queue      : {queue['pending']} pending, {queue['rejected']} rejected, 1 hidden product"
         )
         self.stdout.write(
-            f"  Follow-up queue   : {follow_up['reviews'] + follow_up['replies']} review(s), "
+            f"  Follow-up queue   : "
             f"{follow_up['products']} product(s), {follow_up['customers']} shopper(s) flagged automatically"
         )
         self.stdout.write("  AI listing review : run `python manage.py ai_review_pending` to review the pending listings")

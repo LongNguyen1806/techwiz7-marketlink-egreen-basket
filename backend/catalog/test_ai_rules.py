@@ -1,10 +1,9 @@
-"""The rule layer: word matching (with the Vietnamese pitfalls) and the number checks."""
+"""The rule layer: numbers and the shape of the name only; the words are read by the model."""
 
 from decimal import Decimal
 
 import pytest
 
-from catalog.ai_review import wordlists
 from catalog.ai_review.rules import run_rules
 from catalog.ai_review.types import ListingInput, verdict_for
 from catalog.models import AIVerdict, PriceGuideline, Product, ReviewStatus, Unit
@@ -30,37 +29,15 @@ def _checks(findings) -> set[str]:
 
 
 
-@pytest.mark.parametrize(
-    "text",
-    ["Bưởi da xanh", "Quả sung chín", "Cà chua lớn", "Grass-fed beef", "Assam tea", "Carrot", "Scarlet cabbage", "A B grade"],
-)
-def test_produce_words_that_look_like_bad_words_are_not_flagged(text):
-    assert wordlists.find_profanity(text) == []
-    assert wordlists.find_prohibited(text) == []
+@pytest.mark.django_db
+def test_the_meaning_of_the_words_is_left_to_the_model():
+    listing = _listing(name="Honda Wave motorbike", description="Call 0901 234 567 or add me on Zalo.")
+    assert _checks(run_rules(listing)) == set()
 
 
-@pytest.mark.parametrize("text", ["Fucking good", "sh1t mango", "f.u.c.k", "Rau đ.m", "d i t m e", "Rau lồn", "VCL rẻ"])
-def test_swearing_is_found_through_marks_dots_spaces_and_leetspeak(text):
-    assert wordlists.find_profanity(text)
-
-
-@pytest.mark.parametrize("text", ["Honda Wave cũ", "Xe máy chính chủ", "iPhone 12", "Súng nhựa", "cần sa khô"])
-def test_items_a_market_cannot_sell_are_found(text):
-    assert wordlists.find_prohibited(text)
-
-
-@pytest.mark.parametrize(
-    ("text", "kind"),
-    [("Call 0901 234 567", "phone number"), ("mail me a@b.vn", "email address"), ("www.shop.vn", "web link"), ("add zalo", "messaging app")],
-)
-def test_off_platform_contact_is_found(text, kind):
-    assert kind in wordlists.find_contact(text)
-
-
-def test_prices_and_weights_are_not_mistaken_for_a_phone_number():
-    assert wordlists.find_contact("12.50 per 1000g, 5 kg bags") == []
-
-
+@pytest.mark.django_db
+def test_a_name_in_capitals_only_is_pointed_out():
+    assert _checks(run_rules(_listing(name="FRESH TOMATOES"))) == {"NAME_QUALITY"}
 
 
 @pytest.fixture

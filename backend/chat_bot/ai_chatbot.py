@@ -12,6 +12,7 @@ Every result is capped (MAX_ROWS) and carries public or own-account fields only.
 """
 
 import logging
+import unicodedata
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -20,7 +21,6 @@ from django.utils import timezone
 
 from accounts.models import FarmerProfile
 from accounts.selectors import farmer_closure_map, farmer_market_rows, pickup_windows, public_farmers
-from catalog.ai_review.wordlists import strip_marks
 from catalog.models import Category, Product, ReviewStatus
 from catalog.selectors import markets_for_products, public_products
 from marketlink_core.constants import BOOKING_HORIZON_DAYS
@@ -31,6 +31,12 @@ from orders.models import Order, OrderStatus
 from orders.selectors import OPEN_TAB, customer_orders_queryset
 
 logger = logging.getLogger("marketlink")
+
+
+def strip_marks(text: str) -> str:
+    """Lower-case and drop Vietnamese tone marks (đ -> d), so "rau muống" matches "rau muong"."""
+    decomposed = unicodedata.normalize("NFD", text.lower().replace("đ", "d").replace("Đ", "d"))
+    return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
 
 MAX_ROWS = 5
 MAX_OWN_PRODUCTS = 10

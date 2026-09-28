@@ -124,10 +124,11 @@ def test_the_same_content_is_never_reviewed_twice(approved_farmer, category, mod
 
 def test_rules_still_count_when_the_model_is_unavailable(approved_farmer, category, monkeypatch):
     monkeypatch.setattr(gemini, "ask_model", FakeModel(error="Gemini did not answer (timeout)."))
-    swear = review_product(_pending(approved_farmer, category, name="Fucking cucumber").pk)
+    PriceGuideline.objects.create(category=category, unit=Unit.KG, min_price=Decimal("0.20"), max_price=Decimal("20.00"))
+    overpriced = review_product(_pending(approved_farmer, category, name="Cucumber", price="999.00").pk)
     clean = review_product(_pending(approved_farmer, category, name="Cucumber").pk)
 
-    assert swear.verdict == AIVerdict.LIKELY_VIOLATION and not swear.ai_used
+    assert overpriced.verdict == AIVerdict.LIKELY_VIOLATION and not overpriced.ai_used
     assert clean.verdict == AIVerdict.UNAVAILABLE and "timeout" in clean.ai_error
 
 
@@ -399,6 +400,7 @@ def test_a_per_minute_limit_waits_and_retries_the_same_model(settings, monkeypat
 
 
 def test_the_model_is_not_asked_when_the_rules_already_found_a_likely_violation(approved_farmer, category, model):
-    review = review_product(_pending(approved_farmer, category, name="Honda Wave 110").pk)
+    PriceGuideline.objects.create(category=category, unit=Unit.KG, min_price=Decimal("0.20"), max_price=Decimal("20.00"))
+    review = review_product(_pending(approved_farmer, category, price="999.00").pk)
     assert review.verdict == AIVerdict.LIKELY_VIOLATION
     assert not model.calls and "not asked" in review.ai_error

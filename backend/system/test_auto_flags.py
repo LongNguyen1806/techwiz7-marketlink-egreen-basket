@@ -14,6 +14,7 @@ from reviews.models import FarmerReview, ProductReview
 from reviews.selectors import TYPE_PRODUCT
 from reviews.services.farmer_reply_service import reply_to_review
 from reviews.services.review_service import create_farmer_review, create_product_review
+from system.auto_flags import gemini
 from system.auto_flags import AUTO_PREFIX, check_customer_no_shows, scan_existing
 from system.models import FlagTarget, ModerationFlag
 
@@ -62,8 +63,18 @@ def make_order(customer_user, farmer, market, product):
     return _make
 
 
-FAKE_HIT = ["<offensive word>"]
-PROFANITY = "system.auto_flags.find_profanity"
+OFFENSIVE = ["offensive language (The review insults the stall owner)"]
+CONTACT = ["contact details to trade off MarketLink (It asks shoppers to call a phone number)"]
+
+
+@pytest.fixture
+def ai(settings):
+    """The model as the review check sees it, answering whatever a test tells it to."""
+    settings.AI_MODERATION_ENABLED = True
+    settings.GEMINI_API_KEY = "test-key"
+    settings.AI_MODERATION_RUN_INLINE = True
+    with mock.patch("system.auto_flags.gemini.ask_about_review", return_value=[]) as ask:
+        yield ask
 
 
 def open_flags(target_type):
@@ -71,10 +82,11 @@ def open_flags(target_type):
 
 
 @pytest.mark.django_db
-def test_an_offensive_review_goes_to_the_queue(customer_user, make_order):
+def test_an_offensive_review_goes_to_the_queue(customer_user, make_order, ai, django_capture_on_commit_callbacks):
     order = make_order()
+    ai.return_value = OFFENSIVE
 
-    with mock.patch(PROFANITY, return_value=FAKE_HIT):
+    with django_capture_on_commit_callbacks(execute=True):
         review = create_farmer_review(
             customer=customer_user, order_id=order.pk, rating=1, comment="Terrible stall, never again."
         )
@@ -89,36 +101,68 @@ def test_an_offensive_review_goes_to_the_queue(customer_user, make_order):
 
 
 @pytest.mark.django_db
-def test_a_phone_number_in_a_review_goes_to_the_queue(customer_user, make_order):
+def test_a_phone_number_in_a_review_goes_to_the_queue(customer_user, make_order, ai, django_capture_on_commit_callbacks):
     order = make_order()
     item = order.items.get()
+    ai.return_value = CONTACT
 
-    create_product_review(
-        customer=customer_user, order_id=order.pk, item_id=item.pk, rating=5,
-        comment="Great! Call me on 0909 123 456 for a cheaper price.",
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        create_product_review(
+            customer=customer_user, order_id=order.pk, item_id=item.pk, rating=5,
+            comment="Great! Call me on 0909 123 456 for a cheaper price.",
+        )
+
+    ai.assert_called_once_with("Great! Call me on 0909 123 456 for a cheaper price.")
 
     assert "contact details" in open_flags(FlagTarget.PRODUCT_REVIEW).get().note
 
 
 @pytest.mark.django_db
-def test_a_clean_review_raises_nothing(customer_user, make_order):
+def test_a_clean_review_raises_nothing(customer_user, make_order, ai, django_capture_on_commit_callbacks):
     order = make_order()
 
-    create_farmer_review(customer=customer_user, order_id=order.pk, rating=5, comment="Fresh and friendly.")
+    with django_capture_on_commit_callbacks(execute=True):
+        create_farmer_review(customer=customer_user, order_id=order.pk, rating=5, comment="Fresh and friendly.")
 
+    assert ai.called
     assert not ModerationFlag.objects.exists()
 
 
 @pytest.mark.django_db
-def test_an_abusive_reply_from_the_stall_goes_to_the_queue(customer_user, farmer, make_order):
+def test_without_an_api_key_the_model_is_not_asked(customer_user, make_order, settings, django_capture_on_commit_callbacks):
+    settings.GEMINI_API_KEY = ""
+    order = make_order()
+
+    with mock.patch("system.auto_flags.gemini.ask_about_review") as ask:
+        with django_capture_on_commit_callbacks(execute=True):
+            create_farmer_review(customer=customer_user, order_id=order.pk, rating=1, comment="Rude seller.")
+
+    ask.assert_not_called()
+    assert not ModerationFlag.objects.exists()
+
+
+@pytest.mark.django_db
+def test_a_model_outage_never_breaks_the_review(customer_user, make_order, ai, django_capture_on_commit_callbacks):
+    order = make_order()
+    ai.side_effect = gemini.AIUnavailable("Gemini did not answer (timeout).")
+
+    with django_capture_on_commit_callbacks(execute=True):
+        review = create_farmer_review(customer=customer_user, order_id=order.pk, rating=2, comment="Late again.")
+
+    assert FarmerReview.objects.filter(pk=review.pk).exists()
+    assert not ModerationFlag.objects.exists()
+
+
+@pytest.mark.django_db
+def test_an_abusive_reply_from_the_stall_goes_to_the_queue(customer_user, farmer, make_order, ai, django_capture_on_commit_callbacks):
     order = make_order()
     item = order.items.get()
     review = create_product_review(
         customer=customer_user, order_id=order.pk, item_id=item.pk, rating=2, comment="Too small."
     )
+    ai.side_effect = lambda text: OFFENSIVE if text == "Then buy elsewhere." else []
 
-    with mock.patch(PROFANITY, side_effect=lambda text: FAKE_HIT if text == "Then buy elsewhere." else []):
+    with django_capture_on_commit_callbacks(execute=True):
         reply_to_review(
             review_type=TYPE_PRODUCT, review_id=review.pk, farmer_id=farmer.pk, reply="Then buy elsewhere."
         )
@@ -189,13 +233,15 @@ def test_one_open_flag_per_thing(customer_user, make_order):
 
 
 @pytest.mark.django_db
-def test_a_broken_queue_never_breaks_the_review(customer_user, make_order):
+def test_a_broken_queue_never_breaks_the_review(customer_user, make_order, ai, django_capture_on_commit_callbacks):
     order = make_order()
+    ai.return_value = CONTACT
 
     with mock.patch("system.auto_flags.ModerationFlag.objects.create", side_effect=RuntimeError("down")):
-        review = create_farmer_review(
-            customer=customer_user, order_id=order.pk, rating=1, comment="Call me on 0909 123 456."
-        )
+        with django_capture_on_commit_callbacks(execute=True):
+            review = create_farmer_review(
+                customer=customer_user, order_id=order.pk, rating=1, comment="Call me on 0909 123 456."
+            )
 
     assert FarmerReview.objects.filter(pk=review.pk).exists()
 
@@ -209,9 +255,9 @@ def test_the_command_flags_what_is_already_there(customer_user, make_order):
 
     call_command("raise_follow_up_flags")
 
-    assert open_flags(FlagTarget.PRODUCT_REVIEW).count() == 1
+    assert not open_flags(FlagTarget.PRODUCT_REVIEW).exists()
     assert open_flags(FlagTarget.CUSTOMER).count() == 1
-    assert scan_existing() == {"reviews": 0, "replies": 0, "products": 0, "customers": 0}
+    assert scan_existing() == {"products": 0, "customers": 0}
 
 
 @pytest.mark.django_db
