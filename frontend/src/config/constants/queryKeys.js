@@ -51,7 +51,6 @@ export const QUERY_KEYS = {
   ADMIN_REPORTS: (params) => ['admin-reports', params],
   ADMIN_ANNOUNCEMENTS: (params) => ['admin-announcements', params],
   ADMIN_CHANGE_LOG: (model, id) => ['admin-change-log', model, id],
-  ADMIN_FLAGS: (params) => ['admin-flags', params],
   ADMIN_FLAG_TARGET: (kind, id) => ['admin-flag-target', kind, id],
   ADMIN_SETTINGS: ['admin-settings'],
   ADMIN_ORDERS: (params) => ['admin-orders', params],
