@@ -45,7 +45,6 @@ export const QUERY_KEYS = {
   ADMIN_MARKET: (id) => ['admin-market', String(id)],
   ADMIN_CATEGORIES: ['admin-categories'],
   ADMIN_MODERATION_PRODUCTS: (params) => ['admin-mod-products', params],
-  // AI-assisted listing review: agreement figures and the admin-tuned price guidelines.
   ADMIN_AI_REVIEW_STATS: (days) => ['admin-ai-review-stats', days],
   ADMIN_PRICE_GUIDELINES: ['admin-price-guidelines'],
   ADMIN_MODERATION_REVIEWS: (params) => ['admin-mod-reviews', params],

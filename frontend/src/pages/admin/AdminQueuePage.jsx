@@ -31,8 +31,6 @@ const TARGET_LABEL = {
 };
 
 const QUEUE_FILTERS = [
-  // Same debounced box as every other admin table: FilterBar waits for typing to stop and
-  // the query runs with staleTime 0, so a stale page of results can never come back.
   { name: 'q', label: 'Search note or number', type: 'search' },
   {
     name: 'target_type',
@@ -55,8 +53,6 @@ const RESOLUTION_MIN_LENGTH = 5;
 export default function AdminQueuePage() {
   const [filters, setFilters] = useState({});
   const [resolving, setResolving] = useState(null);
-  // Read in a panel over the queue rather than on another screen: leaving the page throws
-  // away the search and the filters, and this list is worked through one item at a time.
   const [reviewing, setReviewing] = useState(null);
   const [resolution, setResolution] = useState('');
   const queryClient = useQueryClient();
@@ -121,8 +117,6 @@ export default function AdminQueuePage() {
                   </span>
                 </div>
                 <p className="admin-queue-page__note">{flag.note}</p>
-                {/* The reported content itself, and the way to it. Deciding without looking
-                    is guesswork, and a number alone means hunting for the row by hand. */}
                 {flag.target_preview ? (
                   <p className="admin-queue-page__preview">{flag.target_preview}</p>
                 ) : (
@@ -184,8 +178,6 @@ export default function AdminQueuePage() {
               <Button
                 size="sm"
                 onClick={() => {
-                  // Straight from the panel: having looked at it is exactly when the
-                  // decision gets made.
                   setResolving(reviewing);
                   setResolution('');
                   setReviewing(null);

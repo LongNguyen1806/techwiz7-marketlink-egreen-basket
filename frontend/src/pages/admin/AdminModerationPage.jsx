@@ -34,8 +34,6 @@ import { Textarea } from '@/components/ui/Textarea';
 
 import './AdminModerationPage.css';
 
-// AD-21, AD-23 and AD-24 all require 5 to 500 characters; rejecting shorter text here
-// saves a round trip that would come back as a 400.
 const REASON_MIN_LENGTH = 5;
 
 function reviewTarget(review) {
@@ -46,8 +44,6 @@ function reviewTarget(review) {
 
 const FLAG_NOTE_MIN_LENGTH = 5;
 
-// Hide and Block both set the same flag, so the row has to read `moderation_action` to know
-// which one happened and therefore which way back to offer.
 const MODERATION_COPY = {
   HIDE: { label: 'Hidden', undo: 'Restore' },
   BLOCK: { label: 'Taken down', undo: 'Unblock' },
@@ -120,9 +116,6 @@ const REVIEW_SORT = [
 ];
 
 export default function AdminModerationPage() {
-  // The follow-up queue links here with the exact row it wants. Read once into the initial
-  // filter state rather than kept in sync: the admin is free to widen the filter afterwards
-  // and the URL should not keep dragging them back to one row.
   const [params, setParams] = useSearchParams();
   const [pinned] = useState(() => ({
     tab: params.get('tab') === 'reviews' ? 'reviews' : 'products',
@@ -139,7 +132,6 @@ export default function AdminModerationPage() {
   const [flagNote, setFlagNote] = useState('');
   const [reason, setReason] = useState('');
 
-  // The two tabs sort independently: they are different lists with different columns.
   const [productOrdering, setProductOrdering] = useState(undefined);
   const [reviewOrdering, setReviewOrdering] = useState(undefined);
   const [productFilters, setProductFilters] = useState(() =>
@@ -151,8 +143,6 @@ export default function AdminModerationPage() {
       : {},
   );
 
-  // Clearing the filters has to drop the deep link too, or the next render pins the row
-  // straight back on.
   const clearPin = () => {
     if (!params.size) return;
     setParams(new URLSearchParams(), { replace: true });
@@ -187,7 +177,6 @@ export default function AdminModerationPage() {
         } will be cancelled in full, and the stock of the ${held} already accepted goes back on the shelf.`,
       );
     } catch {
-      // The count is context, not permission: a failed lookup must not stop a legal takedown.
       setBlockImpact('The number of affected orders could not be loaded.');
     }
   };

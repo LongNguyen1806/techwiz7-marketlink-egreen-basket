@@ -14,7 +14,6 @@ export const stallLabelSchema = z.object({ stall_label: stallLabelField });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** FA-32 (D-023). `today` is the GMT+7 date as YYYY-MM-DD, so plain string compares work. */
 export function makeClosureSchema(today) {
   return z
     .object({

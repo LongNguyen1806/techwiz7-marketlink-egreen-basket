@@ -3,11 +3,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import '../../styles/common/Pagination.css';
 
-/**
- * The page numbers to draw: always the first and last, the current one with a neighbour on
- * each side, and "…" for longer gaps. A gap of exactly one page shows that page instead,
- * since "…" would take the same room and say less.
- */
 export function pageItems(page, totalPages, siblings = 1) {
   const shown = new Set([1, totalPages]);
   for (let number = page - siblings; number <= page + siblings; number += 1) {
@@ -24,7 +19,6 @@ export function pageItems(page, totalPages, siblings = 1) {
   return items;
 }
 
-/** Numbered pages with Previous/Next. Renders nothing when everything fits on one page. */
 export function Pagination({ page, totalPages, onChange, disabled = false, className }) {
   if (totalPages <= 1) return null;
 
@@ -90,7 +84,6 @@ Pagination.propTypes = {
   className: PropTypes.string,
 };
 
-/** "Showing 21–40 of 86": where this page sits in the whole list. */
 export function PageStatus({ page, pageSize, total, shown, className }) {
   if (!total || !shown) return null;
   const first = (page - 1) * pageSize + 1;

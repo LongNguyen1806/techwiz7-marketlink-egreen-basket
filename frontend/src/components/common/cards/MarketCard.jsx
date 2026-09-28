@@ -10,7 +10,6 @@ import { cn } from '../../../lib/cn';
 import { formatDate } from '../../../utils/formatters';
 import './MarketCard.css';
 
-// Card space is tight: day/month only, e.g. "Closed 01/10 – 03/10".
 const dayMonth = (isoDate) => formatDate(isoDate).slice(0, 5);
 
 function closureRange(closure) {
@@ -59,7 +58,6 @@ export function MarketCard({ market, highlighted = false, onHover, onRequireSign
           {(market.operating_days ?? []).map((day) => (
             <Badge key={day} variant="outline">{DAY_OF_WEEK_LABELS[day]}</Badge>
           ))}
-          {/* D-023: planned closures inside the booking horizon. */}
           {(market.upcoming_closures ?? []).map((closure) => (
             <Badge key={`${closure.start_date}-${closure.end_date}`} variant="warning" title={closure.reason || undefined}>
               {closureRange(closure)}

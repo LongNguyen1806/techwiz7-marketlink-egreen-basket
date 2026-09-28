@@ -14,10 +14,6 @@ function percent(rate) {
   return rate === null || rate === undefined ? '—' : `${Math.round(rate * 100)}%`;
 }
 
-/**
- * Whether the AI's advice can be trusted, in the numbers that answer it: how often admins
- * agreed with its clear calls, what it caught, what it flagged wrongly, and what it missed.
- */
 export function AIReviewSummaryCard() {
   const [days, setDays] = useState(30);
   const query = useAIReviewStats(days);

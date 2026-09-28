@@ -5,11 +5,6 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import '../../styles/common/Accordion.css';
 
-/**
- * Question/answer list. Each item is a heading button (aria-expanded) controlling its panel,
- * so it works with a keyboard and screen readers. `openId` opens one item from the start,
- * e.g. when a page is reached through /about#faq-pay.
- */
 export function Accordion({ items, openId = null, idPrefix = 'faq' }) {
   const [open, setOpen] = useState(() => new Set(openId ? [openId] : []));
 

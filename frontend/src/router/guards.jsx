@@ -31,7 +31,6 @@ export function GuestOnly() {
 }
 
 
-// A guest is sent to the sign-in page of the portal they tried to open.
 export function RequireAuth() {
   const location = useLocation();
   const portal = usePortal();

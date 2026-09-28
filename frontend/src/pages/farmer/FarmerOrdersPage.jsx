@@ -99,7 +99,6 @@ function OrderRows({ query, emptyDescription, hasFilters, onClearFilters, onPage
             <OrderNotes order={order} />
           </div>
           <div className="page-primitive__actions-row">
-            {/* PLACED within 2 h of pickup: it turns EXPIRED at pickup start unless the farmer acts. */}
             {order.is_expiring_soon ? (
               <Badge variant="danger">Expires at {formatTime(order.pickup_start_at)}</Badge>
             ) : null}
@@ -194,7 +193,6 @@ PickingList.propTypes = {
   onMarketChange: PropTypes.func.isRequired,
 };
 
-/** FA-37 (D-005): a shopper's orders for one pickup date, packed and handed over together. */
 function BagsByCustomer({ pickupDate, marketId }) {
   const query = useOrdersByCustomer(pickupDate, { marketId });
   const groups = query.data ?? [];
@@ -252,10 +250,8 @@ function BagsByCustomer({ pickupDate, marketId }) {
 
 BagsByCustomer.propTypes = { pickupDate: PropTypes.string.isRequired, marketId: PropTypes.number.isRequired };
 
-// Backend BOOKING_HORIZON_DAYS default, used until /public/config/ answers.
 const DEFAULT_BOOKING_HORIZON_DAYS = 7;
 
-// With no tab in the URL, open where the work is: waiting approvals first, then orders to pack.
 function busiestTab(counts) {
   if (!counts) return 'pending';
   if (counts.placed > 0) return 'pending';
@@ -264,11 +260,8 @@ function busiestTab(counts) {
   return 'pending';
 }
 
-// Filters that belong to one tab only; they reset when the farmer switches tabs.
 const TAB_ONLY_RESET = { changed: false, status: '', sort: '' };
 
-// Open tabs filter by an upcoming pickup day, History by a past range; a date from one means
-// nothing in the other, so it resets when the farmer crosses between them.
 const dateGroup = (tabId) => (tabId === 'history' ? 'past' : 'upcoming');
 
 export default function FarmerOrdersPage() {
@@ -285,7 +278,6 @@ export default function FarmerOrdersPage() {
     page: 1,
   });
   const search = useDebouncedSearchParam('q');
-  // Counts follow the market filter, so the tab and day badges match the list below them.
   const countsQuery = useFarmerOrderTabCounts({ marketId: filters.market });
   const marketsQuery = useFarmerMarkets();
   const profileQuery = useFarmerProfile();
@@ -297,15 +289,12 @@ export default function FarmerOrdersPage() {
 
   const explicitTab = TABS.find((tab) => tab.id === filters.tab);
   const activeTab = explicitTab ?? TABS.find((tab) => tab.id === busiestTab(countsQuery.data));
-  // Hold the list until the counts decide the tab, so it doesn't load Pending and then jump.
   const tabResolved = Boolean(explicitTab) || !countsQuery.isPending;
   const showOrders = filters.view !== 'picking';
   const isOverdue = activeTab.id === 'overdue';
-  // D-030: quick filter on the Accepted tab for orders with a change request waiting.
   const onlyChanged = activeTab.id === 'accepted' && filters.changed;
   const status = activeTab.id === 'history' ? filters.status : '';
   const sort = activeTab.id === 'pending' ? filters.sort : '';
-  // Overdue has no day filter (every order there is already past its pickup).
   const from = isOverdue ? '' : filters.from;
   const to = isOverdue ? '' : filters.to;
 
@@ -321,7 +310,6 @@ export default function FarmerOrdersPage() {
       ...listFilters,
       tab: activeTab.apiTab,
       status: status || undefined,
-      // FA-19 takes `ordering` on the placed tab only; the backend default there is FIFO.
       ordering: sort || undefined,
       change_requested: onlyChanged || undefined,
     },
@@ -418,7 +406,6 @@ export default function FarmerOrdersPage() {
                   hasFilters={activeCount > 0}
                   onClearFilters={clearFilters}
                   onPageChange={goToPage}
-                  // Overdue merges two lists page by page, so a "21–40 of N" line would not add up.
                   showStatus={!isOverdue}
                 />
               ) : (

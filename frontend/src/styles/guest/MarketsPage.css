@@ -212,7 +212,6 @@
   border-radius: var(--radius-2xl);
 }
 
-/* G-02: list 40% | map 60% on desktop; on smaller screens a List / Map switch shows one. */
 .markets-page__view-switch {
   display: flex;
   gap: var(--space-2);

@@ -22,7 +22,6 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 export function useNotificationSocket({ enabled = true } = {}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // Realtime notifications are for the market portal; the backend issues no ticket to admins.
   const isAuthenticated = useMarketAuthStore(selectIsAuthenticated);
   const setRealtimeConnected = useUiStore((state) => state.setRealtimeConnected);
   const hasConnectedBefore = useRef(false);

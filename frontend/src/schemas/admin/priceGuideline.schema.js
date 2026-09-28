@@ -10,7 +10,6 @@ const price = (label) =>
     .regex(PRICE_PATTERN, 'Use a price such as 12.50')
     .refine((value) => Number(value) >= 0.01 && Number(value) <= 10000, 'Between $0.01 and $10,000');
 
-/** One category + unit range the AI listing review compares new listings against. */
 export const priceGuidelineSchema = z
   .object({
     category: z.number({ error: 'Select a category' }).int().positive('Select a category'),

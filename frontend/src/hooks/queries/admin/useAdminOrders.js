@@ -7,7 +7,6 @@ export function useAdminOrders(params = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.ADMIN_ORDERS(params),
     queryFn: () => adminApi.getOrders(params),
-    // Searched and read by support while things are moving, so never from a stale cache.
     staleTime: 0,
     placeholderData: (previous) => previous,
   });

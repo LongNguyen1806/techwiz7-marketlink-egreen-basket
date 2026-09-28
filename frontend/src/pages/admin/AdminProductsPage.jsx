@@ -25,13 +25,9 @@ import { REVIEW_STATE, reviewStateBadge } from '@/utils/reviewState';
 
 import './AdminProductsPage.css';
 
-// AD-21 / AD-21b / AD-23 all want 5 to 500 characters; refusing shorter text here saves a
-// round trip that would come back as a 400.
 const REASON_MIN_LENGTH = 5;
 const FLAG_NOTE_MIN_LENGTH = 5;
 
-// Hide and Take down both set the same flag, so the row reads `moderation_action` to know
-// which one happened and therefore which way back to offer.
 const MODERATION_COPY = {
   HIDE: { label: 'Hidden', undo: 'Restore' },
   BLOCK: { label: 'Taken down', undo: 'Unblock' },
@@ -72,9 +68,6 @@ const PRODUCT_SORT = [
 ];
 
 export default function AdminProductsPage() {
-  // The follow-up queue links here with the exact row it wants. Read once into the initial
-  // filter state rather than kept in sync: the admin may widen the filter afterwards, and the
-  // URL should not keep dragging them back to one row.
   const [params, setParams] = useSearchParams();
   const [pinnedId] = useState(() => params.get('product_id') ?? undefined);
 
@@ -117,7 +110,6 @@ export default function AdminProductsPage() {
         } will be cancelled in full, and the stock of the ${held} already accepted goes back on the shelf.`,
       );
     } catch {
-      // The count is context, not permission: a failed lookup must not stop a legal takedown.
       setBlockImpact('The number of affected orders could not be loaded.');
     }
   };

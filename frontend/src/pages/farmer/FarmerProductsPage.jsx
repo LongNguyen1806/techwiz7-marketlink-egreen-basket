@@ -38,7 +38,6 @@ const STATE_OPTIONS = [
   { value: 'archived', label: 'Archived' },
 ];
 
-// Admin review of a listing (catalog ReviewStatus). Only APPROVED listings reach shoppers.
 const REVIEW = {
   PENDING: { label: 'In review', variant: 'warning' },
   REJECTED: { label: 'Rejected', variant: 'danger' },
@@ -54,7 +53,6 @@ const AVAILABILITY = {
 const STOCK_SAVE_DELAY_MS = 600;
 const MAX_STOCK = 99999;
 
-// "Min 2 · Max 10 kg per order"; only the ends the stall actually set.
 function orderWindowLabel(product) {
   const unit = unitLabel(product.unit);
   const parts = [];

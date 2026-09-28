@@ -13,7 +13,6 @@ export const declineOrderSchema = z.object({
 
 export const DECLINE_DEFAULTS = { reason: '', sold_out_product_ids: [] };
 
-// FA-35: the reason is optional and goes to the shopper as-is.
 export const rejectChangeSchema = z.object({
   reason: z.string().trim().max(500, 'Reason must be 500 characters or fewer'),
 });

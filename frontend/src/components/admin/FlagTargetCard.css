@@ -33,8 +33,6 @@
   margin: 0;
 }
 
-/* Label left, value right, on one baseline. The values are the part being judged, so they
-   take the space and wrap rather than being cut off. */
 .flag-target__row {
   display: grid;
   grid-template-columns: 7.5rem 1fr;

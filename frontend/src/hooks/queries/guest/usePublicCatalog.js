@@ -92,7 +92,6 @@ const flattenMarketPages = (data) => ({
   total: data.pages[0]?.count ?? 0,
 });
 
-/** Market directory (G-02): filters { q, day, lat, lng, ordering }, 20 per page. */
 export function usePublicMarketList(filters) {
   return useInfiniteQuery({
     queryKey: publicKeys.marketList(filters),
@@ -106,7 +105,6 @@ export function usePublicMarketList(filters) {
   });
 }
 
-// Admin-managed; closures and stall counts change rarely.
 export function usePublicMarket(id, coords = {}) {
   const marketId = Number(id);
   return useQuery({
@@ -138,7 +136,6 @@ export function usePublicMarketFarmers(id, { day } = {}) {
   });
 }
 
-/** Stall directory (G-13): filters { q, ordering, lat, lng }, 20 per page. */
 export function usePublicFarmerList(filters) {
   return useInfiniteQuery({
     queryKey: publicKeys.farmerList(filters),

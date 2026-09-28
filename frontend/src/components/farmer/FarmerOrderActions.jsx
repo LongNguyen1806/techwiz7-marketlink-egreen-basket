@@ -35,7 +35,6 @@ const BUTTONS = [
   { action: A.NO_SHOW, label: 'No-show', variant: 'outline' },
 ];
 
-// Approve and reject need the change in front of the farmer, so the list links to the detail page.
 const CHANGE_ACTIONS = [A.APPROVE_CHANGE, A.REJECT_CHANGE];
 
 const CONFIRM_COPY = {
@@ -218,7 +217,6 @@ export function FarmerOrderActions({ order, size = 'sm' }) {
   const orderAction = useFarmerOrderAction();
   const [pendingAction, setPendingAction] = useState(null);
 
-  // List rows carry an OrderSummary (no items, no pending_change); the detail page has both.
   const isDetail = Array.isArray(order.items);
   const available = allowedOrderActions(order);
   const reviewChanges = !isDetail && CHANGE_ACTIONS.some((action) => available.includes(action));

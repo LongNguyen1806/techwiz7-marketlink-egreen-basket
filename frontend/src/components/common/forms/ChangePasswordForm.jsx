@@ -12,7 +12,6 @@ const FIELDS = ['current_password', 'new_password', 'confirm_password'];
 
 
 export function ChangePasswordForm() {
-  // The form shows its own errors (FormAlert + fields), so the global toast is off.
   const changePassword = useChangePassword({ silent: true });
   const { formError, report, clear } = useServerErrors(FIELDS);
   const {

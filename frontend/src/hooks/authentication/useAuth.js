@@ -41,7 +41,6 @@ function redirectAfterSignIn(location, role) {
   return homePathForRole(role);
 }
 
-/** The portal of the current page: /admin/* is the admin portal, everything else the market. */
 export function usePortal() {
   const { pathname } = useLocation();
   return portalForPath(pathname);
@@ -49,7 +48,6 @@ export function usePortal() {
 
 export function useIsAuthenticated() {
   const portal = usePortal();
-  // Both stores are read so the hook order never changes when the portal does.
   const market = useMarketAuthStore(selectIsAuthenticated);
   const admin = useAdminAuthStore(selectIsAuthenticated);
   return portal === PORTALS.ADMIN ? admin : market;
@@ -80,10 +78,6 @@ export function useAuth() {
   };
 }
 
-/**
- * When a portal's account changes (sign-out, expiry, another tab), drop what was cached for it:
- * everything if this tab shows that portal, otherwise just that portal's /auth/me/.
- */
 export function useAuthSessionSync() {
   const queryClient = useQueryClient();
   useEffect(() => {
@@ -121,7 +115,6 @@ export function useLogin() {
   });
 }
 
-// The page shows its own form errors, so the global error toast is off.
 export function useAdminLogin() {
   const startSession = useStartSession(PORTALS.ADMIN);
   return useMutation({
@@ -147,7 +140,6 @@ export function useRegisterFarmer() {
   });
 }
 
-// silent: the caller shows the error in its own form, so the global error toast stays off.
 export function useRegisterCustomer({ silent = false } = {}) {
   const startSession = useStartSession(PORTALS.MARKET);
   return useMutation({
@@ -160,7 +152,6 @@ export function useRegisterCustomer({ silent = false } = {}) {
   });
 }
 
-/** Signs out of the current portal only; the other portal's session stays. */
 export function useLogout() {
   const navigate = useNavigate();
   const portal = usePortal();

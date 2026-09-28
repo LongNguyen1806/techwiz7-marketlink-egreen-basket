@@ -9,8 +9,6 @@ export function useAdminOrdersByMonth(month) {
   return useQuery({
     queryKey: QUERY_KEYS.ADMIN_ORDERS_BY_MONTH(month),
     queryFn: () => adminApi.getOrdersByMonth(month),
-    // The previous month stays on screen while the next one loads, so stepping through the
-    // year does not blank the card on every click.
     placeholderData: (previous) => previous,
   });
 }

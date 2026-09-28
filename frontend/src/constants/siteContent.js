@@ -1,12 +1,3 @@
-/**
- * Copy for the static pages (About, Contact, Privacy Policy, Sitemap) and the footer.
- * Kept apart from the page layouts so the team can edit wording without touching components.
- *
- * CONTACT holds SAMPLE details (the ".example" address is reserved and cannot receive mail):
- * replace them with the team's real address, email and phone before going live.
- */
-
-// The booking window comes from /public/config/ (booking_horizon_days); 7 is the backend default.
 export const DEFAULT_BOOKING_HORIZON_DAYS = 7;
 
 export const LAST_UPDATED = { privacy: '27/09/2026' };
@@ -17,7 +8,6 @@ export const CONTACT = {
   phone: '+84 28 0000 0000',
   hours: 'Every day, 06:00–18:00 (GMT+7)',
   replyTime: 'We reply to emails within one business day.',
-  // Next to Cho Ben Thanh, the market most of our stalls sell at.
   latitude: 10.7725,
   longitude: 106.698,
 };
@@ -62,7 +52,6 @@ export const VALUES = [
   { title: 'Pay at the stall', text: 'No card details online. You pay the farmer in person when you collect.' },
 ];
 
-// About → FAQ. `id` is the anchor (/about#faq-pay), so other pages can link to an answer.
 export const faq = (horizonDays = DEFAULT_BOOKING_HORIZON_DAYS) => [
   {
     id: 'pay',
@@ -122,7 +111,6 @@ export const faq = (horizonDays = DEFAULT_BOOKING_HORIZON_DAYS) => [
   },
 ];
 
-// Privacy Policy. Written to match what the platform actually does; update it with the code.
 export const PRIVACY_SECTIONS = [
   {
     id: 'who-we-are',

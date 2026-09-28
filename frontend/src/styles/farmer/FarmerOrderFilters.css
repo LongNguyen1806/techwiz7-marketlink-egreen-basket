@@ -37,7 +37,6 @@
   color: var(--color-foreground);
 }
 
-/* A day with no orders in this tab stays clickable but steps back. */
 .farmer-order-filters__segment--empty:not([data-state='active']) {
   opacity: 0.55;
 }

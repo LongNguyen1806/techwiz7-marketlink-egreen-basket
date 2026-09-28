@@ -6,14 +6,12 @@ import 'leaflet/dist/leaflet.css';
 import { MARKER_ICON } from './markerIcon';
 import './MarketsMap.css';
 
-// OpenStreetMap tile usage policy: the subdomain-free URL and the full attribution.
 const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const DEFAULT_CENTER = [10.762622, 106.660172]; // Ho Chi Minh City, before any market is known
+const DEFAULT_CENTER = [10.762622, 106.660172];
 
 const hasPoint = (item) => typeof item.latitude === 'number' && typeof item.longitude === 'number';
 
-/** One market's pin (G-03). Keyed by position: Leaflet reads `center` only when created. */
 export function MiniMap({ latitude, longitude, label, className }) {
   return (
     <div className={className}>
@@ -40,7 +38,6 @@ MiniMap.propTypes = {
   className: PropTypes.string,
 };
 
-// Keeps every listed market in view as the list changes.
 function FitToMarkets({ markets }) {
   const map = useMap();
   const boundsKey = markets.map((market) => market.id).join(',');
@@ -55,7 +52,6 @@ function FitToMarkets({ markets }) {
       markets.map((market) => [market.latitude, market.longitude]),
       { padding: [32, 32], maxZoom: 15 },
     );
-    // Refit only when the set of markets changes, not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boundsKey, map]);
 
@@ -64,10 +60,6 @@ function FitToMarkets({ markets }) {
 
 FitToMarkets.propTypes = { markets: PropTypes.arrayOf(PropTypes.object).isRequired };
 
-/**
- * All listed markets (G-02): a popup with "View market" per pin; the pin of the card under the
- * pointer (`highlightedId`) stays opaque and on top while the others fade.
- */
 export function MarketsMap({ markets, highlightedId = null, className }) {
   const points = markets.filter(hasPoint);
 

@@ -5,7 +5,6 @@
 
 export const authKeys = {
   all: () => ['auth'],
-  // One entry per portal (market / admin); authKeys.me() alone matches both.
   me: (portal) => (portal ? ['auth', 'me', portal] : ['auth', 'me']),
 };
 

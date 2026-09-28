@@ -4,12 +4,6 @@ import { toast } from 'sonner';
 import { adminApi } from '@/api/admin/adminApi';
 import { ApiError } from '@/lib/ApiError';
 
-/**
- * Downloads an admin list as CSV using the filters currently on screen.
- *
- * The file arrives as a blob rather than a URL the browser can follow, because the endpoint
- * needs the Authorization header that a plain link would not send.
- */
 export function useCsvDownload(kind) {
   const [pending, setPending] = useState(false);
 
@@ -24,7 +18,6 @@ export function useCsvDownload(kind) {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      // Released on the next tick so the click has taken the data first.
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
       toast.error(ApiError.fromUnknown(error).friendlyMessage);

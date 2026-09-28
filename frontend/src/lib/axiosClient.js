@@ -71,8 +71,6 @@ async function toApiError(error) {
 
 
 
-// Every request belongs to the portal of the page that sent it (market or admin), fixed at send
-// time so a navigation mid-request cannot refresh or expire the other portal's session.
 function sessionOf(config) {
   return authStoreFor(config?._portal ?? currentPortal());
 }
@@ -83,7 +81,6 @@ function expireSession(store) {
   notifyError(new ApiError({ status: 401, code: CLIENT_ERROR_CODES.SESSION_EXPIRED }));
 }
 
-// One shared refresh per portal: refresh tokens rotate.
 const refreshPromises = new Map();
 
 function refreshAccessToken(store) {

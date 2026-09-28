@@ -1,7 +1,3 @@
-/* The shared admin primitives. Every route is a lazy chunk with its own stylesheet, so a
-   page that uses page-primitive__* classes has to pull them in here: landing straight on
-   this route would otherwise render it unstyled, and it only looked fine because another
-   page had already loaded them. */
 @import '../../styles/common/page-primitives.css';
 
 .admin-products-page__list {
@@ -48,8 +44,6 @@
   margin-top: var(--space-1);
 }
 
-/* The sentence the stall was given. It belongs under the refused badge, not in a tooltip: it
-   is the only thing that tells the admin what was already decided and why. */
 .admin-products-page__note {
   margin-top: var(--space-1);
   font-size: var(--text-sm);
@@ -60,8 +54,6 @@
   margin-top: var(--space-2);
 }
 
-/* Says what the button does before the reason box, because "Take down" and "Hide" sit next to
-   each other and only one of them cancels other people's orders. */
 .admin-products-page__warning {
   margin-bottom: var(--space-3);
   border-left: 3px solid var(--color-danger);
@@ -71,7 +63,6 @@
   color: var(--color-foreground);
 }
 
-/* Says why the list has one row in it; without it a deep link looks like a broken filter. */
 .admin-products-page__pin {
   display: flex;
   flex-wrap: wrap;

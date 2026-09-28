@@ -32,7 +32,6 @@ function AddTimeOffDialog({ open, onClose }) {
   const create = useCreateClosure();
   const today = toApiDate();
   const schema = useMemo(() => makeClosureSchema(today), [today]);
-  // Open orders inside the range (RESOURCE_IN_USE): the farmer must decline or finish them first.
   const [blockingIds, setBlockingIds] = useState([]);
   const {
     register,
@@ -118,7 +117,6 @@ AddTimeOffDialog.propTypes = {
   onClose: PropTypes.func.isRequired,
 };
 
-/** F-07 "Time off" block (FA-31/32/33, D-023): applies to the whole stall, not one market. */
 export function FarmerTimeOffPanel() {
   const closuresQuery = useFarmerClosures();
   const remove = useDeleteClosure();

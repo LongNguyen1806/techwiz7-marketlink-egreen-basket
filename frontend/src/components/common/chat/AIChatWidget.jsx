@@ -11,7 +11,6 @@ import { CHAT_MESSAGE_MAX, useChatStore } from '../../../stores/chat.store';
 import { cn } from '../../../lib/cn';
 import './AIChatWidget.css';
 
-// What the assistant offers each role (the backend enforces the same limits on its tools).
 const ROLE_COPY = {
   GUEST: {
     subtitle: 'Markets, produce, stalls and how pickup works',
@@ -35,7 +34,6 @@ const ROLE_COPY = {
   },
 };
 
-// What a tool looked up, in words, under the answer.
 const TOOL_LABEL = {
   search_products: 'produce',
   get_market_info: 'markets',
@@ -48,10 +46,6 @@ const TOOL_LABEL = {
 
 const panelTransition = { type: 'spring', stiffness: 340, damping: 34, mass: 0.85 };
 
-/**
- * The MarketLink assistant (N-03, CH-01), on every portal. What it can look up depends on who is
- * signed in; it reads data only and never acts on anyone's behalf.
- */
 export function AIChatWidget() {
   const portal = usePortal();
   const { user } = useAuth();
@@ -71,7 +65,6 @@ export function AIChatWidget() {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // A different person (or portal) gets a fresh conversation.
   const owner = `${portal}:${user?.id ?? 'guest'}`;
   useEffect(() => {
     claim(owner);
@@ -85,7 +78,6 @@ export function AIChatWidget() {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  // The switch in /public/config/ (AI_CHAT_ENABLED) hides the whole widget.
   if (configQuery.data && configQuery.data.ai_chat_enabled === false) return null;
 
   const submit = (text) => {
@@ -181,7 +173,6 @@ export function AIChatWidget() {
                   value={input}
                   onChange={(event) => setInput(event.target.value.slice(0, CHAT_MESSAGE_MAX))}
                   onKeyDown={(event) => {
-                    // Enter sends; Shift+Enter is a new line.
                     if (event.key === 'Enter' && !event.shiftKey) {
                       event.preventDefault();
                       submit(input);

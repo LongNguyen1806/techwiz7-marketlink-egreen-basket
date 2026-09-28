@@ -6,11 +6,9 @@ import { notify } from '../../../lib/toast';
 
 const byStartDate = (a, b) => a.start_date.localeCompare(b.start_date) || a.id - b.id;
 
-// Shoppers see time off on the stall pages (D-023), so those go stale with it.
 const invalidatePublicStall = (queryClient) =>
   queryClient.invalidateQueries({ queryKey: [...publicKeys.all(), 'farmers'] });
 
-/** FA-31: current and upcoming time off. */
 export function useFarmerClosures() {
   return useQuery({
     queryKey: farmerKeys.closures(),
@@ -19,7 +17,6 @@ export function useFarmerClosures() {
   });
 }
 
-/** FA-32. Silent: the form shows field errors and the blocking orders itself. */
 export function useCreateClosure() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -33,7 +30,6 @@ export function useCreateClosure() {
   });
 }
 
-/** FA-33. */
 export function useDeleteClosure() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -11,17 +11,11 @@ import '../../styles/farmer/FarmerOrderFilters.css';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const dayFromToday = (days) => toApiDate(new Date(Date.now() + days * DAY_MS));
 
-// ISO weekday (1 = Mon … 7 = Sun) of a YYYY-MM-DD date.
 function isoWeekday(isoDate) {
   const day = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
   return day === 0 ? 7 : day;
 }
 
-/**
- * Pickup days an open order can fall on: today through the booking horizon (D-006), keeping
- * only the farmer's operating days (D-031). Dates, not weekday names: the horizon spans 8 days,
- * so today's weekday appears twice.
- */
 function openTabDays(horizonDays, operatingDays) {
   const days = [];
   for (let offset = 0; offset <= horizonDays; offset += 1) {
@@ -40,7 +34,6 @@ function openTabDays(horizonDays, operatingDays) {
   return days;
 }
 
-// History has no upper bound, so it filters by how far back to look.
 function historyRanges() {
   const today = dayFromToday(0);
   return [
@@ -49,17 +42,13 @@ function historyRanges() {
   ];
 }
 
-// FA-19 history statuses (backend HISTORY_STATUSES).
 const HISTORY_STATUSES = ['COMPLETED', 'CANCELLED', 'DECLINED', 'NO_SHOW', 'EXPIRED'];
 
-// FA-19 accepts `ordering` on the placed tab only (created_at | pickup_start_at). FIFO is the
-// default on purpose (F-02: first ordered, first handled).
 const PENDING_SORTS = [
   { value: '', label: 'Ordered first' },
   { value: 'pickup_start_at', label: 'Pickup soonest' },
 ];
 
-/** Market picker shared by the order list and the picking list; hidden for a one-market stall. */
 export function MarketFilter({ markets, value, onChange }) {
   if (markets.length < 2) return null;
   return (
@@ -96,7 +85,6 @@ function CountBadge({ count }) {
 
 CountBadge.propTypes = { count: PropTypes.number };
 
-/** Segmented control styled like the order tabs; each option can carry an order count. */
 function DateSegments({ label, options, allCount, filters, setFilters }) {
   const allActive = !filters.from && !filters.to;
   return (
@@ -145,10 +133,8 @@ DateSegments.propTypes = {
   setFilters: PropTypes.func.isRequired,
 };
 
-// Which by_date bucket (FA-20) matches the order tab being viewed.
 const COUNT_KEY_BY_TAB = { pending: 'placed', accepted: 'accepted', ready: 'ready' };
 
-/** F-02 filter bar: search, pickup day, market, and the tab-specific status / sort. */
 export function FarmerOrderFilters({
   search,
   filters,
@@ -162,7 +148,6 @@ export function FarmerOrderFilters({
   onClear,
 }) {
   const isHistory = tabId === 'history';
-  // Overdue orders are all in the past already; a day filter adds nothing there.
   const showDates = tabId !== 'overdue';
   const countKey = COUNT_KEY_BY_TAB[tabId];
 
@@ -286,9 +271,7 @@ FarmerOrderFilters.propTypes = {
   tabId: PropTypes.string.isRequired,
   markets: PropTypes.array.isRequired,
   horizonDays: PropTypes.number.isRequired,
-  // Null until the profile loads: every day in the horizon is shown meanwhile.
   operatingDays: PropTypes.arrayOf(PropTypes.number),
-  // FA-20 tab-counts (with by_date); undefined while loading, so no badges show.
   counts: PropTypes.object,
   activeCount: PropTypes.number.isRequired,
   onClear: PropTypes.func.isRequired,

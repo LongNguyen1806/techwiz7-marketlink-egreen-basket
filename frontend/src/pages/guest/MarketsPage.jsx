@@ -14,7 +14,6 @@ import { useGeolocation } from '../../hooks/useGeolocation';
 import { DAYS_OF_WEEK } from '../../utils/labels';
 import '../../styles/guest/MarketsPage.css';
 
-// day 0 = every day. near = sort by distance (needs the shopper's location). view = mobile tab.
 const FILTER_DEFAULTS = { day: 0, near: false, view: 'list' };
 
 export default function MarketsPage() {
@@ -194,7 +193,6 @@ export default function MarketsPage() {
         <div className="markets-page__split" data-view={filters.view === 'map' ? 'map' : 'list'}>
           <div className="markets-page__list-panel">{list}</div>
           <div className="markets-page__map-panel">
-            {/* Remounted on a tab switch: Leaflet measures its box once, and a hidden box has none. */}
             <MarketsMap
               key={filters.view}
               markets={markets}

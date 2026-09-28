@@ -10,7 +10,6 @@
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
   box-shadow: var(--shadow-soft);
-  /* Fixed size: a dragged corner broke the form layout. Long text scrolls inside. */
   resize: none;
   overflow-y: auto;
   transition:

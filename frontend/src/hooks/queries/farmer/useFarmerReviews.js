@@ -18,7 +18,6 @@ const toPage = (data) => ({
 });
 
 
-/** One page of reviews; `filters.page` picks it (1 when left out). */
 export function useFarmerReviews(filters) {
   return useQuery({
     queryKey: farmerKeys.reviews.list(filters),

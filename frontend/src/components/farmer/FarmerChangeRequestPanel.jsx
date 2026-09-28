@@ -5,16 +5,10 @@ import { formatDateTime, formatMoney, formatPickupWindow } from '../../utils/for
 import { unitLabel } from '../../utils/labels';
 import '../../styles/farmer/FarmerChangeRequestPanel.css';
 
-/**
- * What the shopper asked to change on an ACCEPTED order (D-030), shown next to the current order
- * so the farmer can decide on FA-34 / FA-35. `change.items` is the full list after the edit
- * (null = items unchanged), so anything missing from it was removed.
- */
 export function FarmerChangeRequestPanel({ order }) {
   const change = order.pending_change;
 
   if (!change) {
-    // has_pending_change without a readable change: the backend could not parse it (FAILED_PRECONDITION on approve).
     return (
       <section className="farmer-change-request" aria-labelledby="farmer-change-request-title">
         <h2 className="farmer-change-request__title" id="farmer-change-request-title">

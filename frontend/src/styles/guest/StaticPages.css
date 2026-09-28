@@ -1,5 +1,3 @@
-/* About, Contact, Privacy Policy and Sitemap: one look, matching the Markets/Farmers hero. */
-
 .static-page__hero {
   border-bottom: 1px solid var(--color-border);
   background: radial-gradient(ellipse at top, rgba(22, 163, 74, 0.08), transparent 55%);
@@ -108,7 +106,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Cards (values, steps, team, contact details) */
 .static-page__cards {
   display: grid;
   gap: var(--space-4);
@@ -187,7 +184,6 @@
   text-decoration: underline;
 }
 
-/* Numbered steps */
 .static-page__step-number {
   font-family: var(--font-heading);
   font-size: var(--text-3xl);
@@ -196,7 +192,6 @@
   line-height: 1;
 }
 
-/* Live figures */
 .static-page__stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -225,7 +220,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Team */
 .static-page__avatar {
   display: inline-flex;
   width: 3.5rem;
@@ -245,7 +239,6 @@
   color: var(--color-primary-700);
 }
 
-/* Call to action band */
 .static-page__band {
   display: flex;
   flex-wrap: wrap;
@@ -276,7 +269,6 @@
   gap: var(--space-3);
 }
 
-/* Map */
 .static-page__map {
   display: block;
   width: 100%;
@@ -286,7 +278,6 @@
   border-radius: var(--radius-2xl);
 }
 
-/* Legal page: contents on the side, numbered sections */
 .static-page__legal {
   display: grid;
   gap: var(--space-8);
@@ -387,7 +378,6 @@
   margin-top: var(--space-2);
 }
 
-/* Sitemap: Envato-style groups of link columns */
 .static-page__sitemap-group + .static-page__sitemap-group {
   margin-top: var(--space-10);
   padding-top: var(--space-10);

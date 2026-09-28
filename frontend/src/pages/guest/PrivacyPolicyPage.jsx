@@ -4,7 +4,6 @@ import { LAST_UPDATED, PRIVACY_SECTIONS } from '../../constants/siteContent';
 import { useScrollToHash } from '../../hooks/common/useScrollToHash';
 import '../../styles/guest/StaticPages.css';
 
-/** Privacy Policy: numbered sections with a contents list, matching what the platform does. */
 export default function PrivacyPolicyPage() {
   useScrollToHash();
 

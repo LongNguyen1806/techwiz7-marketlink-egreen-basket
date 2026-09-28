@@ -36,7 +36,6 @@ export const publicRoutes = [
         path: '/farmers/:id',
         lazy: page(() => import('../../pages/guest/FarmerDetailPage')),
       },
-      // Static pages (G-07, G-08, and the Privacy Policy and Sitemap linked from the footer).
       {
         path: '/about',
         lazy: page(() => import('../../pages/guest/AboutPage')),

@@ -17,8 +17,6 @@ export function ProductCard({ product, onAddToCart, onRequireSignIn, className }
   const canWatchRestock = product.availability === 'OUT_OF_STOCK';
 
   return (
-    // A plain element: a layout animation re-measured every card on each sort and made the
-    // grid jump. Loading is shown with ProductCardSkeleton instead.
     <article className={cn('product-card', className)}>
       <div className="product-card__media">
         <Link to={`/products/${product.id}`} className="product-card__media-link">

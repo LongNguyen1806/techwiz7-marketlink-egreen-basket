@@ -41,7 +41,6 @@ const toPage = (data) => ({
 });
 
 
-/** One page of the notification list (the stall's inbox). */
 export function useNotificationList({ isRead, page = 1 } = {}) {
   const refetchInterval = usePollInterval();
   return useQuery({
@@ -56,8 +55,6 @@ export function useNotificationList({ isRead, page = 1 } = {}) {
 
 
 
-// The caches under notificationKeys.all() are either a plain list (the bell's latest few)
-// or one page of the inbox ({ results, count, ... }).
 function patchItems(data, patch) {
   if (Array.isArray(data)) return data.map(patch);
   if (data && Array.isArray(data.results)) return { ...data, results: data.results.map(patch) };

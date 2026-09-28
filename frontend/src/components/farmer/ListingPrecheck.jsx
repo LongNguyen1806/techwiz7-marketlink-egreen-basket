@@ -16,7 +16,6 @@ const SEVERITY = {
   LOW: { icon: Info, tone: 'low' },
 };
 
-/** Only the values that are complete enough to check; the API validates them again. */
 function toParams(values, productId) {
   const name = (values.name ?? '').trim();
   const price = String(values.price ?? '').trim();
@@ -31,12 +30,7 @@ function toParams(values, productId) {
   return params;
 }
 
-/**
- * "Before you send it": the same rule checks the admin's review runs, on the form as the farmer
- * types. Advice only; saving is never blocked, and an administrator still reviews every listing.
- */
 export function ListingPrecheck({ values, productId }) {
-  // A string key: the form hands over a new object every render, the text only changes on edits.
   const key = JSON.stringify(toParams(values, productId));
   const debouncedKey = useDebouncedValue(key, PRECHECK_DELAY_MS);
   const params = useMemo(() => JSON.parse(debouncedKey), [debouncedKey]);

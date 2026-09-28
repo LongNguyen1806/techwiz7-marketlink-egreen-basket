@@ -15,8 +15,6 @@
   width: auto;
 }
 
-/* Same floating-label treatment as Input, so a select lines up with the text and date boxes
-   instead of standing a label's height taller. */
 .filter-bar__field {
   position: relative;
   height: 2.75rem;
@@ -41,8 +39,6 @@
   transform: translateY(-50%);
 }
 
-/* Same height as the boxes beside it, so the row has one baseline whether or not anything
-   is filtered. */
 .filter-bar__clear {
   height: 2.75rem;
 }

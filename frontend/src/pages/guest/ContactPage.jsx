@@ -8,10 +8,8 @@ import { useChatStore } from '../../stores/chat.store';
 import { googleMapsDirectionsUrl } from '../../utils/helpers/geo';
 import '../../styles/guest/StaticPages.css';
 
-// D-012: Google Maps only for the Contact page embed and directions links.
 const MAP_EMBED = `https://www.google.com/maps?q=${CONTACT.latitude},${CONTACT.longitude}&z=16&output=embed`;
 
-/** G-08 Contact Us: static details and a map, no form (the SRS asks for static information only). */
 export default function ContactPage() {
   const openAssistant = useChatStore((state) => state.setOpen);
 

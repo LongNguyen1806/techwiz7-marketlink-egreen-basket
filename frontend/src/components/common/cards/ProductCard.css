@@ -14,8 +14,6 @@
   box-shadow: var(--shadow-soft-lg);
 }
 
-/* Covers the whole picture frame, so a click anywhere on the photo (or the "No image"
-   placeholder) opens the product. The badge and heart come later in the markup and stay on top. */
 .product-card__media-link {
   position: absolute;
   inset: 0;
@@ -132,7 +130,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Loading placeholder (ProductCardSkeleton): same frame and rows as a real card. */
 .product-card--skeleton,
 .product-card--skeleton:hover {
   transform: none;

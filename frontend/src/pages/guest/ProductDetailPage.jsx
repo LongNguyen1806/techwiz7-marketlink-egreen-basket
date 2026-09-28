@@ -147,7 +147,6 @@ RelatedProducts.propTypes = {
 };
 
 function PurchaseBox({ product, onAddToCart }) {
-  // The stall's per-order window: at least min_per_order, at most the smallest of stock, max_per_order, 999.
   const minimum = product.min_per_order ?? 1;
   const [quantity, setQuantity] = useState(minimum);
   const enoughStock = product.stock_quantity >= minimum;

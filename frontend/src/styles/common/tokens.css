@@ -35,8 +35,6 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
-  /* Room below the last thing on a page for the floating assistant button (3.5rem button
-     + its 2rem offset + a gap), so Save buttons at the bottom are never under it. */
   --chat-fab-clearance: 6.5rem;
   --space-20: 5rem;
   --space-24: 6rem;

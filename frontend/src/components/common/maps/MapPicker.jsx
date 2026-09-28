@@ -9,11 +9,10 @@ import { cn } from '../../../lib/cn';
 import { MARKER_ICON } from './markerIcon';
 import './MapPicker.css';
 
-// OpenStreetMap tile usage policy: the subdomain-free URL and the full attribution.
 const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const PRECISION = 6;
-const DEFAULT_CENTER = [10.762622, 106.660172]; // Ho Chi Minh City, before a pin is placed
+const DEFAULT_CENTER = [10.762622, 106.660172];
 const MIN_ADDRESS_LENGTH = 5;
 
 function round(value) {
@@ -29,8 +28,6 @@ function ClickToPick({ onPick }) {
 
 ClickToPick.propTypes = { onPick: PropTypes.func.isRequired };
 
-// Leaflet reads `center` once, so a pin moved by a search has to move the view itself. Clicks
-// and drags leave the view alone: the person is already looking at that spot.
 function FlyToFound({ found }) {
   const map = useMap();
   useEffect(() => {
@@ -54,18 +51,12 @@ function lookupMessage(geocode) {
   return null;
 }
 
-/**
- * A pin on the map: click to place it, drag to adjust. With `address`, a "Find on map"
- * button looks the address up and moves the pin there as a starting point; searches for
- * Vietnamese street addresses often miss, so the person always gets the final say.
- */
 export function MapPicker({ latitude = null, longitude = null, onChange, address, readOnly = false, className }) {
   const hasPoint = typeof latitude === 'number' && typeof longitude === 'number';
   const geocode = useGeocode();
   const [searched, setSearched] = useState('');
   const [found, setFound] = useState(null);
   const query = (address ?? '').trim();
-  // A message about an address that has since been edited would be about the wrong address.
   const message = searched && searched === query ? lookupMessage(geocode) : null;
 
   const find = () => {

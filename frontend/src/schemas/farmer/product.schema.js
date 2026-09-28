@@ -10,7 +10,6 @@ export const DEFAULT_MAX_UPLOAD_MB = 2;
 
 const PRICE_PATTERN = /^\d{1,8}(\.\d{1,2})?$/;
 
-// Backend MAX_ORDER_QUANTITY: one order line is 1-999.
 export const MAX_PER_ORDER = 999;
 
 
@@ -41,8 +40,6 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .int('Weekly default must be a whole number')
       .min(0, 'Weekly default cannot be negative')
       .nullable(),
-    // Per-order window from what the stall can sell to one order: at least min (1 = any amount),
-    // at most max (blank = no cap beyond stock).
     min_per_order: z
       .number({ error: 'Enter a whole number' })
       .int('Min per order must be a whole number')

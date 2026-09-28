@@ -3,9 +3,6 @@ import { chatApi } from '../../../api/common/chatApi';
 import { ApiError } from '../../../lib/ApiError';
 import { CHAT_HISTORY_LIMIT, CHAT_MESSAGE_MAX, useChatStore } from '../../../stores/chat.store';
 
-// Every refusal comes back as the same neutral "busy" text (in the user's language) from the
-// backend. Anything else (network down, server error) gets that same neutral wording here, so
-// the widget never names a limit or an internal problem.
 const BUSY_FALLBACK = 'The assistant is busy right now. Please try again later.';
 
 function refusalText(error) {
@@ -13,14 +10,12 @@ function refusalText(error) {
   return apiError.is('AI_UNAVAILABLE') && apiError.apiMessage ? apiError.apiMessage : BUSY_FALLBACK;
 }
 
-/** Send one question with the recent conversation; the reply (or the problem) lands in the store. */
 export function useAIChat() {
   const add = useChatStore((state) => state.add);
   const setToolsUsed = useChatStore((state) => state.setToolsUsed);
 
   const mutation = useMutation({
     mutationFn: chatApi.send,
-    // Shown inside the chat, not as a toast.
     meta: { silent: true },
     onSuccess: (result) => {
       add('assistant', result.reply);

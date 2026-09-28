@@ -1,18 +1,5 @@
-/* The shared admin primitives. Every route is a lazy chunk with its own stylesheet, so a
-   page that uses page-primitive__* classes has to pull them in here: landing straight on
-   this route would otherwise render it unstyled, and it only looked fine because another
-   page had already loaded them. */
 @import '../../styles/common/page-primitives.css';
 
-/* This screen is two lists in tabs. The stalls tab is a table like Farmers and Customers; the
-   products tab is a card per stall, using the same Card as the dashboard, with rows inside it
-   laid out like the rows on Products and Follow-up queue. Nothing here invents a new shape -
-   it only positions what the shared pieces leave to the page. */
-
-/* ---- stalls table ------------------------------------------------------- */
-
-/* Stall name over contact person, email over phone: one cell, two lines, so the table stays
-   five columns wide instead of eight. */
 .admin-approvals-page__name {
   display: block;
   font-weight: var(--weight-medium);
@@ -28,8 +15,6 @@ a.admin-approvals-page__name:hover {
   display: block;
 }
 
-/* ---- listings grouped by stall ------------------------------------------ */
-
 .admin-approvals-page__stalls {
   display: flex;
   flex-direction: column;
@@ -37,8 +22,6 @@ a.admin-approvals-page__name:hover {
   margin-top: var(--space-4);
 }
 
-/* CardHeader stacks its children; here the stall and its whole-stall button sit on one line,
-   and wrap rather than overflow on a phone. */
 .admin-approvals-page__stall-head {
   flex-direction: row;
   flex-wrap: wrap;
@@ -60,8 +43,6 @@ a.admin-approvals-page__name:hover {
   gap: var(--space-3);
 }
 
-/* Same row as Products and the follow-up queue: content left, actions right, a hairline
-   between neighbours. */
 .admin-approvals-page__item {
   display: flex;
   flex-wrap: wrap;
@@ -91,8 +72,6 @@ a.admin-approvals-page__name:hover {
   object-fit: cover;
 }
 
-/* May shrink: without min-width 0 a long description pushes the buttons off the card instead
-   of wrapping. */
 .admin-approvals-page__text {
   min-width: 0;
 }
@@ -101,7 +80,6 @@ a.admin-approvals-page__name:hover {
   font-weight: var(--weight-medium);
 }
 
-/* Two lines: enough to judge most listings, short enough that the row stays a row. */
 .admin-approvals-page__description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -119,7 +97,6 @@ a.admin-approvals-page__name:hover {
 }
 
 
-/* AI triage bar (AI-assisted listing review). */
 .admin-approvals-page__ai-bar {
   display: flex;
   flex-wrap: wrap;

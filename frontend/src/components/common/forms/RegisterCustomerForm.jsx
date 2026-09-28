@@ -14,7 +14,6 @@ const FIELDS = ['email', 'full_name', 'phone', 'address', 'password', 'confirm_p
 
 
 export function RegisterCustomerForm() {
-  // The form shows its own errors (FormAlert + fields), so the global toast is off.
   const registerCustomer = useRegisterCustomer({ silent: true });
   const { formError, report, clear } = useServerErrors(FIELDS);
   const {

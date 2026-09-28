@@ -124,7 +124,6 @@ export default function FarmerOrderDetailPage() {
 
       <BackToList />
 
-      {/* FA-36 (D-036): the shopper then agrees (Accept) or not (Decline). */}
       <ConfirmDialog
         open={Boolean(soldOutItem)}
         onOpenChange={(open) => !open && setSoldOutItem(null)}

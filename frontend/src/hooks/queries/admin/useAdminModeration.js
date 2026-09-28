@@ -5,10 +5,7 @@ import { ApiError } from '@/lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
 import { QUERY_KEYS } from '@/config/constants';
 
-// A product needs only its id; a review also needs the table its id belongs to.
-
 function invalidateModeration(queryClient) {
-  // Only the first key segment, so every sort order of the list is refreshed.
   void queryClient.invalidateQueries({
     queryKey: [QUERY_KEYS.ADMIN_MODERATION_PRODUCTS()[0]],
   });
@@ -38,7 +35,6 @@ export function useHideModerationItem() {
       if (input.type === 'product') {
         return adminApi.hideProduct(input.id, input.reason);
       }
-      // Which review table the id belongs to decides the route (AD-23 vs AD-24).
       return adminApi.hideReview(input.id, input.reviewType, input.reason);
     },
     onSuccess: () => {
@@ -75,7 +71,6 @@ export function useBlockModerationProduct() {
           : `Product taken down · ${count} ${count === 1 ? 'order' : 'orders'} cancelled`,
       );
       invalidateModeration(queryClient);
-      // The cancelled orders change what the follow-up counts and the order list show.
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS()[0]] });
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_DASHBOARD[0]] });
     },
@@ -88,7 +83,6 @@ export function useUnblockModerationProduct() {
   return useMutation({
     mutationFn: adminApi.unblockProduct,
     onSuccess: () => {
-      // Worded so nobody reads it as an undo: the cancelled orders are not coming back.
       toast.success('Product is on sale again. Cancelled orders were not reinstated.');
       void queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.ADMIN_MODERATION_PRODUCTS()[0]],

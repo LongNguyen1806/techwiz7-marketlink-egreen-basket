@@ -7,7 +7,6 @@ import { STALE } from '../../../constants/staleTimes';
 export const ORDERS_PAGE_SIZE = 20;
 
 
-// One page of the list, with what the page buttons need.
 const toPage = (data) => ({
   orders: data.results,
   total: data.count,
@@ -19,7 +18,6 @@ const toPage = (data) => ({
 const byPickupEnd = (a, b) => new Date(a.pickup_end_at) - new Date(b.pickup_end_at);
 
 
-/** One page of orders; `filters.page` picks it (1 when left out). */
 export function useFarmerOrderList(filters, { enabled = true } = {}) {
   return useQuery({
     queryKey: farmerKeys.orders.list(filters),
@@ -33,11 +31,6 @@ export function useFarmerOrderList(filters, { enabled = true } = {}) {
 }
 
 
-/**
- * Overdue is two lists (accepted and ready, both past pickup) shown as one. Both are paged
- * with the same page number, so page N shows the Nth slice of each; there are as many pages
- * as the longer of the two needs.
- */
 export function useFarmerOverdueOrders(filters, { enabled = true } = {}) {
   const accepted = useFarmerOrderList({ ...filters, tab: 'accepted', overdue: true }, { enabled });
   const ready = useFarmerOrderList({ ...filters, tab: 'ready', overdue: true }, { enabled });
@@ -84,7 +77,6 @@ export function useFarmerOrder(id, { enabled = true } = {}) {
   });
 }
 
-/** FA-37: one group per customer for a pickup date, to pack their orders together (D-005). */
 export function useOrdersByCustomer(pickupDate, { marketId = 0, enabled = true } = {}) {
   return useQuery({
     queryKey: farmerKeys.orders.byCustomer(pickupDate, marketId),

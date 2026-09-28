@@ -35,9 +35,6 @@ const FILTER_DEFAULTS = {
 const MARKET_OPTIONS_PARAMS = { ordering: 'name', page_size: 20 };
 const PAGE_SIZE = 20;
 
-// The slider runs from $0 to the dearest listing, rounded up to a whole dollar. One request
-// for the top price is enough to find that end; sold-out listings count, since the shopper
-// can include them.
 const TOP_PRICE_PARAMS = { ordering: 'price_desc', page_size: 5, in_stock: false };
 const PRICE_STEP = 0.5;
 const FALLBACK_CEILING = 20;
@@ -59,11 +56,6 @@ function priceParam(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
-/**
- * Two thumbs on one track. The labels follow the thumbs while dragging; the filter is applied
- * when the thumb is let go, so a drag does not fire a request per step. $0 at the bottom and
- * the top of the track mean "no limit" on that side and leave the URL parameter out.
- */
 function PriceRange({ min, max, ceiling, onApply }) {
   const [range, setRange] = useState(() => {
     const low = clampPrice(min, 0, ceiling);
@@ -81,7 +73,6 @@ function PriceRange({ min, max, ceiling, onApply }) {
   const commitHandlers = { onPointerUp: commit, onKeyUp: commit, onBlur: commit };
 
   const percent = (value) => (value / ceiling) * 100;
-  // When both thumbs meet at the top, the lower one must stay on top or it can never move again.
   const lowOnTop = low >= ceiling - PRICE_STEP;
 
   return (
@@ -170,7 +161,6 @@ export default function ProductsPage() {
   const pageData = productsQuery.data;
   const products = pageData?.results ?? [];
 
-  // A page past the end (an old link, or the list shrank) is a 404 from the API: go to page 1.
   const pageMissing = page > 1 && productsQuery.isError && productsQuery.error?.status === 404;
   useEffect(() => {
     if (pageMissing) setFilters({ page: 1 }, { replace: true });
@@ -212,8 +202,6 @@ export default function ProductsPage() {
   }
 
   let results;
-  // While a new sort, filter or page loads, skeletons replace the old list rather than the old
-  // cards staying up and then being reshuffled in place.
   if (productsQuery.isPending || productsQuery.isPlaceholderData) {
     results = <ProductCardSkeletonGrid count={6} className="products-page__grid" />;
   } else if (!pageData) {

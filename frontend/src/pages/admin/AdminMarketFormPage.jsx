@@ -32,8 +32,6 @@ const DAYS = [
 const DEFAULT_VALUES = {
   name: "",
   address: "",
-  // No pin until the admin places one: a default spot would send shoppers to the wrong place
-  // whenever it was left unmoved.
   latitude: null,
   longitude: null,
   image: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=800&q=80",

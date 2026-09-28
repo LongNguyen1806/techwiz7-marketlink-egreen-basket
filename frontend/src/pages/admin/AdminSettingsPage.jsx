@@ -8,8 +8,6 @@ import { PageSkeleton } from '@/components/feedback/PageSkeleton';
 
 import './AdminSettingsPage.css';
 
-// Each limit with the plain-language question it answers. Without this an admin has no way to
-// find out what the platform is actually enforcing.
 const LIMITS = [
   {
     key: 'booking_horizon_days',

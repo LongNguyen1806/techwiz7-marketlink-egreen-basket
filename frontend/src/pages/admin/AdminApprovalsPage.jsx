@@ -50,7 +50,6 @@ const PRODUCT_SORT = [
   { value: '-ai_risk', label: 'Highest AI risk' },
 ];
 
-// The AI's verdict on the latest version of each listing. "NONE" = not reviewed yet.
 const AI_FILTERS = [
   { value: '', label: 'All' },
   { value: 'LIKELY_VIOLATION', label: 'Likely violation' },
@@ -60,15 +59,12 @@ const AI_FILTERS = [
   { value: 'NONE', label: 'Not reviewed' },
 ];
 
-// The refusal text an admin starts from when the AI found something: its findings, in order.
 function reasonFromFindings(findings) {
   const lines = findings.map((finding) => `- ${finding.message}`);
   return `Please fix the following before this listing can go on sale:\n${lines.join('\n')}`;
 }
 
-/** A queue is worked from the front, so both tabs open on whatever has waited longest. */
 export default function AdminApprovalsPage() {
-  // An AI alert links here as /admin/approvals?product=<id>, straight to that one listing.
   const [searchParams, setSearchParams] = useSearchParams();
   const linkedProduct = searchParams.get('product');
   const [stallFilters, setStallFilters] = useState({});
@@ -145,9 +141,6 @@ export default function AdminApprovalsPage() {
     },
   ];
 
-  // Grouped by stall, because a stall that has just signed up usually adds several listings
-  // at once and they are judged together: the same photographer, the same wording, the same
-  // idea of what a description is for.
   const byStall = [];
   const seen = new Map();
   for (const product of productsQuery.data?.results ?? []) {
@@ -159,8 +152,6 @@ export default function AdminApprovalsPage() {
     seen.get(id).products.push(product);
   }
 
-  // One dialog for both kinds. Refusing is the same act either way: say why, in words the
-  // person on the other end can act on.
   const openReject = (kind, item) => {
     setRejecting({ kind, id: item.id, name: item.stall_name ?? item.name, findings: item.ai_review?.findings ?? [] });
     setReason('');
@@ -183,7 +174,6 @@ export default function AdminApprovalsPage() {
 
       <Tabs defaultValue={linkedProduct || (stallCount === 0 && productCount > 0) ? 'products' : 'stalls'}>
         <TabsList>
-          {/* The counts are on the tabs because the point of this screen is how much is left. */}
           <TabsTrigger value="stalls">Stalls ({stallCount})</TabsTrigger>
           <TabsTrigger value="products">Products ({productCount})</TabsTrigger>
         </TabsList>
@@ -299,7 +289,6 @@ export default function AdminApprovalsPage() {
             onChange={setProductOrdering}
           />
 
-          {/* AI triage: read the likely violations first, clear the passed ones in one go. */}
           <div className="admin-approvals-page__ai-bar">
             <span className="admin-approvals-page__ai-label">
               <Sparkles aria-hidden className="admin-approvals-page__ai-icon" />
@@ -361,10 +350,6 @@ export default function AdminApprovalsPage() {
                       </Link>
                       <Badge variant="warning">{products.length} waiting</Badge>
                     </div>
-                    {/* Whole-stall approval, for the common case: several listings written
-                        the same day by the same person, judged in one read. It sits in the
-                        header, away from the per-listing buttons, so it is never the
-                        Approve that happens to be nearest the thumb. */}
                     <Button
                       size="sm"
                       loading={approveProducts.isPending}
@@ -392,8 +377,6 @@ export default function AdminApprovalsPage() {
                               {p.stock_quantity} in stock · added{' '}
                               {formatDateTime(p.created_at)}
                             </p>
-                            {/* Most refusals come from the description, so it is on the row
-                                rather than a click away. */}
                             {p.description ? (
                               <p className="admin-approvals-page__description">
                                 {p.description}

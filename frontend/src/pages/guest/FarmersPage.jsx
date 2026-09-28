@@ -10,7 +10,6 @@ import { usePublicFarmerList } from '../../hooks/queries/guest/usePublicCatalog'
 import { useGeolocation } from '../../hooks/useGeolocation';
 import '../../styles/guest/FarmersPage.css';
 
-// accounts/public_portal FARMER_ORDERINGS; "distance" needs the shopper's location.
 const SORT_OPTIONS = [
   { value: 'rating', label: 'Top rated' },
   { value: 'in_stock', label: 'Best stocked' },

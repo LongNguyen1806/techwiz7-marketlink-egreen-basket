@@ -5,12 +5,10 @@ import { ROUTES } from '../../constants/routes';
 import { useCategories, usePublicFarmers, usePublicMarkets } from '../../hooks/queries/guest/usePublicCatalog';
 import '../../styles/guest/StaticPages.css';
 
-// Enough for a sitemap page; each directory page lists the rest.
 const LIST_ALL = { page_size: 50 };
 
 const SIGN_IN = 'sign in';
 
-// Fixed sections. `note` marks pages that need an account.
 const SECTIONS = [
   {
     title: 'Shop',
@@ -90,7 +88,6 @@ Group.propTypes = {
   loading: PropTypes.bool,
 };
 
-/** HTML sitemap: every public page, plus the live markets, produce categories and stalls. */
 export default function SitemapPage() {
   const marketsQuery = usePublicMarkets(LIST_ALL);
   const categoriesQuery = useCategories();

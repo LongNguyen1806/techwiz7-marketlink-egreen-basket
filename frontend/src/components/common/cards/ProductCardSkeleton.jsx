@@ -3,10 +3,6 @@ import { Skeleton } from '../../ui/Skeleton';
 import { cn } from '../../../lib/cn';
 import './ProductCard.css';
 
-/**
- * A product card while its data loads, with the same frame, spacing and rows as the real
- * one, so the grid does not jump when the products arrive.
- */
 export function ProductCardSkeleton({ className }) {
   return (
     <div className={cn('product-card', 'product-card--skeleton', className)} aria-hidden>
@@ -29,7 +25,6 @@ export function ProductCardSkeleton({ className }) {
 
 ProductCardSkeleton.propTypes = { className: PropTypes.string };
 
-/** A grid's worth of skeleton cards, announced once to screen readers. */
 export function ProductCardSkeletonGrid({ count, className }) {
   return (
     <div className={className} aria-busy role="status" aria-label="Loading produce">

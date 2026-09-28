@@ -6,7 +6,6 @@
   gap: var(--space-4);
 }
 
-/* Same floating-label treatment as Input, so the select lines up with the date fields. */
 .admin-orders-page__field {
   position: relative;
   height: 2.75rem;

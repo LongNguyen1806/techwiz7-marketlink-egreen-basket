@@ -16,7 +16,6 @@ import '../../styles/guest/StaticPages.css';
 
 const STEP_ICONS = [Search, CalendarCheck, MapPin];
 const VALUE_ICONS = [Leaf, Sprout, ShieldCheck, HandCoins];
-// One row is enough: only the totals are read.
 const COUNT_ONLY = { page_size: 1 };
 
 function initials(name) {
@@ -38,7 +37,6 @@ function LiveFigure({ value, label }) {
   );
 }
 
-/** G-07 About Us: mission, how it works, the team, and the FAQ (with D-021 account sharing). */
 export default function AboutPage() {
   const configQuery = usePublicConfig();
   const horizonDays = configQuery.data?.booking_horizon_days ?? DEFAULT_BOOKING_HORIZON_DAYS;
@@ -46,7 +44,6 @@ export default function AboutPage() {
   const stalls = usePublicFarmers(COUNT_ONLY).data?.count;
   const products = usePublicProducts(COUNT_ONLY).data?.count;
 
-  // /about#faq-pay opens that answer and scrolls to it.
   const hash = useScrollToHash();
   const openFaq = hash.startsWith('faq-') ? hash.slice(4) : null;
 
@@ -170,7 +167,6 @@ export default function AboutPage() {
             .
           </p>
           <div className="static-page__prose">
-            {/* Keyed so a new #faq-… link re-opens the right answer. */}
             <Accordion key={openFaq ?? 'none'} items={faq(horizonDays)} openId={openFaq} idPrefix="faq" />
           </div>
         </section>

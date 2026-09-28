@@ -38,7 +38,6 @@ select {
   color: inherit;
 }
 
-/* No drag handle on any text box; each form sets the size it was designed for. */
 textarea {
   resize: none;
 }

@@ -167,8 +167,6 @@
   accent-color: var(--color-primary-600);
 }
 
-/* Price slider: two range inputs stacked on one track. Only the thumbs take the pointer,
-   so either thumb can be grabbed wherever the other one sits. */
 .products-page__price-head {
   display: flex;
   align-items: baseline;
@@ -349,7 +347,6 @@
 }
 
 .products-page__results {
-  /* Room for the sticky header when a page change scrolls back here. */
   scroll-margin-top: 5rem;
 }
 

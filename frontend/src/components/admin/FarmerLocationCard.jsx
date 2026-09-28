@@ -14,7 +14,6 @@ const MARKET_COLOR = '#d97706';
 
 const isPoint = (latitude, longitude) => typeof latitude === 'number' && typeof longitude === 'number';
 
-// Frames the farm and its markets together, so the distance between them is visible at a glance.
 function FitAll({ points }) {
   const map = useMap();
   const key = JSON.stringify(points);
@@ -28,11 +27,6 @@ function FitAll({ points }) {
 
 FitAll.propTypes = { points: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired };
 
-/**
- * Where the stall says it grows, next to the markets it sells at. Part of the approval
- * decision: an address far outside the area, or a pin nowhere near it, is worth a question.
- * The pin is the farmer's own (or an address search when they placed none); nothing checks it.
- */
 export function FarmerLocationCard({ address, latitude, longitude, markets = [] }) {
   const hasFarm = isPoint(latitude, longitude);
   const marketPoints = markets.filter((market) => isPoint(market.latitude, market.longitude));

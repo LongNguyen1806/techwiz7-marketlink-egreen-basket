@@ -39,7 +39,6 @@ const FARMER_DEFAULTS = {
   contact_person: '',
   address: '',
   operating_days: [],
-  // Optional pin for the farm, seen only by the admins who approve the stall.
   latitude: null,
   longitude: null,
 };
@@ -206,7 +205,6 @@ export function RegisterFarmerForm() {
     if (await trigger(REGISTER_FARMER_STEP_1, { shouldFocus: true })) setStep(2);
   };
 
-  // No pin means the API looks the address up itself, so the empty pair is left out.
   const onSubmit = handleSubmit(({ latitude: lat, longitude: lng, ...values }) =>
     registerFarmer.mutate(lat !== null && lng !== null ? { ...values, latitude: lat, longitude: lng } : values, {
       onError: (error) => {

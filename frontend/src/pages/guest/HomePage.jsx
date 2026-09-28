@@ -93,7 +93,6 @@ CardGrid.propTypes = {
   shown: PropTypes.number.isRequired,
   gridClass: PropTypes.string.isRequired,
   skeletonClass: PropTypes.string,
-  // Card-shaped placeholders instead of plain blocks, for grids that have them.
   renderSkeletons: PropTypes.func,
   errorTitle: PropTypes.string.isRequired,
   emptyTitle: PropTypes.string.isRequired,

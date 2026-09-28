@@ -7,15 +7,6 @@ import { useDebouncedValue } from '@/hooks/common/useDebouncedValue';
 
 import './FilterBar.css';
 
-/**
- * One filter row for every admin table.
- *
- * Only the text box is debounced. A dropdown or a date is a single deliberate choice, so it
- * fires at once; debouncing those would make the table feel broken.
- *
- * `fields` is a list of:
- *   { name, label, type: 'search' | 'select' | 'date', options?: [{ value, label }] }
- */
 export function FilterBar({ fields, value, onChange, onReset }) {
   const [text, setText] = useState(value.q ?? '');
   const debounced = useDebouncedValue(text);
@@ -23,7 +14,6 @@ export function FilterBar({ fields, value, onChange, onReset }) {
   useEffect(() => {
     if ((value.q ?? '') === debounced) return;
     onChange({ ...value, q: debounced || undefined });
-    // value and onChange are stable per render by the caller; re-running on them would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
@@ -78,9 +68,6 @@ export function FilterBar({ fields, value, onChange, onReset }) {
         );
       })}
 
-      {/* Always rendered, disabled when there is nothing to clear. Showing it only once a
-          filter is set made the row jump and left some screens with the button and some
-          without, so an admin could not learn where it lives. */}
       <Button
         size="sm"
         variant="ghost"

@@ -177,7 +177,6 @@ function StallAbout({ farmer }) {
 
 StallAbout.propTypes = { farmer: PropTypes.object.isRequired };
 
-/** Bookable slots over the booking horizon (same data the checkout uses). */
 function StallSchedule({ farmerId }) {
   const query = usePickupOptions(farmerId);
 
@@ -242,7 +241,6 @@ export default function FarmerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lat, lng } = useGeolocation();
-  // With the shopper's location the backend also returns distance_km.
   const coords = lat !== null && lng !== null ? { lat, lng } : {};
   const farmerQuery = usePublicFarmer(id, coords);
   const { filters, setFilters } = useUrlFilters({ tab: 'products' });
@@ -317,7 +315,6 @@ export default function FarmerDetailPage() {
           ) : null}
         </div>
 
-        {/* D-023: the stall's own planned days off inside the booking horizon. */}
         {farmer.upcoming_closures?.length ? (
           <div className="page-primitive__warn-banner" role="note">
             {farmer.upcoming_closures.map((closure) => (

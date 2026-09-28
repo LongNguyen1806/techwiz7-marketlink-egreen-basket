@@ -38,7 +38,6 @@ function closureLabel(closure) {
   return closure.reason ? `Closed ${range} · ${closure.reason}` : `Closed ${range}`;
 }
 
-/** Stalls selling here (G-03), filtered by the day the shopper plans to come. */
 function MarketFarmers({ market, onRequireSignIn }) {
   const { filters, setFilters } = useUrlFilters({ day: 0 });
   const day = market.operating_days.includes(filters.day) ? filters.day : 0;
@@ -146,7 +145,6 @@ export default function MarketDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lat, lng } = useGeolocation();
-  // With the shopper's location the backend also returns distance_km.
   const coords = lat !== null && lng !== null ? { lat, lng } : {};
   const marketQuery = usePublicMarket(id, coords);
   const { requireSignIn } = useAddToCart();
@@ -217,7 +215,6 @@ export default function MarketDetailPage() {
           />
         </div>
 
-        {/* D-023: planned closures inside the booking horizon. */}
         {market.upcoming_closures?.length ? (
           <div className="page-primitive__warn-banner" role="note">
             {market.upcoming_closures.map((closure) => (

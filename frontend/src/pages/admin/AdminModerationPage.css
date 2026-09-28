@@ -1,8 +1,5 @@
 @import '../../styles/common/page-primitives.css';
 
-/* One column at every width, on purpose. These lists are sorted, and a reader scans a
-   two-column grid straight down the left side - so the second item by rating showed up third
-   on screen and the sort looked broken. */
 .admin-moderation-page__list {
   display: grid;
   gap: var(--space-3);
@@ -67,8 +64,6 @@
   margin-top: var(--space-2);
 }
 
-/* The takedown dialog says what the button does before the reason box, because "Take down"
-   and "Hide" sit next to each other and only one of them cancels other people's orders. */
 .admin-moderation-page__warning {
   margin-bottom: var(--space-3);
   border-left: 3px solid var(--color-danger);
@@ -78,8 +73,6 @@
   color: var(--color-foreground);
 }
 
-/* Says why the list has one row in it. Without this a deep link from the queue looks like a
-   broken filter. */
 .admin-moderation-page__pin {
   display: flex;
   flex-wrap: wrap;

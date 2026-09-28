@@ -21,7 +21,6 @@ export function availabilityOf({ is_available: isAvailable, stock_quantity: stoc
 }
 
 
-/** One page of the stall's products; `filters.page` picks it (1 when left out). */
 export function useFarmerProductList(filters) {
   return useQuery({
     queryKey: farmerKeys.products.list(filters),
@@ -110,7 +109,6 @@ export function useSaveFarmerProduct(productId) {
     mutationFn: (payload) => (isEdit ? farmerApi.updateProduct(productId, payload) : farmerApi.createProduct(payload)),
     onSuccess: (product) => {
       queryClient.setQueryData(farmerKeys.products.detail(product.id), product);
-      // New listings and edits to what a listing is wait for an admin before shoppers see them.
       if (!isEdit) {
         notify.success('Produce submitted for review', {
           description: 'Shoppers will see it once an administrator approves it.',
@@ -201,11 +199,6 @@ export function useApplyWeeklyTemplate() {
 }
 
 
-/**
- * The rule checks an admin's AI review will run, shown on the form while the farmer types, so
- * obvious problems (an unusual price, contact details, words that will be refused) are fixed
- * before the listing is sent. `params` is already debounced by the caller; null = not yet.
- */
 export function useProductPrecheck(params) {
   return useQuery({
     queryKey: farmerKeys.products.precheck(params),

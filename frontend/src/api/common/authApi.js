@@ -8,7 +8,6 @@ export const authApi = {
     return data;
   },
 
-  // Staff portal: only ADMIN accounts are accepted here.
   adminLogin: async (credentials) => {
     const { data } = await axiosClient.post('/auth/admin/login/', credentials);
     return data;
