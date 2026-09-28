@@ -160,6 +160,12 @@ class MarketAdminWriteSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class MarketGeocodeSerializer(serializers.Serializer):
+    found = serializers.BooleanField()
+    latitude = serializers.FloatField(allow_null=True)
+    longitude = serializers.FloatField(allow_null=True)
+
+
 class MarketEditImpactSerializer(serializers.Serializer):
     """The preview the edit form shows before a save that moves or reschedules a market."""
 

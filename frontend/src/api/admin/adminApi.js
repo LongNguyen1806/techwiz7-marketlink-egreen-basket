@@ -118,6 +118,12 @@ export const adminApi = {
     return data;
   },
 
+  // Where an address is. The server asks Nominatim, within its one-request-a-second rule.
+  geocodeAddress: async (q) => {
+    const { data } = await axiosClient.get('/admin/markets/geocode/', { params: { q } });
+    return data;
+  },
+
   // What a save would do (orders needing a new pickup time, people told), without saving.
   previewMarketUpdate: async (id, payload) => {
     const { data } = await axiosClient.post(`/admin/markets/${id}/impact/`, payload);

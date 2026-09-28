@@ -4,7 +4,8 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from marketlink_core.exceptions import ResourceNotFoundError
+from accounts.geocoding import geocode_address
+from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
 from markets.admin_portal.serializers_admin import (
@@ -14,6 +15,7 @@ from markets.admin_portal.serializers_admin import (
     MarketAdminReadSerializer,
     MarketAdminWriteSerializer,
     MarketEditImpactSerializer,
+    MarketGeocodeSerializer,
 )
 from markets.models import Market, MarketClosure
 from markets.selectors import (
@@ -159,6 +161,34 @@ class MarketDetailView(RetrieveUpdateAPIView):
         data["orders_to_reschedule"] = summary["orders_to_reschedule"]
         data["notified"] = summary["customers_to_notify"] + summary["stalls_to_notify"]
         return api_response(message="Market updated.", request=request, data=data)
+
+
+class MarketGeocodeView(APIView):
+    """Where an address is, so the market form can drop its pin there.
+
+    Looked up here rather than in the browser: Nominatim allows one request a second for the
+    whole app and wants the app named in the User-Agent, and accounts.geocoding already
+    does both (D-032). The admin still drags the pin to the exact spot before saving.
+    """
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        parameters=[OpenApiParameter("q", str, required=True, description="The address.")],
+        responses={200: MarketGeocodeSerializer, 400: None},
+        summary="Find the coordinates of an address",
+    )
+    def get(self, request) -> Response:
+        query = (request.query_params.get("q") or "").strip()
+        if len(query) < 5:
+            raise BusinessValidationError(
+                errors={"q": ["Type at least 5 characters of the address."]}
+            )
+        found = geocode_address(query)
+        data = {"found": found is not None, "latitude": None, "longitude": None}
+        if found is not None:
+            data["latitude"], data["longitude"] = float(found[0]), float(found[1])
+        return api_response(message="OK", request=request, data=data)
 
 
 class MarketEditImpactView(APIView):

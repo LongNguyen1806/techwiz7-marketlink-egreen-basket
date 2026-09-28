@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -11,6 +11,7 @@ import "leaflet/dist/leaflet.css";
 
 import {
   useAdminMarket,
+  useGeocodeAddress,
   useMarketEditImpact,
   useSaveAdminMarket,
 } from "../../hooks/queries/admin/useAdminMarkets";
@@ -46,6 +47,21 @@ const DAYS = [
 ];
 
 const CONFIRM_WORD = "confirm";
+const MIN_ADDRESS_LENGTH = 5;
+const FOUND_ZOOM = 17;
+
+// The columns hold six decimals (about 10 cm); a dragged pin gives many more, which the API refuses.
+const toCoordinate = (value) => Math.round(value * 1e6) / 1e6;
+
+// MapContainer only reads `center` once, so a pin placed from the address would sit off-screen.
+// This moves the view there, and only then: a click or a drag is already where the admin looks.
+function FlyTo({ target }) {
+  const map = useMap();
+  useEffect(() => {
+    if (target) map.flyTo([target.lat, target.lng], FOUND_ZOOM);
+  }, [map, target]);
+  return null;
+}
 
 // The form has no photo field, so the photo is never sent: the stored one stays. Sending the
 // URL back would be refused, the API only takes an uploaded file there.
@@ -107,6 +123,11 @@ export default function AdminMarketFormPage() {
   // Set when a save reaches other people; the save waits for the admin to confirm it.
   const [pending, setPending] = useState(null);
   const [typed, setTyped] = useState("");
+  const geocode = useGeocodeAddress();
+  const [flyTarget, setFlyTarget] = useState(null);
+  // What the pin says about itself, shown under the address: found, not found, or moved by hand.
+  const [pinNote, setPinNote] = useState(null);
+  const [lookedUp, setLookedUp] = useState("");
   const form = useForm({
     resolver: zodResolver(marketSchema),
     defaultValues: DEFAULT_VALUES,
@@ -139,6 +160,33 @@ export default function AdminMarketFormPage() {
     return <EmptyState title="Market couldn't be loaded" actionLabel='Try again' onAction={() => marketQuery.refetch()} />;
   }
   if (isEdit && seededId !== market?.id) return <PageSkeleton />;
+
+  const placePin = (lat, lng) => {
+    form.setValue("latitude", toCoordinate(lat), { shouldDirty: true });
+    form.setValue("longitude", toCoordinate(lng), { shouldDirty: true });
+  };
+
+  const findAddress = () => {
+    const address = (form.getValues("address") || "").trim();
+    if (address.length < MIN_ADDRESS_LENGTH || geocode.isPending) return;
+    setLookedUp(address);
+    geocode.mutate(address, {
+      onSuccess: (result) => {
+        if (!result?.found) {
+          setPinNote({ tone: "warn", text: "Couldn't find this address. Click the map or drag the pin to the market." });
+          return;
+        }
+        placePin(result.latitude, result.longitude);
+        setFlyTarget({ lat: result.latitude, lng: result.longitude });
+        setPinNote({ tone: "ok", text: "Pinned from the address. Drag the pin onto the market entrance if it is off." });
+      },
+    });
+  };
+
+  const pinnedByHand = (lat, lng) => {
+    placePin(lat, lng);
+    setPinNote({ tone: "ok", text: "Pin placed by hand. This spot is saved as the market location." });
+  };
 
   const toggleDay = (day) => {
     const current = form.getValues("operating_days") || [];
@@ -203,8 +251,30 @@ export default function AdminMarketFormPage() {
               {form.formState.errors.name ? <p className='page-primitive__error'>{form.formState.errors.name.message}</p> : null}
             </div>
             <div className='page-primitive__form-field page-primitive__form-span-2'>
-              <Input id='address' label='Address' requiredMark {...form.register("address")} />
+              <div className='admin-market-form-page__address'>
+                <Input
+                  id='address'
+                  label='Address'
+                  requiredMark
+                  {...form.register("address", {
+                    // Leaving the box looks the address up once; retyping the same text does not.
+                    onBlur: (event) => {
+                      const address = event.target.value.trim();
+                      if (address !== lookedUp) findAddress();
+                    },
+                  })}
+                />
+                <Button type='button' variant='outline' onClick={findAddress} loading={geocode.isPending}>
+                  Find on map
+                </Button>
+              </div>
               {form.formState.errors.address ? <p className='page-primitive__error'>{form.formState.errors.address.message}</p> : null}
+              {form.formState.errors.latitude || form.formState.errors.longitude ? (
+                <p className='page-primitive__error'>Place the pin on the map.</p>
+              ) : null}
+              {pinNote ? (
+                <p className={`admin-market-form-page__pin-note admin-market-form-page__pin-note--${pinNote.tone}`}>{pinNote.text}</p>
+              ) : null}
             </div>
             <div className='page-primitive__form-field'>
               <Input id='open_time' type='time' label='Open time' requiredMark {...form.register("open_time")} />
@@ -251,17 +321,12 @@ export default function AdminMarketFormPage() {
                   dragend: (event) => {
                     const point = readDragLatLng(event.target);
                     if (!point) return;
-                    form.setValue("latitude", point.lat);
-                    form.setValue("longitude", point.lng);
+                    pinnedByHand(point.lat, point.lng);
                   },
                 }}
               />
-              <MapClick
-                onPick={(nextLatitude, nextLongitude) => {
-                  form.setValue("latitude", nextLatitude);
-                  form.setValue("longitude", nextLongitude);
-                }}
-              />
+              <MapClick onPick={pinnedByHand} />
+              <FlyTo target={flyTarget} />
             </MapContainer>
           </div>
         </div>

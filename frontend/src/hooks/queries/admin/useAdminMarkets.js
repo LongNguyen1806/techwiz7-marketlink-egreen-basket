@@ -74,6 +74,14 @@ export function useSaveAdminMarket(marketId) {
   });
 }
 
+// A lookup, not a cached query: each press of "Find on map" asks again for the text typed.
+export function useGeocodeAddress() {
+  return useMutation({
+    mutationFn: (address) => adminApi.geocodeAddress(address),
+    onError: (e) => toast.error(ApiError.fromUnknown(e).friendlyMessage),
+  });
+}
+
 // Runs before an edit is saved, so the admin sees who a new schedule or address reaches.
 export function useMarketEditImpact(marketId) {
   return useMutation({
