@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useAdminFarmer, useUpdateFarmer } from "../../hooks/queries/admin/useAdminFarmers";
-import { ProfileEditDialog } from "../../components/admin/ProfileEditDialog";
+import { ProfileEditDialog, VN_PHONE } from "../../components/admin/ProfileEditDialog";
 import { ChangeLogPanel } from "../../components/admin/ChangeLogPanel";
 import { FarmerLocationCard } from "../../components/admin/FarmerLocationCard";
 import { EmptyState } from "../../components/feedback/EmptyState";
@@ -56,9 +56,9 @@ export default function AdminFarmerDetailPage() {
         pending={update.isPending}
         onSave={(values) => update.mutateAsync(values)}
         fields={[
-          { required: true, name: "stall_name", label: "Stall name", value: f.stall_name },
-          { required: true, name: "contact_person", label: "Contact person", value: f.contact_person ?? "" },
-          { required: true, name: "phone", label: "Phone", value: f.phone ?? "", type: "tel" },
+          { required: true, name: "stall_name", label: "Stall name", value: f.stall_name, minLength: 2, maxLength: 100 },
+          { required: true, name: "contact_person", label: "Contact person", value: f.contact_person ?? "", minLength: 2, maxLength: 100 },
+          { required: true, name: "phone", label: "Phone", value: f.phone ?? "", type: "tel", pattern: VN_PHONE, patternMessage: "Enter a Vietnamese mobile number, e.g. 0912345678." },
           { name: "description", label: "Description", value: f.description ?? "", multiline: true },
         ]}
       />

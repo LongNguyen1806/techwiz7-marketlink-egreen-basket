@@ -123,8 +123,12 @@ def check_customer_no_shows(customer_id: int) -> ModerationFlag | None:
         at_risk_window_days,
         at_risk_window_start,
     )
+    from django.contrib.auth import get_user_model
+
     from orders.models import Order
 
+    if not get_user_model().objects.filter(pk=customer_id, is_active=True).exists():
+        return None
     count = Order.objects.filter(
         customer_id=customer_id,
         status__in=AT_RISK_STATUSES,

@@ -326,6 +326,8 @@ AI_CHAT_ENABLED = os.environ.get("AI_CHAT_ENABLED", "True").lower() in (
 
 # --- AI-assisted listing review (advice for admins; never decides on its own) ---
 AI_MODERATION_ENABLED = os.environ.get("AI_MODERATION_ENABLED", "True").lower() in ("true", "1", "t")
+# #6: a listing the AI passes goes on sale without waiting for an admin (who can still undo it).
+AI_AUTO_APPROVE = os.environ.get("AI_AUTO_APPROVE", "True").lower() in ("true", "1", "t")
 # Configurable because the Flash model names change; the call fails soft (UNAVAILABLE) if wrong.
 # Explicit versions, not "-latest" aliases: an alias can move to a pricier model on its own.
 # 3.1 Flash-Lite is the cheapest model this key can use (2.5 Flash-Lite is closed to new users).

@@ -1,5 +1,7 @@
+import logging
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, TypeVar
 
 from django.db import transaction
@@ -23,6 +25,8 @@ from notifications.models import NotificationType
 from notifications.services import notify
 from orders.models import ActorRole, ChangeReason, Order, OrderStatus, OrderStatusHistory, Transition
 from orders.services.notification_context import build_order_context
+
+logger = logging.getLogger("marketlink")
 
 REASON_MIN_LENGTH = 5
 REASON_MAX_LENGTH = 500
@@ -177,10 +181,9 @@ def transition_order(
                 request_id=get_request_id(),
             )
             _send_notifications(order, rule, actor_role, change_reason, notify_customer=notify_customer)
-            if to_status == _S.NO_SHOW:
-                # After the commit, so a retried or rolled-back attempt raises nothing.
-                customer_id = order.customer_id
-                transaction.on_commit(lambda: _flag_if_at_risk(customer_id))
+            if rule.code in (Transition.T11, Transition.T14):
+                transaction.on_commit(partial(_lock_after_no_show, order.customer_id))
+                transaction.on_commit(partial(_flag_if_at_risk, order.customer_id))
         return order
 
     return run_with_retry_if_top_level(_execute)
@@ -440,3 +443,12 @@ def _send_notifications(
         notify(recipient=customer, event_type=NotificationType.ORDER_EXPIRED, context=context)
     elif code == Transition.T9:
         notify(recipient=customer, event_type=NotificationType.ORDER_READY, context=context)
+
+
+def _lock_after_no_show(customer_id: int) -> None:
+    from accounts.services.no_show_lock import lock_if_repeated_no_shows
+
+    try:
+        lock_if_repeated_no_shows(customer_id)
+    except Exception:  # noqa: BLE001 - a failed lock must not surface as a failed no-show
+        logger.exception("Automatic no-show lock failed for customer %s", customer_id)

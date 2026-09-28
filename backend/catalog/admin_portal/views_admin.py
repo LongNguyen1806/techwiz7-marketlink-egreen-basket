@@ -4,7 +4,11 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpda
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.db.models import Q
+from django.utils import timezone
+
 from catalog.admin_portal.serializers_admin import (
+    AIDecisionSerializer,
     CategoryAdminReadSerializer,
     CategoryAdminWriteSerializer,
     ModerationReasonSerializer,
@@ -12,7 +16,7 @@ from catalog.admin_portal.serializers_admin import (
     ProductAdminSerializer,
     ProductBlockImpactSerializer,
 )
-from catalog.models import AIReviewKind, AIVerdict, PriceGuideline, Product, ProductAIReview
+from catalog.models import AIAutoAction, AIReviewKind, AIVerdict, PriceGuideline, Product, ProductAIReview
 from catalog.selectors import (
     get_product_for_admin,
     list_categories_for_admin,
@@ -96,7 +100,6 @@ class CategoryDetailView(RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(category, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # Re-read through the selector so product_count is annotated again.
         updated = self.get_queryset().get(pk=category.pk)
         return api_response(
             message="Category updated.",
@@ -106,12 +109,9 @@ class CategoryDetailView(RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         delete_category(category_id=self.get_object().pk)
-        # 204 carries no body (Pass 4B §2.1), so this one response skips the envelope.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# How many cancelled order ids one audit row will carry. Beyond this the list stops being
-# something a person reads and the JSON column starts paying for it.
 AUDIT_ID_LIMIT = 200
 
 
@@ -154,8 +154,6 @@ def _product_context(products) -> dict:
         "held_quantities": get_open_held_quantities(product_ids=ids),
         "pending_quantities": get_pending_quantities(product_ids=ids),
         "markets": markets_for_products(product_ids=ids),
-        # What a block would cancel, shown on the row so the admin sees the cost before
-        # opening the dialog.
         "open_order_counts": open_order_counts(product_ids=ids),
     }
 
@@ -224,7 +222,6 @@ class _ProductModerationView(APIView):
         audit_extra: dict | None = None,
     ) -> Response:
         product = get_product_for_admin(product_id=product_id)
-        # Audit rows are written after the business transaction so a rollback cannot erase them.
         log_request_event(
             request,
             action=action,
@@ -311,9 +308,6 @@ class ProductBlockView(_ProductModerationView):
             action=AuditAction.PRODUCT_BLOCKED,
             message="Product blocked.",
             extra={"affected_orders": len(cancelled)},
-            # Which orders, not just how many. The count says the takedown was costly; the
-            # ids are what lets someone answer a shopper asking why theirs disappeared.
-            # Capped so one enormous takedown cannot bloat the log row.
             audit_extra={
                 "cancelled_order_ids": cancelled[:AUDIT_ID_LIMIT],
                 **(
@@ -334,8 +328,6 @@ class ProductUnblockView(_ProductModerationView):
     def post(self, request, id: int) -> Response:
         _require_product(id)
         unblock_product(product_id=id)
-        # Deliberately not "restored": the cancelled orders stay cancelled, and the message
-        # should not suggest otherwise.
         return self._respond(
             request,
             product_id=id,
@@ -386,9 +378,6 @@ def _require_product(product_id: int) -> int:
     if not Product.objects.filter(pk=product_id).exists():
         raise ResourceNotFoundError("Product not found.")
     return product_id
-
-
-# ------------------------------------------------------------------ AI-assisted listing review
 
 
 class ProductAIRecheckView(APIView):
@@ -450,3 +439,58 @@ class AIReviewStatsView(APIView):
     @extend_schema(parameters=[OpenApiParameter("days", int, description="Look-back window, 1-365 (default 30).")])
     def get(self, request) -> Response:
         return api_response(message="OK", data=ai_review_stats(days=_int(request.query_params.get("days")) or 30), request=request)
+
+
+class AIDecisionListView(ListAPIView):
+    """#8: what the AI approved or held on its own, newest first, unchecked by default."""
+
+    permission_classes = [IsAdmin]
+    serializer_class = AIDecisionSerializer
+
+    def get_queryset(self):
+        params = self.request.query_params
+        rows = (
+            ProductAIReview.objects.filter(auto_action__isnull=False)
+            .select_related("product__farmer", "product__category", "admin_checked_by")
+            .order_by("-auto_action_at", "-id")
+        )
+        action = params.get("action")
+        if action in AIAutoAction.values:
+            rows = rows.filter(auto_action=action)
+        checked = (params.get("checked") or "false").lower()
+        if checked in ("true", "false"):
+            rows = rows.filter(admin_checked_at__isnull=checked == "false")
+        q = (params.get("q") or "").strip()
+        if q:
+            rows = rows.filter(Q(product__name__icontains=q) | Q(product__farmer__stall_name__icontains=q))
+        return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("action", str, enum=[*AIAutoAction.values]),
+            OpenApiParameter("checked", str, enum=["true", "false", "all"], description="Default false."),
+            OpenApiParameter("q", str, description="Product or stall name."),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+class AIDecisionCheckView(APIView):
+    """#8: the admin looked at an AI decision and lets it stand."""
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(request=None, responses={200: AIDecisionSerializer, 404: None})
+    def post(self, request, id: int) -> Response:
+        review = (
+            ProductAIReview.objects.select_related("product__farmer", "product__category")
+            .filter(pk=id, auto_action__isnull=False)
+            .first()
+        )
+        if review is None:
+            raise ResourceNotFoundError("AI decision not found.")
+        if review.admin_checked_at is None:
+            review.admin_checked_at, review.admin_checked_by = timezone.now(), request.user
+            review.save(update_fields=["admin_checked_at", "admin_checked_by"])
+        return api_response(message="Marked as checked.", request=request, data=AIDecisionSerializer(review).data)

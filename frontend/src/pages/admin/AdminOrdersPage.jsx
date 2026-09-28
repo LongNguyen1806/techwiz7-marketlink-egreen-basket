@@ -28,7 +28,7 @@ const STATUSES = [
 ];
 
 export default function AdminOrdersPage() {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');

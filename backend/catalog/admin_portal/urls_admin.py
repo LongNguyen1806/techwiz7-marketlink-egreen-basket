@@ -1,6 +1,8 @@
 from django.urls import path
 
 from catalog.admin_portal.views_admin import (
+    AIDecisionCheckView,
+    AIDecisionListView,
     AIReviewStatsView,
     PriceGuidelineDetailView,
     PriceGuidelineListCreateView,
@@ -25,6 +27,8 @@ urlpatterns = [
     path("admin/price-guidelines/", PriceGuidelineListCreateView.as_view(), name="admin-price-guideline-list"),
     path("admin/price-guidelines/<int:id>/", PriceGuidelineDetailView.as_view(), name="admin-price-guideline-detail"),
     path("admin/ai-review/stats/", AIReviewStatsView.as_view(), name="admin-ai-review-stats"),
+    path("admin/ai-review/decisions/", AIDecisionListView.as_view(), name="admin-ai-decision-list"),
+    path("admin/ai-review/decisions/<int:id>/check/", AIDecisionCheckView.as_view(), name="admin-ai-decision-check"),
     path(
         "admin/products/<int:id>/approve/",
         ProductApproveView.as_view(),

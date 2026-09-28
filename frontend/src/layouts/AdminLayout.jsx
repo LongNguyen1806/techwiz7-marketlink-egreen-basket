@@ -18,9 +18,11 @@ import {
   ListChecks,
   ReceiptText,
   Scale,
+  Sparkles,
 } from 'lucide-react';
 
 import { ThemeToggle } from '../components/layout/ThemeToggle';
+import { NotificationBell } from '@/components/common/layout/NotificationBell';
 import { Button } from '../components/ui/Button';
 import {
   Sheet,
@@ -43,6 +45,7 @@ const navItems = [
   { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
   { to: '/admin/orders', label: 'Orders', icon: ReceiptText, end: false },
   { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'open_ai_flags' },
+  { to: '/admin/ai-decisions', label: 'AI decisions', icon: Sparkles, end: false, badge: 'unchecked_ai_decisions' },
   { to: '/admin/queue', label: 'Follow-up queue', icon: ListChecks, end: false },
   { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree, end: false },
@@ -58,7 +61,10 @@ const navItems = [
 
 function SideNav({ collapsed }                        ) {
   const aiStats = useAIReviewStats(30);
-  const badges = { open_ai_flags: aiStats.data?.open_ai_flags ?? 0 };
+  const badges = {
+    open_ai_flags: aiStats.data?.open_ai_flags ?? 0,
+    unchecked_ai_decisions: aiStats.data?.unchecked_ai_decisions ?? 0,
+  };
   return (
     <nav className="admin-layout__nav">
       {navItems.map((item) => (
@@ -78,7 +84,7 @@ function SideNav({ collapsed }                        ) {
           <item.icon className="admin-layout__nav-icon" />
           {!collapsed ? <span>{item.label}</span> : null}
           {item.badge && badges[item.badge] ? (
-            <span className="admin-layout__nav-badge" title={`${badges[item.badge]} open AI flags`}>
+            <span className="admin-layout__nav-badge" title={`${badges[item.badge]} waiting for you`}>
               {badges[item.badge]}
             </span>
           ) : null}
@@ -143,6 +149,7 @@ export function AdminLayout() {
             <span className="admin-layout__header-title">MarketLink Admin</span>
           </div>
           <div className="admin-layout__header-actions">
+            <NotificationBell />
             <ThemeToggle />
             <UserMenu />
           </div>

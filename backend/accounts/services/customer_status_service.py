@@ -19,8 +19,6 @@ def _load_locked(customer_id: int):
 
 
 def _set_reason(user, reason: str | None) -> None:
-    # D-024: the reason is required when locking and cleared when unlocking; the lock and
-    # unlock history itself stays in audit_logs.
     profile = getattr(user, "customer_profile", None)
     if profile is None:
         return
@@ -30,7 +28,6 @@ def _set_reason(user, reason: str | None) -> None:
 
 @transaction.atomic
 def deactivate_customer(*, customer_id: int, reason: str, actor) -> tuple[object, int]:
-    # §5.4: lock the account, then cancel every open order and give the stock back.
     user = _load_locked(customer_id)
     if not user.is_active:
         raise BusinessValidationError(
@@ -39,18 +36,13 @@ def deactivate_customer(*, customer_id: int, reason: str, actor) -> tuple[object
     user.is_active = False
     user.save(update_fields=["is_active", "updated_at"])
     _set_reason(user, reason)
-    # Every device of the locked account stops receiving notifications (after the commit).
     disconnect_realtime(user_id=user.pk)
 
-    # Ordered by id to stay deadlock-free. No reason is passed: for an admin transition the FSM
-    # stamps CUSTOMER_LOCKED_BY_ADMIN itself (§5.4 step 5) and gives back the stock of the orders
-    # that held any (D-029: a PLACED order never took stock).
     order_ids = list(
         Order.objects.filter(customer_id=customer_id, status__in=OPEN_STATUSES)
         .order_by("id")
         .values_list("id", flat=True)
     )
-    # §5.4 step 4: a pending change request dies with the order it belonged to.
     Order.objects.filter(pk__in=order_ids).exclude(pending_change=None).update(pending_change=None)
     for order_id in order_ids:
         transition_order(

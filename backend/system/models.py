@@ -19,6 +19,8 @@ class AuditAction(models.TextChoices):
     FARMER_REINSTATED = "FARMER_REINSTATED", "Reinstate Farmer"
     CUSTOMER_DEACTIVATED = "CUSTOMER_DEACTIVATED", "Deactivate Customer"
     CUSTOMER_ACTIVATED = "CUSTOMER_ACTIVATED", "Activate Customer"
+    # Locked by the system after repeated no-shows; details name the orders.
+    CUSTOMER_AUTO_LOCKED = "CUSTOMER_AUTO_LOCKED", "Auto-lock Customer (No-shows)"
     PRODUCT_HIDDEN = "PRODUCT_HIDDEN", "Hide Product"
     PRODUCT_RESTORED = "PRODUCT_RESTORED", "Restore Product"
     # A legal takedown, which also cancels orders - kept apart from a plain hide so the

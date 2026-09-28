@@ -1,10 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import L from 'leaflet';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import 'leaflet/dist/leaflet.css';
+import { OSM_ATTRIBUTION, OSM_TILE_URL } from '../../lib/map';
 
 import { useAdminMarket } from '../../hooks/queries/admin/useAdminMarkets';
 import { EmptyState } from '../../components/feedback/EmptyState';
@@ -14,12 +10,6 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import '../../styles/admin/AdminMarketDetailPage.css';
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 const DAY_LABELS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -117,7 +107,7 @@ export default function AdminMarketDetailPage() {
             className="page-primitive__map-fill"
             scrollWheelZoom={false}
           >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
             <Marker position={[market.latitude, market.longitude]} />
           </MapContainer>
         </div>

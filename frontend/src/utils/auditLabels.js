@@ -12,6 +12,7 @@ const ACTIONS = {
   FARMER_REINSTATED: { label: 'Reinstated a stall', tone: 'good' },
   CUSTOMER_DEACTIVATED: { label: 'Locked a customer', tone: 'danger' },
   CUSTOMER_ACTIVATED: { label: 'Unlocked a customer', tone: 'good' },
+  CUSTOMER_AUTO_LOCKED: { label: 'Locked a customer after 3 no-shows (system)', tone: 'danger' },
   PRODUCT_HIDDEN: { label: 'Hid a product', tone: 'warning' },
   PRODUCT_RESTORED: { label: 'Restored a product', tone: 'good' },
   PRODUCT_BLOCKED: { label: 'Took a product down', tone: 'danger' },

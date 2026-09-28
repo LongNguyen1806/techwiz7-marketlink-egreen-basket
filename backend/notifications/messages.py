@@ -129,6 +129,16 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         target_url="{target_url}",
         required=("market_name", "changes", "target_url"),
     ),
+    NotificationType.ACCOUNT_LOCKED_NO_SHOW: NotificationSpec(
+        title="Your account has been locked",
+        message=(
+            "Orders {order_numbers} were not collected, so your account was locked after "
+            "{count} missed pickups and any open orders were cancelled. Contact support to "
+            "have it reviewed."
+        ),
+        target_url=None,
+        required=("order_numbers", "count"),
+    ),
     NotificationType.ORDER_RESCHEDULE_MISSED: NotificationSpec(
         title="Order #{order_id} was cancelled",
         message=(
@@ -158,6 +168,15 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         message="{check_label} at {stall_name}: {summary} The decision is yours.",
         target_url="/admin/approvals?product={product_id}",
         required=("product_name", "stall_name", "check_label", "summary", "product_id"),
+    ),
+    NotificationType.AI_AUTO_APPROVED: NotificationSpec(
+        title="AI approved {count} listing(s)",
+        message=(
+            "{count} listing(s) passed the AI review and went on sale without waiting. "
+            "Latest: {product_name} ({stall_name}). Check them in AI decisions."
+        ),
+        target_url="/admin/ai-decisions",
+        required=("count", "product_name", "stall_name"),
     ),
     NotificationType.PRODUCT_REJECTED: NotificationSpec(
         title="{product_name} was not approved",

@@ -216,3 +216,18 @@ def test_the_command_flags_what_is_already_there(customer_user, make_order):
     assert open_flags(FlagTarget.CUSTOMER).count() == 1
     # Running it again adds nothing.
     assert scan_existing() == {"reviews": 0, "replies": 0, "products": 0, "customers": 0}
+
+
+@pytest.mark.django_db
+def test_a_locked_shopper_gets_no_at_risk_flag(customer_user, make_order, farmer, django_capture_on_commit_callbacks):
+    for _ in range(3):
+        ready = make_order(status=OrderStatus.READY_FOR_PICKUP, days_ago=1)
+        with django_capture_on_commit_callbacks(execute=True):
+            transition_order(
+                order_id=ready.pk, to_status=OrderStatus.NO_SHOW, actor=farmer.user,
+                actor_role=ActorRole.FARMER, expected_version=ready.version,
+            )
+
+    customer_user.refresh_from_db()
+    assert customer_user.is_active is False
+    assert not open_flags(FlagTarget.CUSTOMER).exists()

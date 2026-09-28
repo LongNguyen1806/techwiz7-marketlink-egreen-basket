@@ -334,7 +334,7 @@ export default function AdminApprovalsPage() {
           ) : !byStall.length ? (
             <EmptyState
               title="No listings waiting"
-              description="A new listing, or one whose name, photo, description or category changed, appears here."
+              description="A listing the AI could not settle appears here: unsure, held for a likely problem, or not checked because the AI was unavailable. Listings the AI passed go on sale at once and are listed in AI decisions."
             />
           ) : (
             <div className="admin-approvals-page__stalls">

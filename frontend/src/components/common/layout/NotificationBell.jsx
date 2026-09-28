@@ -86,17 +86,21 @@ export function NotificationBell({ listPath }) {
             {item.target_url ? <span className="notification-bell__item-link">View details</span> : null}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to={listPath} className="notification-bell__view-all">
-            View all
-          </Link>
-        </DropdownMenuItem>
+        {listPath ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to={listPath} className="notification-bell__view-all">
+                View all
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
 NotificationBell.propTypes = {
-  listPath: PropTypes.string.isRequired,
+  listPath: PropTypes.string,
 };

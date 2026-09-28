@@ -16,7 +16,6 @@ class Severity:
     HIGH = "HIGH"
 
 
-# How much one finding adds to the 0-100 risk score.
 SEVERITY_WEIGHT = {Severity.LOW: 10, Severity.MEDIUM: 30, Severity.HIGH: 60}
 
 
@@ -38,10 +37,10 @@ class ListingInput:
 
 @dataclass(frozen=True)
 class Finding:
-    source: str  # "rules" or "ai"
+    source: str
     check: str
     severity: str
-    message: str  # English: shown to admins, and to farmers for rule findings
+    message: str
 
     def as_dict(self) -> dict:
         return asdict(self)

@@ -22,6 +22,7 @@ export const adminRoutes = [
               { path: '/admin/orders', lazy: page(() => import('../../pages/admin/AdminOrdersPage')) },
               { path: '/admin/approvals', lazy: page(() => import('../../pages/admin/AdminApprovalsPage')) },
               { path: '/admin/products', lazy: page(() => import('../../pages/admin/AdminProductsPage')) },
+              { path: '/admin/ai-decisions', lazy: page(() => import('../../pages/admin/AdminAIDecisionsPage')) },
               { path: '/admin/queue', lazy: page(() => import('../../pages/admin/AdminQueuePage')) },
               { path: '/admin/limits', lazy: page(() => import('../../pages/admin/AdminSettingsPage')) },
               { path: '/admin/markets', lazy: page(() => import('../../pages/admin/AdminMarketsPage')) },

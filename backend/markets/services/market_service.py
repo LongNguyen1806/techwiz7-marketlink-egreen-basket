@@ -29,13 +29,9 @@ from orders.services.fsm import transition_order
 
 SCHEDULE_FIELDS = ("operating_days", "open_time", "close_time")
 
-# Stamped on every pickup slot a closure switches off and on every stall it suspends, so
-# reopening can tell those apart from ones that were already off for a different reason.
 CLOSURE_REASON = "Market #{market_id} closed by Admin (AD-17)"
 REOPEN_REASON = "Market #{market_id} reopened by Admin (AD-17)"
 
-# What the stall reads on its own profile. The line above is a marker for the machine; this
-# is the sentence a person sees next to the suspension.
 SUSPENSION_TEXT = "{market_name} has closed. The stall is suspended until it reopens."
 
 
@@ -54,7 +50,6 @@ def create_market(*, validated: dict[str, Any]) -> Market:
     return market
 
 
-# Edits the people at a market have to hear about. A new description or photo is not news.
 LOCATION_FIELDS = ("name", "address", "latitude", "longitude")
 SCHEDULE_CHANGE_MARKER = "Market #{market_id} schedule changed by Admin (AD-16)"
 DAY_LABELS = {1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
@@ -71,14 +66,10 @@ class MarketEditImpact:
     changed_fields: list[str]
     location_changed: bool
     schedule_changed: bool
-    # Open orders whose pickup no longer falls inside the new days and hours. They are not
-    # cancelled: the shopper is asked to pick a new time.
     order_ids_to_reschedule: list[int] = field(default_factory=list)
     slot_ids_to_disable: list[int] = field(default_factory=list)
-    # recipient user id -> orders of theirs needing a new time (0 = told, nothing to redo)
     customers: dict[int, int] = field(default_factory=dict)
     farmers: dict[int, int] = field(default_factory=dict)
-    # farmer user id -> pickup slots of theirs this edit switches off
     slots_per_farmer: dict[int, int] = field(default_factory=dict)
 
     def summary(self) -> dict[str, Any]:
@@ -100,7 +91,6 @@ def _current_days(market: Market) -> set[int]:
 
 
 def _changed_fields(market: Market, validated: dict[str, Any]) -> list[str]:
-    # The form sends every field on each save, so "sent" is not "changed": compare values.
     changed = []
     for name, value in validated.items():
         if name == "operating_days":
@@ -141,9 +131,6 @@ def preview_market_update(*, market: Market, validated: dict[str, Any]) -> Marke
                 farmer_id = slot.farmer_market.farmer_id
                 impact.slots_per_farmer[farmer_id] = impact.slots_per_farmer.get(farmer_id, 0) + 1
 
-        # Only pickups still ahead. One whose time has already come went ahead under the old
-        # schedule; the expiry sweep and the stall close those out as usual. An order already
-        # waiting for a new time was told once and is not counted or told again.
         upcoming = Order.objects.filter(
             market=market,
             status__in=OPEN_STATUSES,
@@ -162,7 +149,6 @@ def preview_market_update(*, market: Market, validated: dict[str, Any]) -> Marke
             impact.farmers.setdefault(farmer_id, 0)
 
     if impact.location_changed:
-        # Everyone who is due to come here has to know where "here" is now.
         for customer_id in (
             Order.objects.filter(market=market, status__in=OPEN_STATUSES)
             .values_list("customer_id", flat=True)
@@ -239,17 +225,10 @@ def _notify_update(*, market: Market, old_name: str, impact: MarketEditImpact) -
         )
 
 
-# D-022 / AD-16. Moving a market or changing when it runs reaches the people due there:
-# - name, address, map position: everyone with an open order and every stall gets one notice;
-# - days or hours: slots outside them switch off, and open orders whose pickup falls outside
-#   them are kept but marked: the shopper picks a new time or cancels, and one left alone is
-#   declined when its old time comes (expiry sweep). The admin sees the count and confirms.
-# Each person gets a single notice that carries every change, never one per order.
 @transaction.atomic
 def update_market(
     *, market_id: int, validated: dict[str, Any], actor=None, confirm_affected: bool = False
 ) -> tuple[Market, MarketEditImpact]:
-    # Lock order fixed by §5: markets, then pickup_slots by id, to stay deadlock-free.
     market = Market.objects.select_for_update().get(pk=market_id)
     impact = preview_market_update(market=market, validated=validated)
     if impact.order_ids_to_reschedule and not confirm_affected:
@@ -269,8 +248,6 @@ def update_market(
         _replace_operating_days(market=market, days=days)
 
     marker = SCHEDULE_CHANGE_MARKER.format(market_id=market_id)
-    # Row by row, never QuerySet.update(): the audit trail of pickup_slots has to record every
-    # slot the admin switched off, and update() writes no history row (v1.8, AD-16).
     for slot in (
         PickupSlot.objects.filter(pk__in=impact.slot_ids_to_disable)
         .order_by("id")
@@ -286,8 +263,6 @@ def update_market(
         .select_for_update(of=("self",))
     ):
         order.reschedule_requested_at = now
-        # A change request asked for against the old schedule is moot; the shopper picks
-        # again from the new one (§5.4 step 4).
         order.pending_change = None
         order.version += 1
         save_with_history(
@@ -307,17 +282,11 @@ def update_market(
             request_id=get_request_id(),
         )
 
-    # notify() writes its row in this transaction and defers delivery to on_commit, so a
-    # rollback leaves no notification behind and nobody is told before the change lands.
     if impact.customers or impact.farmers:
         _notify_update(market=market, old_name=old_name, impact=impact)
     return market, impact
 
 
-# Closing a market used to be refused while orders were open. It now carries them out instead:
-# every open order at the market is declined (stock goes back), the stalls' pickup slots there
-# are switched off, and - since a stall trades at exactly one market - the stalls are suspended
-# until it reopens.
 @transaction.atomic
 def deactivate_market(
     *, market_id: int, reason: str, actor, farmer_message: str = ""
@@ -332,14 +301,11 @@ def deactivate_market(
     market.is_active = False
     market.save(update_fields=["is_active", "updated_at"])
 
-    # Ordered by id so this cannot deadlock against a farmer or customer touching the same rows.
     order_ids = list(
         Order.objects.filter(market_id=market_id, status__in=OPEN_STATUSES)
         .order_by("id")
         .values_list("id", flat=True)
     )
-    # A pending change request dies with the order it belonged to (§5.4 step 4). Saved one by
-    # one: QuerySet.update() writes no history row, and the order trail has to show this.
     for order in Order.objects.filter(pk__in=order_ids).exclude(pending_change=None).order_by("id"):
         order.pending_change = None
         save_with_history(
@@ -349,8 +315,6 @@ def deactivate_market(
             user=actor,
         )
 
-    # Counted per recipient before the transitions run, because afterwards none of these
-    # orders is open any more.
     orders_per_customer: dict[int, int] = {}
     orders_per_farmer: dict[int, int] = {}
     for customer_id, farmer_id in Order.objects.filter(pk__in=order_ids).values_list(
@@ -365,14 +329,10 @@ def deactivate_market(
             to_status=OrderStatus.DECLINED,
             actor=actor,
             actor_role=ActorRole.ADMIN,
-            # Without this the shopper is told the stall was suspended by an administrator,
-            # which is not what happened and, for a stall trading normally, is a slur.
             admin_change_reason=ChangeReason.MARKET_CLOSED_BY_ADMIN,
-            # Each shopper gets one MARKET_CLOSED notice below, not one per order.
             notify_customer=False,
         )
 
-    # Row by row, never QuerySet.update(): the audit trail has to record each slot (v1.8).
     slots = list(
         PickupSlot.objects.filter(farmer_market__market_id=market_id, is_active=True)
         .order_by("id")
@@ -386,10 +346,6 @@ def deactivate_market(
             reason=CLOSURE_REASON.format(market_id=market_id),
         )
 
-    # A stall trades at exactly one market, so closing that market leaves it with nowhere to
-    # sell: it is suspended until the market reopens, and trading anywhere else means
-    # registering again. Done after the orders, not before - suspend_farmer would otherwise
-    # decline those same orders and stamp them with the wrong reason.
     suspended = _suspend_stalls(market=market, actor=actor)
 
     _notify_closure(market=market, reason=reason, per_customer=orders_per_customer,
@@ -418,8 +374,6 @@ def _suspend_stalls(*, market: Market, actor) -> set[int]:
             reason=SUSPENSION_TEXT.format(market_name=market.name),
             actor=actor,
             history_reason=CLOSURE_REASON.format(market_id=market.pk),
-            # The market-closed notice below says this too; two messages about one event
-            # read as two separate problems.
             send_notification=False,
         )
     return set(farmer_ids)
@@ -429,7 +383,6 @@ def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int]
                     per_farmer: dict[int, int], market_id: int,
                     farmer_message: str = "", suspended: set[int] | None = None) -> None:
     """Tell everyone who had something at the market, with the reason the admin typed."""
-    # Farmers with a stall here but no open order still need to know the market has gone.
     silent_farmers = set(
         FarmerMarket.objects.filter(market_id=market_id).values_list("farmer_id", flat=True)
     ) - set(per_farmer)
@@ -449,8 +402,6 @@ def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int]
         notify(
             recipient=users[recipient_id],
             event_type=NotificationType.MARKET_CLOSED,
-            # Only the stalls get the admin's note; it is written for them. The suspension
-            # rides along in the same message instead of arriving as a second one.
             context={"market_name": market.name, "order_count": count, "reason": reason,
                      "target_url": "/farmer/markets", "admin_message": farmer_message,
                      "stall_note": (
@@ -468,8 +419,6 @@ def activate_market(*, market_id: int) -> tuple[Market, int]:
     market.save(update_fields=["is_active", "updated_at"])
 
     reason = CLOSURE_REASON.format(market_id=market_id)
-    # Stalls come back before their slots do, so a reopened market is never briefly showing
-    # collection times for a stall that is still suspended.
     _reinstate_stalls(market_id=market_id, marker=reason)
 
     slots = list(
@@ -484,8 +433,6 @@ def activate_market(*, market_id: int) -> tuple[Market, int]:
             .order_by("history_date", "history_id")
             .last()
         )
-        # Only the ones this closure switched off. A slot the farmer turned off themselves,
-        # or one AD-16 disabled for falling outside the hours, stays off.
         if latest is None or latest.history_change_reason != reason:
             continue
         slot.is_active = True
@@ -527,8 +474,6 @@ def _reinstate_stalls(*, market_id: int, marker: str) -> set[int]:
             farmer_id=farmer_id,
             actor=None,
             history_reason=REOPEN_REASON.format(market_id=market_id),
-            # The stall gets told its account is approved again, which is the useful half;
-            # there is no separate "market reopened" notice to collide with.
         )
         reinstated.add(farmer_id)
     return reinstated

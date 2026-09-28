@@ -1,7 +1,10 @@
-"""Runs both layers over a listing, stores the advice, and tells admins about the risky ones.
+"""Runs both layers over a listing, stores the advice, and acts on the clear cases.
 
-Nothing here changes a listing: no approve, reject, hide, block or account action. Those stay
-with an administrator (the endpoints in catalog/admin_portal).
+#6: a new or re-submitted listing the AI passes goes on sale at once; one it thinks breaks
+the rules stays off sale and goes to the follow-up queue; anything else (unsure, or the AI
+could not be asked) waits for an admin as before. Every automatic decision is listed in
+AI decisions (#8), where an admin can confirm or undo it. Hiding, blocking and account
+actions stay with an administrator.
 """
 
 import hashlib
@@ -18,20 +21,25 @@ from django.utils import timezone
 from accounts.models import CustomUser, RoleCode
 from catalog.ai_review import gemini, rules
 from catalog.ai_review.types import Finding, ListingInput, risk_score, verdict_for
-from catalog.models import AIReviewKind, AIVerdict, Category, ProductAIReview, Product, ReviewStatus
-from notifications.models import NotificationType
+from catalog.models import (
+    AIAutoAction,
+    AIReviewKind,
+    AIVerdict,
+    Category,
+    Product,
+    ProductAIReview,
+    ReviewStatus,
+)
+from notifications.messages import render_notification
+from notifications.models import Notification, NotificationType
 from notifications.services import notify
 from system.models import FlagTarget, ModerationFlag
 
 logger = logging.getLogger("marketlink")
 
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="marketlink-ai-review")
-# A review stuck as UNAVAILABLE is tried again by the sweep after this long.
 UNAVAILABLE_RETRY_AFTER = timedelta(minutes=10)
 FLAG_NOTE_PREFIX = "AI review:"
-
-
-# ---------------------------------------------------------------------------- inputs
 
 
 def _read_image(product: Product) -> tuple[bytes | None, str | None]:
@@ -82,17 +90,12 @@ def _category_names() -> list[str]:
     return list(Category.objects.filter(is_active=True).order_by("display_order", "name").values_list("name", flat=True))
 
 
-# ---------------------------------------------------------------------------- one review
-
-
 def evaluate(listing: ListingInput, *, kind: str = AIReviewKind.LISTING, use_ai: bool = True) -> dict:
     """Both layers over one listing, without saving anything (used by review, precheck, eval)."""
     started = time.monotonic()
     findings: list[Finding] = [] if kind == AIReviewKind.WEEKLY_IMAGE else rules.run_rules(listing)
     ai_error, ai_used, suggested, summary, model_name = None, False, None, "", ""
     if use_ai and kind == AIReviewKind.LISTING and verdict_for(findings) == AIVerdict.LIKELY_VIOLATION:
-        # The rules already found a likely violation; asking the model cannot make it cleaner,
-        # and on the free tier every request counts.
         use_ai = False
         ai_error = "the rule checks already found a likely violation, so the AI was not asked (saves quota)"
     if use_ai:
@@ -104,7 +107,6 @@ def evaluate(listing: ListingInput, *, kind: str = AIReviewKind.LISTING, use_ai:
             ai_error = str(exc)
 
     verdict = verdict_for(findings)
-    # The rules found nothing but the model could not be asked: not a clean bill of health.
     if not ai_used and use_ai and verdict == AIVerdict.PASS:
         verdict = AIVerdict.UNAVAILABLE
     if not summary:
@@ -170,7 +172,70 @@ def review_product(product_id: int, *, kind: str = AIReviewKind.LISTING, force: 
         duration_ms=result["duration_ms"],
     )
     _alert_admins(product, review)
+    if kind == AIReviewKind.LISTING:
+        _act_on_listing(product.pk, review)
     return review
+
+
+def _act_on_listing(product_id: int, review: ProductAIReview) -> None:
+    """#6: approve a clean pass, hold a likely violation, leave the rest to an admin."""
+    if review.verdict == AIVerdict.LIKELY_VIOLATION:
+        review.auto_action, review.auto_action_at = AIAutoAction.HELD, timezone.now()
+        review.save(update_fields=["auto_action", "auto_action_at"])
+        return
+    if review.verdict != AIVerdict.PASS or not settings.AI_AUTO_APPROVE:
+        return
+    with transaction.atomic():
+        product = (
+            Product.objects.select_for_update()
+            .select_related("farmer__user")
+            .filter(pk=product_id, review_status=ReviewStatus.PENDING, is_archived=False)
+            .first()
+        )
+        if product is None:
+            return
+        now = timezone.now()
+        product.review_status = ReviewStatus.APPROVED
+        product.review_note = None
+        product.reviewed_at = now
+        product.reviewed_by = None
+        product.save(
+            update_fields=["review_status", "review_note", "reviewed_at", "reviewed_by", "updated_at"]
+        )
+        review.auto_action, review.auto_action_at = AIAutoAction.APPROVED, now
+        review.save(update_fields=["auto_action", "auto_action_at"])
+        notify(
+            recipient=product.farmer.user,
+            event_type=NotificationType.PRODUCT_APPROVED,
+            context={"product_name": product.name},
+        )
+        _tell_admins_of_approval(product)
+
+
+def unchecked_auto_approvals() -> int:
+    return ProductAIReview.objects.filter(
+        auto_action=AIAutoAction.APPROVED, admin_checked_at__isnull=True
+    ).count()
+
+
+def _tell_admins_of_approval(product: Product) -> None:
+    """#8: one running notice per admin, rewritten as approvals come in, not one per listing."""
+    context = {
+        "count": unchecked_auto_approvals(),
+        "product_name": product.name,
+        "stall_name": product.farmer.stall_name,
+    }
+    title, message, target_url = render_notification(NotificationType.AI_AUTO_APPROVED, context)
+    for admin in CustomUser.objects.filter(role__code=RoleCode.ADMIN, is_active=True):
+        unread = Notification.objects.filter(
+            recipient=admin, type=NotificationType.AI_AUTO_APPROVED, is_read=False
+        ).first()
+        if unread is None:
+            notify(recipient=admin, event_type=NotificationType.AI_AUTO_APPROVED, context=context)
+        else:
+            Notification.objects.filter(pk=unread.pk).update(
+                title=title, message=message, target_url=target_url, created_at=timezone.now()
+            )
 
 
 def _alert_admins(product: Product, review: ProductAIReview) -> None:
@@ -184,7 +249,6 @@ def _alert_admins(product: Product, review: ProductAIReview) -> None:
         target_type=FlagTarget.PRODUCT, target_id=product.pk, resolved_at__isnull=True
     ).exists()
     if not already_open:
-        # raised_by stays empty: the system raised it, and the note says so.
         ModerationFlag.objects.create(
             target_type=FlagTarget.PRODUCT,
             target_id=product.pk,
@@ -213,7 +277,11 @@ def record_admin_decision(product_id: int, decision: str, actor=None) -> None:
     if review is not None and review.admin_decision is None:
         review.admin_decision = decision
         review.admin_decided_at = timezone.now()
-        review.save(update_fields=["admin_decision", "admin_decided_at"])
+        fields = ["admin_decision", "admin_decided_at"]
+        if review.auto_action and review.admin_checked_at is None:
+            review.admin_checked_at, review.admin_checked_by = review.admin_decided_at, actor
+            fields += ["admin_checked_at", "admin_checked_by"]
+        review.save(update_fields=fields)
     close_ai_flags(product_id, resolution=f"Listing {decision.lower()} on the approval page.", actor=actor)
 
 
@@ -227,14 +295,11 @@ def close_ai_flags(product_id: int, *, resolution: str, actor=None) -> int:
     ).update(resolved_at=timezone.now(), resolved_by=actor, resolution=resolution[:500])
 
 
-# ---------------------------------------------------------------------------- scheduling
-
-
 def _run_in_background(product_id: int) -> None:
     close_old_connections()
     try:
         review_product(product_id)
-    except Exception:  # never let a review failure reach the farmer's request
+    except Exception:
         logger.exception("AI listing review failed for product %s", product_id)
     finally:
         close_old_connections()

@@ -141,11 +141,11 @@ class NotificationsAPITestCase(TestCase):
         self.client.force_authenticate(user=self.farmer)
         self.assertEqual(self.client.get(f"{URL}unread-count/").data["data"], {"unread_count": 2})
 
-    def test_admin_and_anonymous_are_rejected(self):
+    def test_admin_reads_own_notifications_and_anonymous_is_rejected(self):
         self.client.force_authenticate(user=self.admin)
         res = self.client.get(URL)
-        self.assertEqual(res.status_code, 403)
-        self.assertEqual(res.data["code"], ErrorCode.PERMISSION_DENIED)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"]["count"], 0)
         self.client.force_authenticate(user=None)
         self.assertEqual(self.client.get(f"{URL}unread-count/").status_code, 401)
 

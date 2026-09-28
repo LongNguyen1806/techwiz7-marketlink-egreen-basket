@@ -240,7 +240,9 @@ class AdminChangeLogView(APIView):
         # slot deleted by FA-10 or an item removed by FA-34 still has a story worth reading.
         # An id that never existed has no history either, which is the 404 below.
         entries = build_change_log(tracked, id, limit=CHANGE_LOG_LIMIT)
-        if not entries:
+        # A record that exists but was never saved through the history (seed data written with
+        # bulk_create) simply has no changes yet; only an id that never existed is a 404.
+        if not entries and not tracked.objects.filter(pk=id).exists():
             raise ResourceNotFoundError("No history for this record.")
 
         # build_change_log reads oldest first because that is how a history is worked out;

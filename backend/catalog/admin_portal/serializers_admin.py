@@ -23,8 +23,6 @@ class Availability:
 
 
 class CategoryAdminReadSerializer(serializers.ModelSerializer):
-    # Annotated by catalog.selectors.list_categories_for_admin; the default keeps the
-    # serializer usable for a freshly created row that was never annotated.
     product_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
@@ -38,10 +36,6 @@ UNKNOWN_ICON_MESSAGE = "Choose one of the icons offered."
 
 
 class CategoryAdminWriteSerializer(serializers.ModelSerializer):
-    # Declaring `name` here replaces the auto-built field, which would have carried
-    # the model's UniqueValidator, so the validator is restored explicitly. The
-    # lookup runs under the column's utf8mb4_0900_as_ci collation: accent-sensitive,
-    # case-insensitive, exactly as A-07 requires.
     name = serializers.CharField(
         min_length=NAME_MIN_LENGTH,
         max_length=NAME_MAX_LENGTH,
@@ -50,10 +44,6 @@ class CategoryAdminWriteSerializer(serializers.ModelSerializer):
         ],
     )
 
-    # A free-text icon name used to be accepted and then drawn as a leaf if nothing matched,
-    # so a typo became a wrong picture on the shopper's home page with nothing to notice.
-    # Kept as a CharField rather than a ChoiceField because an older name has to be readable
-    # and rewritten, and a ChoiceField refuses it before any of that can run.
     icon = serializers.CharField(max_length=50)
 
     class Meta:
@@ -64,13 +54,9 @@ class CategoryAdminWriteSerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_icon(self, value: str) -> str:
-        # Accepts the names an older database stored, so editing a category seeded before the
-        # icon set was widened does not fail on a value the admin never typed.
         icon = canonical_icon(value)
         if icon is None:
             raise serializers.ValidationError(UNKNOWN_ICON_MESSAGE)
-        # Checked here rather than with a UniqueValidator on the field: that one would test
-        # the name as typed, and "pepper" is free while the "chilli" it becomes may not be.
         clash = Category.objects.filter(icon=icon)
         if self.instance is not None:
             clash = clash.exclude(pk=self.instance.pk)
@@ -225,7 +211,6 @@ class ProductAdminSerializer(serializers.ModelSerializer):
         return self.context.get("pending_quantities", {}).get(product.pk, 0)
 
     def get_availability(self, product) -> str:
-        # "Publicly on sale" is defined in §3.3: not archived, not hidden, farmer APPROVED.
         sellable = (
             not product.is_archived
             and not product.is_hidden_by_admin
@@ -235,8 +220,6 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             return Availability.UNAVAILABLE
         return Availability.IN_STOCK if product.stock_quantity else Availability.OUT_OF_STOCK
 
-    # Part of ProductCard, which ProductDetail and FarmerProduct extend; an admin has no
-    # favourites, so it stays null here.
     @extend_schema_field(serializers.BooleanField(allow_null=True))
     def get_is_favorite(self, product):
         return None
@@ -252,3 +235,40 @@ class ProductBlockImpactSerializer(serializers.Serializer):
 
     open_orders = OpenOrderBreakdownSerializer()
     affected_customers = serializers.IntegerField()
+
+
+class AIDecisionSerializer(serializers.ModelSerializer):
+    """#8: one thing the AI decided on its own, and whether an admin has looked at it since."""
+
+    product = serializers.SerializerMethodField()
+    checked_by = serializers.EmailField(source="admin_checked_by.email", default=None, read_only=True)
+
+    class Meta:
+        model = ProductAIReview
+        fields = [
+            "id",
+            "product",
+            "verdict",
+            "risk_score",
+            "summary",
+            "findings",
+            "auto_action",
+            "auto_action_at",
+            "admin_decision",
+            "admin_checked_at",
+            "checked_by",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.DictField())
+    def get_product(self, review) -> dict:
+        product = review.product
+        return {
+            "id": product.pk,
+            "name": product.name,
+            "stall_name": product.farmer.stall_name,
+            "farmer_id": product.farmer_id,
+            "category": product.category.name if product.category_id else None,
+            "review_status": product.review_status,
+            "image": product.image.url if product.image else None,
+        }

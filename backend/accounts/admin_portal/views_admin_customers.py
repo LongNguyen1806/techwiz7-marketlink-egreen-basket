@@ -142,7 +142,6 @@ class _CustomerActionView(APIView):
         return api_response(message=message, request=request, data=data)
 
     def _audit(self, request, *, action: str, customer_id: int, details: dict) -> None:
-        # Written after the business transaction so a rollback cannot erase the trail.
         log_request_event(
             request,
             action=action,

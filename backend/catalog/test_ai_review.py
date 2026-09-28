@@ -207,7 +207,9 @@ def test_the_seller_text_is_sent_as_escaped_data():
 # ---------------------------------------------------------------- admin side
 
 
-def test_the_approval_queue_carries_the_advice_and_sorts_by_risk(admin_client, approved_farmer, category, monkeypatch):
+def test_the_approval_queue_carries_the_advice_and_sorts_by_risk(admin_client, approved_farmer, category, monkeypatch, settings):
+    # The advisory mode: with auto-approval off every listing waits for an admin.
+    settings.AI_AUTO_APPROVE = False
     risky = _pending(approved_farmer, category, name="iPhone")
     clean = _pending(approved_farmer, category, name="Cucumber")
     monkeypatch.setattr(gemini, "ask_model", FakeModel([NOT_FOOD]))
@@ -235,7 +237,9 @@ def test_an_admin_can_run_the_review_again(admin_client, approved_farmer, catego
     assert response.data["data"]["ai_review"]["verdict"] == AIVerdict.PASS
 
 
-def test_the_admin_decision_is_kept_next_to_the_advice_and_counted(admin_client, approved_farmer, category, monkeypatch):
+def test_the_admin_decision_is_kept_next_to_the_advice_and_counted(admin_client, approved_farmer, category, monkeypatch, settings):
+    # The advisory mode: with auto-approval off every listing waits for an admin.
+    settings.AI_AUTO_APPROVE = False
     good = _pending(approved_farmer, category, name="Cucumber")
     bad = _pending(approved_farmer, category, name="iPhone")
     monkeypatch.setattr(gemini, "ask_model", FakeModel())

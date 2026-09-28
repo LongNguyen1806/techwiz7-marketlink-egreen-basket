@@ -35,18 +35,19 @@ def ai_review_stats(*, days: int = 30) -> dict:
         "reviewed": sum(by_verdict.values()),
         "by_verdict": by_verdict,
         "decided": decided.count(),
-        # Only the clear-cut calls count: PASS vs LIKELY_VIOLATION. NEEDS_REVIEW asks for a look
-        # and is right either way.
         "agreement_rate": round((passed_approved + flagged_rejected) / clear_cut, 3) if clear_cut else None,
         "passed_then_approved": passed_approved,
-        "missed": passed_rejected,  # AI said fine, admin refused
-        "caught": flagged_rejected,  # AI flagged, admin refused
-        "false_alarms": flagged_approved,  # AI flagged, admin approved
+        "missed": passed_rejected,
+        "caught": flagged_rejected,
+        "false_alarms": flagged_approved,
         "review_then_approved": count(AIVerdict.NEEDS_REVIEW, ReviewStatus.APPROVED),
         "review_then_rejected": count(AIVerdict.NEEDS_REVIEW, ReviewStatus.REJECTED),
         "ai_unavailable": by_verdict[AIVerdict.UNAVAILABLE],
         "open_ai_flags": ModerationFlag.objects.filter(
             target_type=FlagTarget.PRODUCT, resolved_at__isnull=True, note__startswith=FLAG_NOTE_PREFIX
+        ).count(),
+        "unchecked_ai_decisions": ProductAIReview.objects.filter(
+            auto_action__isnull=False, admin_checked_at__isnull=True
         ).count(),
         "last_photo_check_at": ProductAIReview.objects.filter(kind=AIReviewKind.WEEKLY_IMAGE).aggregate(last=Max("created_at"))["last"],
     }

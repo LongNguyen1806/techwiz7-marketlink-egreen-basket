@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useAdminCustomer, useUpdateCustomer } from "../../hooks/queries/admin/useAdminCustomers";
-import { ProfileEditDialog } from "../../components/admin/ProfileEditDialog";
+import { ProfileEditDialog, VN_PHONE } from "../../components/admin/ProfileEditDialog";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { PageHeader } from "../../components/common/PageHeader";
 import { PageSkeleton } from "../../components/feedback/PageSkeleton";
@@ -53,9 +53,9 @@ export default function AdminCustomerDetailPage() {
         pending={update.isPending}
         onSave={(values) => update.mutateAsync(values)}
         fields={[
-          { required: true, name: "full_name", label: "Full name", value: c.full_name },
-          { required: true, name: "phone", label: "Phone", value: c.phone ?? "", type: "tel" },
-          { required: true, name: "address", label: "Address", value: c.address ?? "" },
+          { required: true, name: "full_name", label: "Full name", value: c.full_name, minLength: 2, maxLength: 100 },
+          { required: true, name: "phone", label: "Phone", value: c.phone ?? "", type: "tel", pattern: VN_PHONE, patternMessage: "Enter a Vietnamese mobile number, e.g. 0912345678." },
+          { required: true, name: "address", label: "Address", value: c.address ?? "", minLength: 5, maxLength: 255 },
         ]}
       />
 
@@ -96,6 +96,31 @@ export default function AdminCustomerDetailPage() {
           <p>Joined: {formatDateTime(c.date_joined)}</p>
         </CardContent>
       </Card>
+
+      {c.auto_lock ? (
+        <Card className='admin-customer-detail-page__auto-lock'>
+          <CardHeader>
+            <CardTitle>Locked automatically</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className='page-primitive__muted-sm'>
+              The system locked this account on {formatDateTime(c.auto_lock.locked_at)} after these
+              pickups were missed. Unlocking starts the count again from zero.
+            </p>
+            <ul className='admin-customer-detail-page__orders'>
+              {c.auto_lock.orders.map((order) => (
+                <li key={order.id} className='admin-customer-detail-page__order'>
+                  <Link to={`/admin/orders?q=${order.id}`}>#{order.id}</Link>
+                  <span>{order.stall_name}</span>
+                  <span>{order.market_name}</span>
+                  <span>{formatDate(order.pickup_date)}</span>
+                  <span>{formatMoney(order.total_amount)}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
