@@ -20,6 +20,10 @@ media/*
 !media/*/
 media/*/*
 !media/*/.gitkeep
+!media/*/*.jpg
+!media/*/*.jpeg
+!media/*/*.png
+!media/*/*.webp
 staticfiles/
 
 # Environment secrets

@@ -375,6 +375,110 @@ REVIEW_QUEUE_PRODUCTS = [
      "The photo shows a different product. Please upload your own photo of this item."),
 ]
 
+MARKET_IMAGE_MAP = {
+    "Thu Duc Wholesale Agricultural Market": "markets/thuduc_market.jpg",
+    "Hoc Mon Wholesale Market": "markets/hocmon_market.jpg",
+    "Binh Dien Wholesale Market": "markets/binhdien_market.jpg",
+    "Ba Chieu Market": "markets/bachieu_market.jpg",
+    "Binh Tay Market (Cho Lon)": "markets/binhtay_market.jpg",
+    "Tan Dinh Market": "markets/tandinh_market.jpg",
+    "An Dong Market": "markets/andong_market.jpg",
+}
+
+PRODUCT_IMAGE_MAP = {
+    # Fresh Vegetables
+    "Water Spinach (Rau Muong)": "products/water_spinach.jpg",
+    "Bok Choy (Cai Ngot)": "products/bok_choy.jpg",
+    "Mustard Greens (Cai Xanh)": "products/mustard_greens.jpg",
+    "Malabar Spinach (Mong Toi)": "products/malabar_spinach.jpg",
+    "Red Amaranth (Rau Den)": "products/red_amaranth.jpg",
+    "Green Cabbage (Bap Cai)": "products/cabbage.jpg",
+    "Green Broccoli (Sup Lo Xanh)": "products/broccoli.jpg",
+    "White Cauliflower (Sup Lo Trang)": "products/cauliflower.jpg",
+    "Da Lat Carrots (Ca Rot)": "products/carrot.jpg",
+    "Yellow Potatoes (Khoai Tay)": "products/potato.jpg",
+    "Honey Sweet Potatoes (Khoai Lang Mat)": "products/sweet_potato.jpg",
+    "Yellow Onions (Hanh Tay)": "products/onion.jpg",
+    "Vine-Ripened Tomatoes (Ca Chua)": "products/tomato.jpg",
+    "Baby Cucumbers (Dua Leo)": "products/cucumber.jpg",
+    "Pumpkin (Bi Do)": "products/pumpkin.jpg",
+    "Winter Melon (Bi Dao)": "products/winter_melon.jpg",
+    "Sweet Luffa (Muop Huong)": "products/luffa.jpg",
+    "Bottle Gourd (Trai Bau)": "products/bottle_gourd.jpg",
+    "Fresh Scallions (Hanh La)": "products/scallion.jpg",
+    "Bird's Eye Chillies (Ot Hiem)": "products/chilli.jpg",
+    "Purple Garlic (Toi Ly Son)": "products/garlic.jpg",
+    "Napa Cabbage (Cai Thao)": "products/napa_cabbage.jpg",
+    "Crisp Celery (Can Tay)": "products/celery.jpg",
+    "Fresh Lemongrass (Sa Cay)": "products/lemongrass.jpg",
+    # Fresh Fruits
+    "Red Watermelon (Dua Hau)": "products/watermelon.jpg",
+    "Ri6 Durian (Sau Rieng Ri6)": "products/durian.jpg",
+    "Crunchy Jackfruit (Mit Thai)": "products/jackfruit.jpg",
+    "Hoa Loc Mango (Xoai Cat Hoa Loc)": "products/mango.jpg",
+    "Crisp Guava (Oi Nu Hoang)": "products/guava.jpg",
+    "An Phuoc Plum (Man An Phuoc)": "products/bell_fruit.jpg",
+    "Cavendish Bananas (Chuoi Gia)": "products/banana.jpg",
+    "Sanh Green Orange (Cam Sanh)": "products/orange.jpg",
+    "Sweet Tangerines (Quyt Duong)": "products/tangerine.jpg",
+    "Green-Skin Pomelo (Buoi Da Xanh)": "products/pomelo.jpg",
+    "Red Flesh Dragon Fruit (Thanh Long Ruot Do)": "products/red_dragon_fruit.jpg",
+    "Ripe Papaya (Du Du Chin Cay)": "products/papaya.jpg",
+    "Java Rambutan (Chom Chom)": "products/rambutan.jpg",
+    "Xuong Longan (Nhan Xuong)": "products/longan.jpg",
+    "Thieu Lychee (Vai Thieu)": "products/lychee.jpg",
+    "Da Lat Strawberries (Dau Tay)": "products/strawberry.jpg",
+    "Crisp Red Apple (Tao Do)": "products/apple.jpg",
+    "Fragrant Asian Pear (Le)": "products/pear.jpg",
+    "Seedless Black Grapes (Nho Den)": "products/grapes.jpg",
+    "Japanese Cantaloupe (Dua Luoi)": "products/cantaloupe.jpg",
+    "Mangosteen (Mang Cut)": "products/mangosteen.jpg",
+    "034 Avocado (Bo 034)": "products/avocado.jpg",
+    "Passion Fruit (Chanh Day)": "products/passion_fruit.jpg",
+    "Custard Apple (Mang Cau Ta)": "products/custard_apple.jpg",
+    # Spices & Condiments
+    "Natural Sea Salt (Muoi Bien)": "products/sea_salt.jpg",
+    "Pure Cane Sugar (Duong Mia)": "products/cane_sugar.jpg",
+    "Monosodium Glutamate MSG (Bot Ngot)": "products/msg.jpg",
+    "Rich Broth Seasoning (Hat Nem)": "products/seasoning.jpg",
+    "Phu Quoc Black Pepper (Tieu Den)": "products/black_pepper.jpg",
+    "Pure Turmeric Powder (Tinh Bot Nghe)": "products/turmeric_powder.jpg",
+    "Toasted Garlic Powder (Bot Toi)": "products/garlic_powder.jpg",
+    "Sweet Onion Powder (Bot Hanh)": "products/onion_powder.jpg",
+    "Smoked Chilli Powder (Bot Ot)": "products/chilli_powder.jpg",
+    "Yen Bai Cinnamon Sticks (Que Cay)": "products/cinnamon.jpg",
+    # Rice & Grains
+    "ST25 Fragrant Jasmine Rice (Gao ST25)": "products/jasmine_rice.jpg",
+    "Black Glutinous Rice (Nep Cam)": "products/black_glutinous_rice.jpg",
+    "Whole Wheat Grain (Lua Mi)": "products/wheat.jpg",
+    "Green Mung Beans (Dau Xanh)": "products/mung_beans.jpg",
+    "Small Black Beans (Dau Den Xanh Long)": "products/black_beans.jpg",
+    "Small Red Beans (Dau Do)": "products/red_beans.jpg",
+    "Non-GMO Soybeans (Dau Nanh)": "products/soybeans.jpg",
+    "Roasted Peanuts (Dau Phong)": "products/peanuts.jpg",
+    "Binh Phuoc Roasted Cashews (Hat Dieu)": "products/cashews.jpg",
+    "Dong Thap Dried Lotus Seeds (Hat Sen)": "products/lotus_seeds.jpg",
+    "Roasted Watermelon Seeds (Hat Dua)": "products/watermelon_seeds.jpg",
+    "Raw Pumpkin Seeds (Hat Bi)": "products/pumpkin_seeds.jpg",
+    "Roasted Sunflower Seeds (Hat Huong Duong)": "products/sunflower_seeds.jpg",
+    "Organic Chia Seeds (Hat Chia)": "products/chia_seeds.jpg",
+    "Roasted Almonds (Hanh Nhan)": "products/almonds.jpg",
+    "Shelled Walnuts (Oc Cho)": "products/walnuts.jpg",
+    "Dak Lak Macadamia Nuts (Hat Macca)": "products/macadamia.jpg",
+    "Roasted Chestnuts (Hat De)": "products/chestnuts.jpg",
+    # Tea & Coffee
+    "Robusta Dark Roast Coffee (Ca Phe Robusta)": "products/coffee_robusta.jpg",
+    "Cau Dat Arabica Ground Coffee (Ca Phe Arabica)": "products/coffee_arabica.jpg",
+    "Thai Nguyen Green Tea (Tra Xanh Tan Cuong)": "products/green_tea.jpg",
+    "Lam Dong Oolong Tea (Tra O Long)": "products/oolong_tea.jpg",
+    # Review Queue
+    "Curly Kale (Cai Xoan)": "products/curly_kale.jpg",
+    "White Flesh Dragon Fruit (Thanh Long Ruot Trang)": "products/white_dragon_fruit.jpg",
+    "Jasmine Green Tea (Tra Lai)": "products/jasmine_tea.jpg",
+    "Fresh Ginger Root (Gung Tuoi)": "products/ginger.jpg",
+    "Baby Spinach (Cai Bo Xoi Non)": "products/baby_spinach.jpg",
+}
+
 HIDDEN_PRODUCT_INDEX = 26
 HIDDEN_REASON = "Shoppers reported the origin on the label does not match the listing. Checking with the stall."
 
@@ -552,6 +656,7 @@ class Command(BaseCommand):
                 open_time=item["open_time"],
                 close_time=item["close_time"],
                 description=item["description"],
+                image=MARKET_IMAGE_MAP.get(item["name"]),
                 map_provider="OSM",
                 is_active=True,
             )
@@ -669,6 +774,7 @@ class Command(BaseCommand):
                 category=category,
                 name=prod_name,
                 description=desc,
+                image=PRODUCT_IMAGE_MAP.get(prod_name),
                 price=Decimal(price),
                 unit=unit,
                 stock_quantity=100,
@@ -1105,7 +1211,12 @@ class Command(BaseCommand):
 
 
     def _seed_closed_market(self):
-        market = Market.objects.create(map_provider="OSM", is_active=False, **CLOSED_MARKET)
+        market = Market.objects.create(
+            map_provider="OSM",
+            is_active=False,
+            image=MARKET_IMAGE_MAP.get(CLOSED_MARKET["name"]),
+            **CLOSED_MARKET,
+        )
         for day in range(1, 8):
             MarketOperatingDay.objects.create(market=market, day_of_week=day)
         return market
@@ -1146,6 +1257,7 @@ class Command(BaseCommand):
                 category=categories[cat_name],
                 name=name,
                 description=desc,
+                image=PRODUCT_IMAGE_MAP.get(name),
                 price=Decimal(price),
                 unit=unit,
                 stock_quantity=50,

@@ -8,6 +8,10 @@ db.sqlite3
 backend/staticfiles/
 backend/media/*
 !backend/media/.gitkeep
+!backend/media/**/*.jpg
+!backend/media/**/*.jpeg
+!backend/media/**/*.png
+!backend/media/**/*.webp
 
 # Testing
 .coverage
