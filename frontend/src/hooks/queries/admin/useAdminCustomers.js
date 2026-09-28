@@ -14,6 +14,8 @@ export function useAdminCustomers(params = {}) {
   return useQuery({
     queryKey: ['admin', 'customers', params],
     queryFn: () => adminApi.getCustomers(params),
+    staleTime: 0,
+    placeholderData: (previous) => previous,
   });
 }
 

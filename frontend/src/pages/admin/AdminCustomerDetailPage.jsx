@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { useAdminCustomer, useUpdateCustomer } from "../../hooks/queries/admin/useAdminCustomers";
 import { ProfileEditDialog, VN_PHONE } from "../../components/admin/ProfileEditDialog";
+import { ChangeLogPanel } from "../../components/admin/ChangeLogPanel";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { PageHeader } from "../../components/common/PageHeader";
 import { PageSkeleton } from "../../components/feedback/PageSkeleton";
@@ -50,6 +51,7 @@ export default function AdminCustomerDetailPage() {
         onOpenChange={setEditing}
         title='Edit customer details'
         note='Locking an account is a separate action, from the customer list.'
+        signInEmail={c.email}
         pending={update.isPending}
         onSave={(values) => update.mutateAsync(values)}
         fields={[
@@ -121,6 +123,8 @@ export default function AdminCustomerDetailPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <ChangeLogPanel model="customer_profile" id={customerId} />
 
       <Card>
         <CardHeader>

@@ -7,6 +7,7 @@ import {
   useMarketClosures,
 } from '../../hooks/queries/admin/useAdminMarkets';
 import { Button } from '../ui/Button';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 
@@ -23,6 +24,7 @@ function formatRange(startDate, endDate) {
 }
 
 export function MarketClosuresPanel({ marketId }) {
+  const [deleting, setDeleting] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
@@ -59,80 +61,98 @@ export function MarketClosuresPanel({ marketId }) {
   const rows = closures.data ?? [];
 
   return (
-    <section className="market-closures">
-      <div className="market-closures__head">
-        <Label>Temporary closures</Label>
-        <p className="page-primitive__muted-xs">
-          Shoppers cannot pick a collection day inside a closure period.
-        </p>
-      </div>
+    <>
+      <section className="market-closures">
+        <div className="market-closures__head">
+          <Label>Temporary closures</Label>
+          <p className="page-primitive__muted-xs">
+            Shoppers cannot pick a collection day inside a closure period.
+          </p>
+        </div>
 
-      {closures.isLoading ? (
-        <p className="page-primitive__muted-xs">Loading closures…</p>
-      ) : rows.length === 0 ? (
-        <p className="page-primitive__muted-xs">No closure periods yet.</p>
-      ) : (
-        <ul className="market-closures__list">
-          {rows.map((closure) => (
-            <li key={closure.id} className="market-closures__item">
-              <div>
-                <p className="market-closures__range">
-                  {formatRange(closure.start_date, closure.end_date)}
-                </p>
-                {closure.reason ? (
-                  <p className="page-primitive__muted-xs">{closure.reason}</p>
-                ) : null}
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                loading={remove.isPending}
-                onClick={() => remove.mutate(closure.id)}
-              >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {closures.isLoading ? (
+          <p className="page-primitive__muted-xs">Loading closures…</p>
+        ) : rows.length === 0 ? (
+          <p className="page-primitive__muted-xs">No closure periods yet.</p>
+        ) : (
+          <ul className="market-closures__list">
+            {rows.map((closure) => (
+              <li key={closure.id} className="market-closures__item">
+                <div>
+                  <p className="market-closures__range">
+                    {formatRange(closure.start_date, closure.end_date)}
+                  </p>
+                  {closure.reason ? (
+                    <p className="page-primitive__muted-xs">{closure.reason}</p>
+                  ) : null}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  loading={remove.isPending}
+                  onClick={() => setDeleting(closure)}
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      <div className="market-closures__form">
-        <div className="page-primitive__form-field">
-          <Input
-            id="closure_start"
-            type="date"
-            label="From"
-            min={today()}
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
-          />
+        <div className="market-closures__form">
+          <div className="page-primitive__form-field">
+            <Input
+              id="closure_start"
+              type="date"
+              label="From"
+              min={today()}
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+          </div>
+          <div className="page-primitive__form-field">
+            <Input
+              id="closure_end"
+              type="date"
+              label="To"
+              min={startDate || today()}
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+            />
+          </div>
+          <div className="page-primitive__form-field market-closures__reason">
+            <Input
+              id="closure_reason"
+              label="Reason"
+              maxLength={REASON_MAX_LENGTH}
+              placeholder="Lunar New Year closure"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </div>
+          <Button type="button" onClick={submit} loading={create.isPending}>
+            Add
+          </Button>
         </div>
-        <div className="page-primitive__form-field">
-          <Input
-            id="closure_end"
-            type="date"
-            label="To"
-            min={startDate || today()}
-            value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
-          />
-        </div>
-        <div className="page-primitive__form-field market-closures__reason">
-          <Input
-            id="closure_reason"
-            label="Reason"
-            maxLength={REASON_MAX_LENGTH}
-            placeholder="Lunar New Year closure"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </div>
-        <Button type="button" onClick={submit} loading={create.isPending}>
-          Add
-        </Button>
-      </div>
-    </section>
+      </section>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title="Remove this closure period?"
+        description="The market goes back to its usual schedule for those dates."
+        confirmLabel="Remove"
+        destructive
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (!deleting) return;
+          remove.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+        }}
+      />
+    </>
   );
 }
 

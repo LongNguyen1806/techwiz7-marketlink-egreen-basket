@@ -17,7 +17,7 @@ export function useReorderCategories() {
     mutationFn: (ids) => adminApi.reorderCategories(ids),
     onSuccess: () => {
       toast.success('Category order saved');
-      void queryClient.invalidateQueries({
+      return queryClient.invalidateQueries({
         queryKey: ['admin', 'categories'],
       });
     },

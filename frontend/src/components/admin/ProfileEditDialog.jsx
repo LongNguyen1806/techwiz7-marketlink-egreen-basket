@@ -36,6 +36,7 @@ export function ProfileEditDialog({
   onOpenChange,
   title,
   note,
+  signInEmail,
   fields = [],
   pending = false,
   onSave,
@@ -80,7 +81,10 @@ export function ProfileEditDialog({
       const fieldErrors = ApiError.fromUnknown(error).fieldErrors || {};
       setErrors(
         Object.fromEntries(
-          Object.entries(fieldErrors).map(([key, messages]) => [key, String(messages[0] ?? '')]),
+          Object.entries(fieldErrors).map(([key, messages]) => [
+            key,
+            String(messages[0] ?? ''),
+          ]),
         ),
       );
     }
@@ -94,6 +98,14 @@ export function ProfileEditDialog({
           <DialogDescription>{note}</DialogDescription>
         </DialogHeader>
         <form className="profile-edit-dialog__form" onSubmit={submit}>
+          {signInEmail ? (
+            <div className="profile-edit-dialog__field">
+              <Input id="edit-email" label="Email" value={signInEmail} readOnly disabled />
+              <p className="page-primitive__muted-xs">
+                This is the sign-in address and cannot be changed here.
+              </p>
+            </div>
+          ) : null}
           {fields.map((field) => (
             <div key={field.name} className="profile-edit-dialog__field">
               {field.multiline ? (
@@ -102,7 +114,10 @@ export function ProfileEditDialog({
                   placeholder={field.label}
                   value={values[field.name] ?? ''}
                   onChange={(event) =>
-                    setValues((current) => ({ ...current, [field.name]: event.target.value }))
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
                   }
                 />
               ) : (
@@ -113,7 +128,10 @@ export function ProfileEditDialog({
                   requiredMark={field.required}
                   value={values[field.name] ?? ''}
                   onChange={(event) =>
-                    setValues((current) => ({ ...current, [field.name]: event.target.value }))
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
                   }
                 />
               )}

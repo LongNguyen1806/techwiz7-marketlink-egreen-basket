@@ -28,9 +28,9 @@ export function useAdminMarket(id, enabled = true) {
 export function useToggleAdminMarket() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, active, reason }) => {
+    mutationFn: async ({ id, active, reason, farmerMessage }) => {
       if (active) return adminApi.activateMarket(id);
-      return adminApi.deactivateMarket(id, reason ?? '');
+      return adminApi.deactivateMarket(id, reason ?? '', farmerMessage ?? '');
     },
     onSuccess: (data, vars) => {
       if (vars.active) {

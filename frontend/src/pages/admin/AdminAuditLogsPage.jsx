@@ -33,20 +33,22 @@ function technicalRows(log) {
 }
 
 const SUMMARISED_KEYS = new Set([
-  "farmer_id",
-  "customer_id",
-  "product_id",
-  "review_id",
-  "review_type",
-  "market_id",
-  "stall_name",
-  "name",
-  "email",
-  "reason",
-  "affected_orders",
-  "changed_fields",
-  "from",
-  "to",
+  'farmer_id',
+  'customer_id',
+  'product_id',
+  'review_id',
+  'review_type',
+  'market_id',
+  'stall_name',
+  'name',
+  'email',
+  'reason',
+  'affected_orders',
+  'changed_fields',
+  'from',
+  'to',
+  'cancelled_order_ids',
+  'cancelled_order_ids_truncated',
 ]);
 
 function extraDetails(log) {
@@ -60,6 +62,13 @@ function extraDetails(log) {
           ? JSON.stringify(value)
           : String(value),
     ]);
+}
+
+function cancelledOrders(log) {
+  const ids = log.details?.cancelled_order_ids;
+  if (!Array.isArray(ids) || !ids.length) return null;
+  const listed = ids.map((id) => `#${id}`).join(', ');
+  return log.details?.cancelled_order_ids_truncated ? `${listed} and more` : listed;
 }
 
 function outcomeText(log) {
@@ -123,6 +132,23 @@ export default function AdminAuditLogsPage() {
         <Input type='date' label='To' value={to} onChange={(e) => setTo(e.target.value)} className='page-primitive__input-auto' />
         <Button type='submit' size='sm'>
           Apply
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="filter-bar__clear"
+          disabled={!action && !from && !to && !actor}
+          onClick={() => {
+            setAction('');
+            setFrom('');
+            setTo('');
+            setActor(null);
+            setFilters({ action: '', from: '', to: '' });
+            setPage(1);
+          }}
+        >
+          Clear
         </Button>
       </form>
 
@@ -242,7 +268,13 @@ export default function AdminAuditLogsPage() {
                     <dd>{auditReason(selected)}</dd>
                   </div>
                 ) : null}
-                <div className='admin-audit-logs-page__pair'>
+                {cancelledOrders(selected) ? (
+                  <div className="admin-audit-logs-page__pair">
+                    <dt>Orders cancelled</dt>
+                    <dd>{cancelledOrders(selected)}</dd>
+                  </div>
+                ) : null}
+                <div className="admin-audit-logs-page__pair">
                   <dt>Result</dt>
                   <dd>{outcomeText(selected)}</dd>
                 </div>

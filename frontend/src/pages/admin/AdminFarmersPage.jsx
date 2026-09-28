@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { ApiError } from "../../lib/ApiError";
+import { useCsvDownload } from "../../hooks/useCsvDownload";
+import { useDebouncedValue } from "../../hooks/common/useDebouncedValue";
 import { fetchFarmerImpact, useAdminFarmers, useApproveFarmer, useReinstateFarmer, useRejectFarmer, useSuspendFarmer } from "../../hooks/queries/admin/useAdminFarmers";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { EmptyState } from "../../components/feedback/EmptyState";
@@ -17,25 +19,29 @@ import { farmerStatusLabel, farmerStatusVariant } from "../../utils/labels";
 
 import "../../styles/admin/AdminFarmersPage.css";
 
-const STATUSES = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"];
+import '@/components/common/table/FilterBar.css';
+
+const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'];
 
 function isStatus(v) {
-  return v === "PENDING" || v === "APPROVED" || v === "REJECTED" || v === "SUSPENDED";
+  return v === 'PENDING' || v === 'APPROVED' || v === 'REJECTED' || v === 'SUSPENDED';
 }
 
 export default function AdminFarmersPage() {
   const [params, setParams] = useSearchParams();
   const statusParam = params.get("status");
   const status = isStatus(statusParam) ? statusParam : undefined;
-  const [q, setQ] = useState(params.get("q") ?? "");
+  const [q, setQ] = useState(params.get('q') ?? '');
+  const csv = useCsvDownload('farmers');
+  const searchTerm = useDebouncedValue(q);
   const [page, setPage] = useState(1);
 
   const [rejectId, setRejectId] = useState(null);
   const [suspendId, setSuspendId] = useState(null);
-  const [reason, setReason] = useState("");
-  const [impactText, setImpactText] = useState("");
+  const [reason, setReason] = useState('');
+  const [impactText, setImpactText] = useState('');
 
-  const ordering = params.get("ordering") || undefined;
+  const ordering = params.get('ordering') || undefined;
   const sortBy = (next) => {
     const updated = new URLSearchParams(params);
     updated.set("ordering", next);
@@ -44,12 +50,20 @@ export default function AdminFarmersPage() {
   };
 
   const query = useAdminFarmers({
-    q: params.get("q") || undefined,
+    q: searchTerm || undefined,
     status,
     ordering,
     page,
     page_size: 10,
   });
+
+  useEffect(() => {
+    const next = new URLSearchParams(params);
+    if (searchTerm) next.set('q', searchTerm);
+    else next.delete('q');
+    if (next.toString() === params.toString()) return;
+    setParams(next, { replace: true });
+  }, [searchTerm, params, setParams]);
 
   const approve = useApproveFarmer();
   const reject = useRejectFarmer();
@@ -70,20 +84,34 @@ export default function AdminFarmersPage() {
   };
 
   return (
-    <div className='admin-farmers-page'>
-      <PageHeader title='Farmer stalls' description='Approve new growers, suspend accounts, and restore access.' />
+    <div className="admin-farmers-page">
+      <PageHeader
+        title="Farmer stalls"
+        actions={
+          <Button
+            size="sm"
+            variant="outline"
+            loading={csv.pending}
+            onClick={() =>
+              csv.download({ q: params.get('q') || undefined, status, ordering })
+            }
+          >
+            Export CSV
+          </Button>
+        }
+        description="Approve new growers, suspend accounts, and restore access."
+      />
 
-      <form
-        className='page-primitive__actions-row'
-        onSubmit={(e) => {
-          e.preventDefault();
-          const next = new URLSearchParams(params);
-          if (q) next.set("q", q);
-          else next.delete("q");
-          setParams(next);
-          setPage(1);
-        }}>
-        <Input label='Search stall / email' value={q} onChange={(e) => setQ(e.target.value)} className='page-primitive__input-narrow' />
+      <div className="page-primitive__actions-row">
+        <Input
+          label="Search stall / email"
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
+          className="page-primitive__input-narrow"
+        />
         <select
           className='page-primitive__select'
           value={status ?? ""}
@@ -101,10 +129,23 @@ export default function AdminFarmersPage() {
             </option>
           ))}
         </select>
-        <Button type='submit' size='sm'>
-          Filter
+        <Button
+          size="sm"
+          variant="ghost"
+          className="filter-bar__clear"
+          disabled={!q && !status}
+          onClick={() => {
+            setQ('');
+            const next = new URLSearchParams(params);
+            next.delete('status');
+            next.delete('q');
+            setParams(next);
+            setPage(1);
+          }}
+        >
+          Clear
         </Button>
-      </form>
+      </div>
 
       {query.isLoading ? (
         <PageSkeleton />
@@ -127,7 +168,11 @@ export default function AdminFarmersPage() {
                   <SortableTh column='status' current={ordering} onSort={sortBy}>
                     Status
                   </SortableTh>
-                  <SortableTh column='open_order_count' current={ordering} onSort={sortBy}>
+                  <SortableTh
+                    column="open_order_count"
+                    current={ordering}
+                    onSort={sortBy}
+                  >
                     Open orders
                   </SortableTh>
                   <th className='page-primitive__table-th'>Actions</th>
@@ -146,8 +191,10 @@ export default function AdminFarmersPage() {
                       <p>{f.email}</p>
                       <p className='page-primitive__muted-xs'>{f.phone}</p>
                     </td>
-                    <td className='page-primitive__table-td'>
-                      <Badge variant={farmerStatusVariant(f.status)}>{farmerStatusLabel(f.status)}</Badge>
+                    <td className="page-primitive__table-td">
+                      <Badge variant={farmerStatusVariant(f.status)}>
+                        {farmerStatusLabel(f.status)}
+                      </Badge>
                     </td>
                     <td className='page-primitive__table-td'>{f.open_order_count}</td>
                     <td className='page-primitive__table-td'>
@@ -187,7 +234,8 @@ export default function AdminFarmersPage() {
           </div>
           <div className='admin-farmers-page__pagination'>
             <span>
-              Page {query.data.page}/{query.data.total_pages} · {query.data.count} profiles
+              Page {query.data.page}/{query.data.total_pages} · {query.data.count}{' '}
+              profiles
             </span>
             <div className='page-primitive__actions-row'>
               <Button size='sm' variant='outline' disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>

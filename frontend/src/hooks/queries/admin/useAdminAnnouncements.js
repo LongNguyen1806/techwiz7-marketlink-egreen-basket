@@ -4,10 +4,12 @@ import { toast } from 'sonner';
 import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
 
-export function useAdminAnnouncements() {
+export function useAdminAnnouncements(params = {}) {
   return useQuery({
-    queryKey: ['admin', 'announcements'],
-    queryFn: adminApi.getAnnouncements,
+    queryKey: ['admin', 'announcements', params],
+    queryFn: () => adminApi.getAnnouncements(params),
+    staleTime: 0,
+    placeholderData: (previous) => previous,
   });
 }
 

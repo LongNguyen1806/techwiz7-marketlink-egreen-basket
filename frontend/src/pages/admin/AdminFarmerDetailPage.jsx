@@ -53,6 +53,7 @@ export default function AdminFarmerDetailPage() {
         onOpenChange={setEditing}
         title='Edit stall details'
         note='Trading days, address and location are managed by the stall on its own profile.'
+        signInEmail={f.email}
         pending={update.isPending}
         onSave={(values) => update.mutateAsync(values)}
         fields={[

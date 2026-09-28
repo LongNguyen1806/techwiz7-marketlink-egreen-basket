@@ -69,6 +69,12 @@ export function orderStatusLabel(status) {
   return ORDER_STATUS[status] ?? humanise(status);
 }
 
+const ORDER_STATUS_SHORT = { READY_FOR_PICKUP: 'Ready' };
+
+export function orderStatusShortLabel(status) {
+  return ORDER_STATUS_SHORT[status] ?? orderStatusLabel(status);
+}
+
 export function farmerStatusLabel(status) {
   return FARMER_STATUS[status] ?? humanise(status);
 }

@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useAdminAnnouncements, useCreateAnnouncement, useDeleteAnnouncement, useToggleAnnouncement } from "../../hooks/queries/admin/useAdminAnnouncements";
 import { announcementSchema } from "../../schemas/admin/announcement.schema";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
+import { FilterBar } from "../../components/common/table/FilterBar";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { PageHeader } from "../../components/common/PageHeader";
 import { PageSkeleton } from "../../components/feedback/PageSkeleton";
@@ -18,8 +21,35 @@ import { formatDateTime } from "../../utils/formatters";
 import { audienceLabel } from "../../utils/labels";
 import "../../styles/admin/AdminAnnouncementsPage.css";
 
+const ANNOUNCEMENT_FILTERS = [
+  { name: 'q', label: 'Search title or text', type: 'search' },
+  {
+    name: 'audience',
+    label: 'Audience',
+    type: 'select',
+    allLabel: 'Everyone and roles',
+    options: [
+      { value: 'ALL', label: audienceLabel('ALL') },
+      { value: 'CUSTOMER', label: audienceLabel('CUSTOMER') },
+      { value: 'FARMER', label: audienceLabel('FARMER') },
+    ],
+  },
+  {
+    name: 'is_active',
+    label: 'State',
+    type: 'select',
+    allLabel: 'On and off',
+    options: [
+      { value: 'true', label: 'Showing' },
+      { value: 'false', label: 'Off' },
+    ],
+  },
+];
+
 export default function AdminAnnouncementsPage() {
-  const query = useAdminAnnouncements();
+  const [deleting, setDeleting] = useState(null);
+  const [filters, setFilters] = useState({});
+  const query = useAdminAnnouncements(filters);
   const create = useCreateAnnouncement();
   const remove = useDeleteAnnouncement();
   const toggle = useToggleAnnouncement();
@@ -95,6 +125,13 @@ export default function AdminAnnouncementsPage() {
         {form.formState.errors.starts_at ? <p className='page-primitive__error'>{form.formState.errors.starts_at.message}</p> : null}
       </form>
 
+      <FilterBar
+        fields={ANNOUNCEMENT_FILTERS}
+        value={filters}
+        onChange={setFilters}
+        onReset={() => setFilters({})}
+      />
+
       {query.isLoading ? (
         <PageSkeleton />
       ) : !query.data?.results?.length ? (
@@ -125,7 +162,7 @@ export default function AdminAnnouncementsPage() {
                     }>
                     {announcement.is_active ? "Off" : "On"}
                   </Button>
-                  <Button size='sm' variant='destructive' onClick={() => remove.mutate(announcement.id)}>
+                  <Button size='sm' variant='destructive' onClick={() => setDeleting(announcement)}>
                     Delete
                   </Button>
                 </div>
@@ -134,6 +171,22 @@ export default function AdminAnnouncementsPage() {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title={`Delete "${deleting?.title ?? "this announcement"}"?`}
+        description="It stops showing to everyone straight away and cannot be brought back."
+        confirmLabel="Delete"
+        destructive
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (!deleting) return;
+          remove.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+        }}
+      />
     </div>
   );
 }
