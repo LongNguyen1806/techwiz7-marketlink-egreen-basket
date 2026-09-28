@@ -72,3 +72,25 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
 }
+
+.admin-price-guidelines {
+  container-type: inline-size;
+}
+
+@container (max-width: 60rem) {
+  .admin-price-guidelines__form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 40rem) {
+  .admin-price-guidelines__form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 26rem) {
+  .admin-price-guidelines__form-grid {
+    grid-template-columns: 1fr;
+  }
+}

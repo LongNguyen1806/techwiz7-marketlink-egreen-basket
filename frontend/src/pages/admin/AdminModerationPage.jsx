@@ -30,6 +30,7 @@ import {
 import { SortSelect } from '@/components/common/SortSelect';
 import { FilterBar } from '@/components/common/table/FilterBar';
 import { Textarea } from '@/components/ui/Textarea';
+import { REVIEW_STATE } from '@/utils/reviewState';
 
 import './AdminModerationPage.css';
 
@@ -53,6 +54,13 @@ function moderationCopy(product) {
 
 const PRODUCT_FILTERS = [
   { name: 'q', label: 'Search product or stall', type: 'search' },
+  {
+    name: 'review_status',
+    label: 'Review',
+    type: 'select',
+    allLabel: 'Any state',
+    options: REVIEW_STATE.map(({ value, label }) => ({ value, label })),
+  },
   {
     name: 'is_hidden',
     label: 'Visibility',
@@ -180,11 +188,11 @@ export default function AdminModerationPage() {
     <div className="page-primitive__stack-4">
       <PageHeader
         title="Content moderation"
-        description="Hide or restore products and reviews that need review."
+        description="Every product and review on the platform. Hide one while you look into it, or take a product down if it must not be sold."
       />
       {pinned.product_id || pinned.review_id ? (
         <p className="admin-moderation-page__pin">
-          Showing one item, opened from the follow-up queue.
+          Showing one item.
           <Button
             size="sm"
             variant="ghost"

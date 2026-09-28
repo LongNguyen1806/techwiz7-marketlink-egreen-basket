@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import {
   ClipboardList,
   FolderTree,
@@ -7,14 +7,10 @@ import {
   ShieldAlert,
   Store,
   Users,
-  Warehouse,
-  FileBarChart,
   Megaphone,
   ScrollText,
   SlidersHorizontal,
-  KeyRound,
   BadgeCheck,
-  Carrot,
   ReceiptText,
 } from 'lucide-react';
 
@@ -36,31 +32,54 @@ import { cn } from '../lib/cn';
 import '../styles/admin/AdminLayout.css';
 import { AIChatWidget } from '../components/common/chat/AIChatWidget';
 
-const navItems = [
-  { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/admin/farmers', label: 'Farmers', icon: Warehouse, end: false },
-  { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
-  { to: '/admin/orders', label: 'Orders', icon: ReceiptText, end: false },
-  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'approvals' },
-  { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
-  { to: '/admin/categories', label: 'Categories', icon: FolderTree, end: false },
-  { to: '/admin/products', label: 'Products', icon: Carrot, end: false },
-  { to: '/admin/moderation', label: 'Reviews', icon: ShieldAlert, end: false },
-  { to: '/admin/reports', label: 'Reports', icon: FileBarChart, end: false },
-  { to: '/admin/announcements', label: 'Announcements', icon: Megaphone, end: false },
-  { to: '/admin/audit-logs', label: 'System log', icon: ScrollText, end: false },
-  { to: '/admin/limits', label: 'Platform limits', icon: SlidersHorizontal, end: false },
-  { to: '/admin/password', label: 'My password', icon: KeyRound, end: false },
+const NAV_GROUPS = [
+  {
+    title: 'Operations',
+    items: [
+      { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+      { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, badge: 'approvals' },
+      { to: '/admin/orders', label: 'Orders', icon: ReceiptText },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { to: '/admin/farmers', label: 'Accounts', icon: Users, also: ['/admin/customers'] },
+    ],
+  },
+  {
+    title: 'Catalog',
+    items: [
+      { to: '/admin/markets', label: 'Markets', icon: Store },
+      { to: '/admin/categories', label: 'Categories', icon: FolderTree },
+      { to: '/admin/moderation', label: 'Content moderation', icon: ShieldAlert },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+      { to: '/admin/audit-logs', label: 'System log', icon: ScrollText },
+    ],
+  },
 ];
 
 function SideNav({ collapsed }                        ) {
   const aiStats = useAIReviewStats(30);
+  const { pathname } = useLocation();
   const badges = {
     approvals: (aiStats.data?.open_ai_flags ?? 0) + (aiStats.data?.unchecked_ai_decisions ?? 0),
   };
   return (
     <nav className="admin-layout__nav">
-      {navItems.map((item) => (
+      {NAV_GROUPS.map((group) => (
+        <div key={group.title} className="admin-layout__nav-group">
+          {collapsed ? (
+            <hr className="admin-layout__nav-divider" />
+          ) : (
+            <p className="admin-layout__nav-title">{group.title}</p>
+          )}
+      {group.items.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
@@ -68,7 +87,7 @@ function SideNav({ collapsed }                        ) {
           className={({ isActive }) =>
             cn(
               'admin-layout__nav-link',
-              isActive && 'is-active',
+              (isActive || item.also?.some((path) => pathname.startsWith(path))) && 'is-active',
               collapsed && 'admin-layout__nav-link--collapsed',
             )
           }
@@ -82,6 +101,8 @@ function SideNav({ collapsed }                        ) {
             </span>
           ) : null}
         </NavLink>
+      ))}
+        </div>
       ))}
     </nav>
   );
@@ -142,6 +163,11 @@ export function AdminLayout() {
             <span className="admin-layout__header-title">MarketLink Admin</span>
           </div>
           <div className="admin-layout__header-actions">
+            <Button asChild variant="ghost" size="icon" className="admin-layout__header-icon">
+              <Link to="/admin/limits" aria-label="Platform limits" title="Platform limits">
+                <SlidersHorizontal className="admin-layout__header-icon-svg" aria-hidden="true" />
+              </Link>
+            </Button>
             <NotificationBell />
             <ThemeToggle />
             <UserMenu />

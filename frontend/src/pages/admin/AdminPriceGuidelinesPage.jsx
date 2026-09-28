@@ -284,5 +284,5 @@ export function PriceGuidelinesPanel() {
 }
 
 export default function AdminPriceGuidelinesPage() {
-  return <Navigate to="/admin/products?guidelines=open" replace />;
+  return <Navigate to="/admin/categories?guidelines=open" replace />;
 }
