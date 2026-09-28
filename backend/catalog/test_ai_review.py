@@ -52,7 +52,6 @@ def _pending(approved_farmer, category, **overrides) -> Product:
 NOT_FOOD = Finding(source="ai", check="NOT_FARM_PRODUCE", severity="HIGH", message="This is a phone, not farm food.")
 
 
-# ---------------------------------------------------------------- the review itself
 
 
 def test_a_new_listing_is_reviewed_after_the_farmer_saves_it(farmer_client, category, model, django_capture_on_commit_callbacks):
@@ -85,7 +84,7 @@ def test_a_likely_violation_raises_one_flag_and_tells_every_admin(approved_farme
     product = _pending(approved_farmer, category)
 
     review_product(product.pk)
-    review_product(product.pk, force=True)  # a second run must not stack a second open flag
+    review_product(product.pk, force=True)
 
     flags = ModerationFlag.objects.filter(target_type=FlagTarget.PRODUCT, target_id=product.pk, resolved_at__isnull=True)
     assert flags.count() == 1
@@ -129,7 +128,6 @@ def test_rules_still_count_when_the_model_is_unavailable(approved_farmer, catego
     clean = review_product(_pending(approved_farmer, category, name="Cucumber").pk)
 
     assert swear.verdict == AIVerdict.LIKELY_VIOLATION and not swear.ai_used
-    # Rules found nothing, but nobody asked the model: never reported as a clean PASS.
     assert clean.verdict == AIVerdict.UNAVAILABLE and "timeout" in clean.ai_error
 
 
@@ -152,7 +150,6 @@ def test_a_suggested_category_is_kept_for_the_admin(approved_farmer, category, m
     assert review.suggested_category == fruit
 
 
-# ---------------------------------------------------------------- reading the model's answer
 
 
 def test_the_answer_is_forced_into_known_checks_and_severities():
@@ -171,7 +168,6 @@ def test_an_unsure_high_finding_is_reported_as_medium():
     })
     findings, _, _ = gemini._parse(raw, ["Vegetables"], image_only=False)
     assert {f.severity for f in findings} == {"MEDIUM"}
-    # "not farm food" without its own finding still gets reported.
     assert "NOT_FARM_PRODUCE" in {f.check for f in findings}
 
 
@@ -200,15 +196,13 @@ def test_the_seller_text_is_sent_as_escaped_data():
         unit="KG", price=Decimal("1"), stock_quantity=1,
     )
     block = gemini._listing_block(listing, ["Vegetables"], image_only=False)
-    assert block.count("</listing>") == 1  # the seller cannot close the data block early
+    assert block.count("</listing>") == 1
     assert '\\"PASS\\"' in block
 
 
-# ---------------------------------------------------------------- admin side
 
 
 def test_the_approval_queue_carries_the_advice_and_sorts_by_risk(admin_client, approved_farmer, category, monkeypatch, settings):
-    # The advisory mode: with auto-approval off every listing waits for an admin.
     settings.AI_AUTO_APPROVE = False
     risky = _pending(approved_farmer, category, name="iPhone")
     clean = _pending(approved_farmer, category, name="Cucumber")
@@ -238,7 +232,6 @@ def test_an_admin_can_run_the_review_again(admin_client, approved_farmer, catego
 
 
 def test_the_admin_decision_is_kept_next_to_the_advice_and_counted(admin_client, approved_farmer, category, monkeypatch, settings):
-    # The advisory mode: with auto-approval off every listing waits for an admin.
     settings.AI_AUTO_APPROVE = False
     good = _pending(approved_farmer, category, name="Cucumber")
     bad = _pending(approved_farmer, category, name="iPhone")
@@ -253,7 +246,6 @@ def test_the_admin_decision_is_kept_next_to_the_advice_and_counted(admin_client,
     stats = admin_client.get("/api/admin/ai-review/stats/").data["data"]
     assert (stats["passed_then_approved"], stats["caught"], stats["false_alarms"], stats["missed"]) == (1, 1, 0, 0)
     assert stats["agreement_rate"] == 1.0
-    # Deciding on the listing closes the AI's flag on it, and says who decided.
     assert stats["open_ai_flags"] == 0
     flag = ModerationFlag.objects.get(target_id=bad.pk)
     assert flag.resolved_by is not None and "rejected" in flag.resolution
@@ -265,7 +257,7 @@ def test_price_guidelines_are_managed_by_admins_only(admin_client, api_client, c
 
     created = admin_client.post(url, body, format="json")
     assert created.status_code == 201
-    assert admin_client.post(url, body, format="json").status_code == 400  # one per category and unit
+    assert admin_client.post(url, body, format="json").status_code == 400
     upside_down = admin_client.patch(f"{url}{created.data['data']['id']}/", {"min_price": "50.00"}, format="json")
     assert upside_down.status_code == 400 and "min_price" in upside_down.data["errors"]
     assert admin_client.patch(f"{url}{created.data['data']['id']}/", {"max_price": "25.00"}, format="json").status_code == 200
@@ -275,7 +267,6 @@ def test_price_guidelines_are_managed_by_admins_only(admin_client, api_client, c
     assert api_client.get(url).status_code == 403
 
 
-# ---------------------------------------------------------------- farmer precheck
 
 
 def test_the_farmer_form_gets_rule_advice_before_saving(farmer_client, category, model):
@@ -287,11 +278,10 @@ def test_the_farmer_form_gets_rule_advice_before_saving(farmer_client, category,
 
     assert response.status_code == 200
     assert [f["check"] for f in response.data["data"]["findings"]] == ["PRICE_OUT_OF_RANGE"]
-    assert not model.calls  # rules only: instant and free
-    assert not ProductAIReview.objects.exists()  # nothing is saved
+    assert not model.calls
+    assert not ProductAIReview.objects.exists()
 
 
-# ---------------------------------------------------------------- scheduled commands
 
 
 def test_the_sweep_reviews_listings_the_background_missed(approved_farmer, category, model):
@@ -314,16 +304,15 @@ def test_the_weekly_photo_check_flags_but_never_hides(approved_farmer, category,
     call_command("ai_scan_product_images")
 
     review = ProductAIReview.objects.get(product=product, kind=AIReviewKind.WEEKLY_IMAGE)
-    assert review.verdict == AIVerdict.NEEDS_REVIEW and fake.calls[0][1] is True  # photo-only question
+    assert review.verdict == AIVerdict.NEEDS_REVIEW and fake.calls[0][1] is True
     assert ModerationFlag.objects.filter(target_id=product.pk).exists()
     product.refresh_from_db()
     assert product.review_status == ReviewStatus.APPROVED and not product.is_hidden_by_admin
 
-    call_command("ai_scan_product_images")  # same photo, checked this week: not asked again
+    call_command("ai_scan_product_images")
     assert len(fake.calls) == 1
 
 
-# ---------------------------------------------------------------- quota and model fallback
 
 
 def _quota_error(code, quota_id=None, retry="3s"):
@@ -375,7 +364,7 @@ def test_a_model_out_of_daily_quota_hands_over_to_the_next_one(settings, monkeyp
     monkeypatch.setattr(gemini, "_generate", generate)
     result = gemini.ask_model(_listing_input(), ["Vegetables"])
 
-    assert asked == ["main-flash", "spare-lite"]  # no pointless retries on a daily quota
+    assert asked == ["main-flash", "spare-lite"]
     assert result.model_name == "spare-lite"
 
 

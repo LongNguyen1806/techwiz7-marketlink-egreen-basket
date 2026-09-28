@@ -6,5 +6,4 @@ class MarketlinkCoreConfig(AppConfig):
     name = "marketlink_core"
 
     def ready(self):
-        # Register simple_history signal receiver for attaching request_id
         from marketlink_core import signals  # noqa: F401

@@ -9,8 +9,6 @@ def _model(review_type: str):
     return ProductReview if review_type == ReviewType.PRODUCT else FarmerReview
 
 
-# D-016: violating reviews are hidden, never deleted. Both actions are idempotent because
-# AD-23 and AD-24 list no error code.
 @transaction.atomic
 def hide_review(*, review_type: str, review_id: int, reason: str, actor):
     review = _model(review_type).objects.select_for_update().get(pk=review_id)

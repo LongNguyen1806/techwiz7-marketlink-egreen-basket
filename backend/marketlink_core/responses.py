@@ -64,7 +64,6 @@ def api_response(
         "errors": errors or {},
     }
     if status_code >= 400:
-        # 4xx codes outside the catalog (405, 415...) are client mistakes, not server faults.
         fallback = ErrorCode.VALIDATION_ERROR if status_code < 500 else ErrorCode.INTERNAL_SERVER_ERROR
         payload["code"] = code or DEFAULT_ERROR_CODES.get(status_code, fallback)
     return Response(payload, status=status_code, headers=headers)
@@ -93,7 +92,6 @@ def _mysql_errno(exc: Exception) -> int | None:
 
 
 def _log_access_denied(request: Any) -> None:
-    # Lazy import: this module is loaded from settings, before the app registry is ready.
     from system.models import AuditAction
     from system.services import log_request_event
 

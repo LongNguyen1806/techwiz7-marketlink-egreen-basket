@@ -15,9 +15,9 @@ from notifications.models import Notification
 from orders.models import Order, OrderStatus
 from orders.selectors import OPEN_TAB, customer_orders_queryset
 
-UPCOMING_LIMIT = 3  # C-00 shows the three nearest pickups
-FAVORITE_FARMER_LIMIT = 4  # C-00 shows four farmer cards
-NOTIFICATION_LIMIT = 5  # C-00 shows five notification rows
+UPCOMING_LIMIT = 3
+FAVORITE_FARMER_LIMIT = 4
+NOTIFICATION_LIMIT = 5
 
 
 def _counts(customer) -> dict[str, int]:

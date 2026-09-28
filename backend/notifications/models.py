@@ -6,7 +6,6 @@ from marketlink_core.models import BaseModel, CreatedAtModel
 
 
 class NotificationType(models.TextChoices):
-    # Customer notifications
     ORDER_ACCEPTED = "ORDER_ACCEPTED", "Order Accepted"
     ORDER_READY = "ORDER_READY", "Order Ready for Pickup"
     ORDER_DECLINED = "ORDER_DECLINED", "Order Declined"
@@ -15,7 +14,6 @@ class NotificationType(models.TextChoices):
     ORDER_CHANGE_REJECTED = "ORDER_CHANGE_REJECTED", "Order Change Request Rejected"
     ORDER_ITEM_SOLD_OUT = "ORDER_ITEM_SOLD_OUT", "Order Item Sold Out"
     RESTOCK = "RESTOCK", "Favorite Product Restocked"
-    # Farmer notifications
     ORDER_PLACED = "ORDER_PLACED", "New Order Placed"
     ORDER_MODIFIED = "ORDER_MODIFIED", "Order Modified by Customer"
     ORDER_CANCELLED = "ORDER_CANCELLED", "Order Cancelled by Customer"
@@ -25,26 +23,16 @@ class NotificationType(models.TextChoices):
     )
     ACCOUNT_STATUS_CHANGED = "ACCOUNT_STATUS_CHANGED", "Account Status Changed"
     MARKET_SCHEDULE_CHANGED = "MARKET_SCHEDULE_CHANGED", "Market Schedule Changed"
-    # Sent to both sides when Admin closes a market (AD-17), carrying the reason they gave.
     MARKET_CLOSED = "MARKET_CLOSED", "Market Closed"
-    # Sent to both sides when Admin changes where or when a market runs: one notice each,
-    # carrying every change and any orders it cancelled.
     MARKET_UPDATED = "MARKET_UPDATED", "Market Details Changed"
-    # To both sides when an order that needed a new pickup time got none before the old one.
-    # To the shopper when repeated no-shows lock the account.
     ACCOUNT_LOCKED_NO_SHOW = "ACCOUNT_LOCKED_NO_SHOW", "Account Locked After No-shows"
     ORDER_RESCHEDULE_MISSED = "ORDER_RESCHEDULE_MISSED", "Order Cancelled, No New Pickup Time"
-    # Sent to the stall when Admin takes one of its products down (AD-21b).
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Product Blocked by Admin"
-    # The outcome of the review a new or edited listing goes through.
     PRODUCT_APPROVED = "PRODUCT_APPROVED", "Product Approved"
     PRODUCT_REJECTED = "PRODUCT_REJECTED", "Product Rejected"
     STALL_MARKET_APPROVED = "STALL_MARKET_APPROVED", "Market Registration Approved"
     STALL_MARKET_REJECTED = "STALL_MARKET_REJECTED", "Market Registration Refused"
-    # Admin notifications
-    # The AI listing review found a likely violation (or the weekly photo check found a problem).
     AI_LISTING_FLAGGED = "AI_LISTING_FLAGGED", "Listing Flagged by AI Review"
-    # One running notice, not one per listing: how many AI approvals no admin has checked yet.
     AI_AUTO_APPROVED = "AI_AUTO_APPROVED", "Listings Approved by AI"
 
 

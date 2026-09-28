@@ -41,14 +41,12 @@ def validate_pickup_date(
 
     weekday = pickup_date.isoweekday()
 
-    # (4) market is_active is checked on its own so the message tells the real reason.
     if not Market.objects.filter(id=market_id, is_active=True).exists():
         raise UnprocessableEntityError(
             "The market is not active.",
             code=ErrorCode.SLOT_NOT_AVAILABLE,
         )
 
-    # (1a) market day
     if not MarketOperatingDay.objects.filter(market_id=market_id, day_of_week=weekday).exists():
         raise UnprocessableEntityError(
             "The market is not operating on the selected pickup date.",
@@ -99,8 +97,6 @@ def validate_pickup_date(
             code=ErrorCode.SLOT_NOT_AVAILABLE,
         )
 
-    # (1c) inside the market's opening hours. Slots outside them are switched off when the
-    # hours change, but a slot is never offered on that alone.
     market = Market.objects.only("open_time", "close_time").get(pk=market_id)
     if slot.start_time < market.open_time or slot.end_time > market.close_time:
         raise UnprocessableEntityError(
@@ -108,7 +104,6 @@ def validate_pickup_date(
             code=ErrorCode.SLOT_NOT_AVAILABLE,
         )
 
-    # (1b) farmer operating day (D-031). Missing or broken data never lets a date through.
     farmer = slot.farmer_market.farmer
     operating_days = farmer.operating_days if isinstance(farmer.operating_days, list) else []
     if weekday not in operating_days:

@@ -99,7 +99,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         payload.update(body)
         return self.client.post(SLOTS_URL, payload, format="json")
 
-    # --- FA-04 ---
 
     def test_list_markets(self):
         self._order(market=self.market_a, slot=self.slot_mon)
@@ -125,7 +124,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         self.client.force_authenticate(user=self.customer)
         self.assertEqual(self.client.get(MARKETS_URL).status_code, 403)
 
-    # --- FA-05 / FA-06 ---
 
     def test_join_market(self):
         res = self.client.post(MARKETS_URL, {"market_id": self.market_b.pk, "stall_label": " Gate 2 "}, format="json")
@@ -167,7 +165,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         res = self.client.patch(f"{MARKETS_URL}{self.other_fm.pk}/", {"stall_label": "Mine"}, format="json")
         self.assertEqual(res.status_code, 404)
 
-    # --- FA-07 ---
 
     def test_leave_market_blocked_by_open_order(self):
         order = self._order(market=self.market_a, slot=self.slot_mon, status=OrderStatus.ACCEPTED)
@@ -187,7 +184,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         self.assertEqual(done.stall_label, "Row A1")
         self.assertEqual(self.client.delete(f"{MARKETS_URL}{self.other_fm.pk}/").status_code, 404)
 
-    # --- FA-08 ---
 
     def test_create_slot(self):
         res = self._slot()
@@ -198,13 +194,13 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
 
     def test_create_slot_rule_violations(self):
         cases = [
-            ({"day_of_week": 7}, "day_of_week"),  # market A is closed on Sunday
-            ({"day_of_week": 2}, "day_of_week"),  # market open, but not a farmer operating day
-            ({"start_time": "05:30"}, "start_time"),  # before market opens
-            ({"end_time": "12:30"}, "end_time"),  # after market closes
+            ({"day_of_week": 7}, "day_of_week"),
+            ({"day_of_week": 2}, "day_of_week"),
+            ({"start_time": "05:30"}, "start_time"),
+            ({"end_time": "12:30"}, "end_time"),
             ({"start_time": "09:00", "end_time": "08:00"}, "end_time"),
-            ({"day_of_week": 1, "start_time": "08:00", "end_time": "10:00"}, "start_time"),  # overlaps 07-09
-            ({"day_of_week": 1, "start_time": "07:00", "end_time": "08:00"}, "start_time"),  # same start
+            ({"day_of_week": 1, "start_time": "08:00", "end_time": "10:00"}, "start_time"),
+            ({"day_of_week": 1, "start_time": "07:00", "end_time": "08:00"}, "start_time"),
             ({"farmer_market_id": 999999}, "farmer_market_id"),
             ({"start_time": "7h"}, "start_time"),
         ]
@@ -231,7 +227,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn("farmer_market_id", res.data["errors"])
 
-    # --- FA-09 ---
 
     def test_update_slot_time_and_turn_off(self):
         url = f"{SLOTS_URL}{self.slot_mon.pk}/"
@@ -243,7 +238,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         self.assertFalse(res.data["data"]["is_active"])
 
     def test_turning_on_rechecks_rules(self):
-        # D-022: the market changed its hours and the slot was switched off; it no longer fits.
         PickupSlot.objects.filter(pk=self.slot_mon.pk).update(is_active=False)
         Market.objects.filter(pk=self.market_a.pk).update(open_time="08:00")
         url = f"{SLOTS_URL}{self.slot_mon.pk}/"
@@ -268,7 +262,6 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         res = self.client.patch(f"{SLOTS_URL}{self.other_slot.pk}/", {"is_active": False}, format="json")
         self.assertEqual(res.status_code, 404)
 
-    # --- FA-10 ---
 
     def test_delete_slot(self):
         order = self._order(market=self.market_a, slot=self.slot_mon)

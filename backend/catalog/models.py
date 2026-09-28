@@ -11,12 +11,12 @@ from marketlink_core.models import BaseModel, CreatedAtModel, HistoryRequestMeta
 class Unit(models.TextChoices):
     """How farm produce is sold at a Vietnamese market."""
 
-    KG = "KG", "Kilogram"  # weighed: most vegetables and fruit
-    BUNCH = "BUNCH", "Bunch"  # bó / nải: leafy greens, herbs, bananas
-    EACH = "EACH", "Each"  # trái / quả: pomelo, melon, gourd
-    BAG = "BAG", "Bag"  # túi: rice, beans, nuts, salt, sugar, coffee
-    BOX = "BOX", "Box"  # hộp: strawberries, grapes
-    PACK = "PACK", "Pack"  # gói: spices, tea
+    KG = "KG", "Kilogram"
+    BUNCH = "BUNCH", "Bunch"
+    EACH = "EACH", "Each"
+    BAG = "BAG", "Bag"
+    BOX = "BOX", "Box"
+    PACK = "PACK", "Pack"
 
 
 class ModerationAction(models.TextChoices):
@@ -46,18 +46,10 @@ class ReviewStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
 
 
-# Changing any of these is changing what the listing *claims to be*, so it goes back into the
-# queue. Price and stock are deliberately absent: a stall that has to wait for an admin before
-# it can correct its own stock level will stop correcting it, and then the stock figure - the
-# one number the whole booking flow rests on - becomes fiction.
 REVIEWABLE_FIELDS = ("name", "description", "image", "category_id")
 
-# The line quantity cap per order (checkout accepts 1-999); a stall's max_per_order sits inside it.
 MAX_ORDER_QUANTITY = 999
 
-# "Shoppers can buy this" on the product row itself. Orders already placed do not depend on it:
-# a listing sent back for review drops out of the catalogue and out of new orders, while the
-# orders it already has keep moving (accept, ready, complete) as normal.
 ON_SALE_FILTER = Q(
     is_available=True, is_archived=False, is_hidden_by_admin=False, review_status=ReviewStatus.APPROVED
 )
@@ -65,9 +57,6 @@ ON_SALE_FILTER = Q(
 
 class Category(BaseModel):
     name = models.CharField(max_length=50, unique=True, db_collation="utf8mb4_0900_as_ci")
-    # Unique, and required: a picture shared by two categories is a symbol that means two
-    # things, which reads worse on the shopper's home page than no picture at all. The set of
-    # permitted names lives in catalog/icons.py and the serializer refuses anything else.
     icon = models.CharField(max_length=50, unique=True)
     display_order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -95,17 +84,12 @@ class Product(BaseModel):
 
     stock_quantity = models.PositiveIntegerField(default=0)
     weekly_default_quantity = models.PositiveIntegerField(null=True, blank=True)
-    # Per-order quantity window set by the stall: at least min_per_order (1 = any amount) and at
-    # most max_per_order (NULL = no cap beyond stock), from what it can sell to one order.
     min_per_order = models.PositiveSmallIntegerField(default=1)
     max_per_order = models.PositiveSmallIntegerField(null=True, blank=True)
 
     is_available = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
 
-    # The approval state is separate from the hidden flag on purpose: "nobody has looked at
-    # this yet" and "an admin looked and took it down" are different facts, and a listing can
-    # be waiting for a second review while an earlier approved version is still on sale.
     review_status = models.CharField(
         max_length=10, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
     )
@@ -120,7 +104,6 @@ class Product(BaseModel):
     )
 
     is_hidden_by_admin = models.BooleanField(default=False)
-    # NULL whenever is_hidden_by_admin is False; the two are cleared together.
     moderation_action = models.CharField(
         max_length=10, choices=ModerationAction.choices, null=True, blank=True
     )
@@ -150,8 +133,6 @@ class Product(BaseModel):
             ),
             models.Index(fields=["price"], name="prod_price_idx"),
             models.Index(fields=["created_at"], name="prod_created_idx"),
-            # The approval queue is read far more often than it is written to, and it is
-            # always read as "everything still waiting, oldest first".
             models.Index(fields=["review_status", "created_at"], name="prod_review_idx"),
         ]
         constraints = [
@@ -201,15 +182,12 @@ class ProductMarket(CreatedAtModel):
         return f"{self.product_id} at {self.farmer_market_id}"
 
 
-# --------------------------------------------------------------------------------------------
-# AI-assisted listing review. The AI only advises; every decision stays with an administrator.
 
 
 class AIVerdict(models.TextChoices):
     PASS = "PASS", "Nothing found"
     NEEDS_REVIEW = "NEEDS_REVIEW", "Worth a closer look"
     LIKELY_VIOLATION = "LIKELY_VIOLATION", "Likely breaks the rules"
-    # The rules still ran, but the model could not be asked (off, no key, timeout, quota).
     UNAVAILABLE = "UNAVAILABLE", "AI check unavailable"
 
 
@@ -219,9 +197,7 @@ class AIReviewKind(models.TextChoices):
 
 
 class AIAutoAction(models.TextChoices):
-    # PASS: the listing went on sale without waiting for an admin.
     APPROVED = "APPROVED", "Approved by AI"
-    # LIKELY_VIOLATION: kept off sale and put in the follow-up queue.
     HELD = "HELD", "Held by AI"
 
 
@@ -231,11 +207,9 @@ class ProductAIReview(CreatedAtModel):
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="ai_reviews")
     kind = models.CharField(max_length=15, choices=AIReviewKind.choices)
-    # sha256 of the reviewed content: the same content is never paid for twice.
     content_hash = models.CharField(max_length=64)
     verdict = models.CharField(max_length=20, choices=AIVerdict.choices)
     risk_score = models.PositiveSmallIntegerField(default=0)
-    # [{"source": "rules"|"ai", "check": str, "severity": "LOW"|"MEDIUM"|"HIGH", "message": str}]
     findings = models.JSONField(default=list)
     summary = models.CharField(max_length=500, blank=True, default="")
     suggested_category = models.ForeignKey(
@@ -247,10 +221,8 @@ class ProductAIReview(CreatedAtModel):
     prompt_version = models.CharField(max_length=20, blank=True, default="")
     rules_version = models.CharField(max_length=20, blank=True, default="")
     duration_ms = models.PositiveIntegerField(null=True, blank=True)
-    # What the admin decided afterwards (APPROVED / REJECTED), for the agreement figures.
     admin_decision = models.CharField(max_length=10, choices=ReviewStatus.choices, null=True, blank=True)
     admin_decided_at = models.DateTimeField(null=True, blank=True)
-    # What the AI did on its own (#6), and whether an admin has looked at it since (#8).
     auto_action = models.CharField(max_length=10, choices=AIAutoAction.choices, null=True, blank=True)
     auto_action_at = models.DateTimeField(null=True, blank=True)
     admin_checked_at = models.DateTimeField(null=True, blank=True)

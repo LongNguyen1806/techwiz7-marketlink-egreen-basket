@@ -42,9 +42,7 @@ def test_orders_by_day_always_has_thirty_buckets(admin_client):
     data = admin_client.get(reverse(URL_NAME)).data["data"]["orders_by_day"]
 
     assert len(data) == DASHBOARD_DAYS
-    # A chart needs an unbroken axis, so empty days appear as zeros.
     assert all(row["count"] == 0 for row in data)
-    # DateField serializes to an ISO string.
     assert data[-1]["date"] == str(timezone.localdate())
     assert data[0]["date"] == str(timezone.localdate() - timedelta(days=DASHBOARD_DAYS - 1))
 
@@ -63,7 +61,6 @@ def test_orders_land_in_the_bucket_of_the_day_they_were_created(
     data = admin_client.get(reverse(URL_NAME)).data["data"]["orders_by_day"]
 
     assert data[-1]["count"] == 2
-    # The backdated order falls outside the 30-day window entirely.
     assert sum(row["count"] for row in data) == 2
 
 
@@ -119,7 +116,6 @@ def test_a_pending_farmer_row_carries_its_counts(admin_client, make_farmer, mark
     assert row["id"] == farmer.user_id
     assert row["email"] == "pending@marketlink.test"
     assert row["status"] == FarmerStatus.PENDING
-    # Archived products are soft-deleted, so only the live catalogue counts.
     assert row["product_count"] == 1
     assert row["open_order_count"] == 1
 
@@ -129,9 +125,6 @@ def test_customer_cannot_reach_the_dashboard(customer_client):
     assert customer_client.get(reverse(URL_NAME)).status_code == 403
 
 
-# ------------------------------------------------- orders per calendar month
-# The dashboard chart steps month by month, so this endpoint has to give whole calendar
-# months, including the ones with nothing in them.
 
 MONTH_URL_NAME = "admin-dashboard-orders-by-day"
 
@@ -164,7 +157,6 @@ def test_a_month_counts_only_its_own_orders(admin_client, make_order):
     Order.objects.filter(pk=inside.pk).update(
         created_at=timezone.make_aware(datetime.combine(first_of_this_month, time(9, 0)))
     )
-    # One second before the month began: the boundary must exclude it.
     Order.objects.filter(pk=outside.pk).update(
         created_at=timezone.make_aware(datetime.combine(first_of_this_month, time.min))
         - timedelta(seconds=1)

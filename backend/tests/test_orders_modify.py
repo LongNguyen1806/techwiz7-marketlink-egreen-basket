@@ -150,7 +150,6 @@ class OrderModifyTestCase(TestCase):
         self.assertEqual(order.status, OrderStatus.ACCEPTED)
         stock_before_modify = Product.objects.get(id=self.product1.id).stock_quantity
 
-        # Customer submits modification for an ACCEPTED order
         modified = modify_order(
             order_id=order.id,
             actor=self.customer,
@@ -159,23 +158,18 @@ class OrderModifyTestCase(TestCase):
             note="Fresh please",
         )
 
-        # Under D-030 v1.7, status stays ACCEPTED and items are kept intact
         self.assertEqual(modified.status, OrderStatus.ACCEPTED)
         self.assertEqual(modified.version, 3)
 
-        # Physical stock is NOT modified yet
         stock_after_modify = Product.objects.get(id=self.product1.id).stock_quantity
         self.assertEqual(stock_after_modify, stock_before_modify)
 
-        # Order items in DB remain unchanged (qty 2)
         self.assertEqual(modified.items.first().quantity, 2)
         self.assertEqual(modified.total_amount, Decimal("20.00"))
 
-        # pending_change is recorded
         self.assertIsNotNone(modified.pending_change)
         self.assertEqual(modified.pending_change["items"][0]["quantity"], 6)
 
-        # History is recorded with transition=None, from_status=ACCEPTED, to_status=ACCEPTED
         latest_history = modified.status_history.last()
         self.assertIsNone(latest_history.transition)
         self.assertEqual(latest_history.from_status, OrderStatus.ACCEPTED)
@@ -187,7 +181,6 @@ class OrderModifyTestCase(TestCase):
         order = self._create_order(qty=2)
         stock_before = Product.objects.get(id=self.product1.id).stock_quantity
 
-        # Modify item quantity while still PLACED
         modified = modify_order(
             order_id=order.id,
             actor=self.customer,
@@ -196,7 +189,6 @@ class OrderModifyTestCase(TestCase):
         )
 
         self.assertEqual(modified.status, OrderStatus.PLACED)
-        # PLACED orders do not adjust physical stock
         self.assertEqual(Product.objects.get(id=self.product1.id).stock_quantity, stock_before)
         self.assertEqual(modified.total_amount, Decimal("50.00"))
 
@@ -209,11 +201,9 @@ class OrderModifyTestCase(TestCase):
         order = self._create_order(qty=2)
         self.assertEqual(order.items.first().unit_price, Decimal("10.00"))
 
-        # Catalog price surges to $25 after order was placed
         self.product1.price = Decimal("25.00")
         self.product1.save()
 
-        # Customer adds a new product while keeping product1
         modified = modify_order(
             order_id=order.id,
             actor=self.customer,
@@ -227,11 +217,9 @@ class OrderModifyTestCase(TestCase):
         item1 = modified.items.get(product_id=self.product1.id)
         item2 = modified.items.get(product_id=self.product2.id)
 
-        # Existing item preserves original snapshot price $10.00
         self.assertEqual(item1.unit_price, Decimal("10.00"))
         self.assertEqual(item1.line_total, Decimal("20.00"))
 
-        # New item gets current catalog price $5.00
         self.assertEqual(item2.unit_price, Decimal("5.00"))
         self.assertEqual(item2.line_total, Decimal("15.00"))
         self.assertEqual(modified.total_amount, Decimal("35.00"))
@@ -333,7 +321,6 @@ class OrderModifyTestCase(TestCase):
         self.product1.min_per_order = 3
         self.product1.save(update_fields=["min_per_order"])
 
-        # Unchanged line: the minimum rose after the order was placed, which is not the customer's doing.
         kept = modify_order(
             order_id=order.id,
             actor=self.customer,

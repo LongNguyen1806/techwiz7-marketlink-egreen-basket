@@ -49,7 +49,6 @@ class _PublicReviewListView(ListAPIView):
         response = self.paginator.get_paginated_response(
             PublicReviewSerializer(rows, many=True).data
         )
-        # The summary describes every visible review, so it ignores the rating filter.
         response.data["data"]["summary"] = RatingSummarySerializer(
             rating_summary(self._unfiltered(target_id))
         ).data

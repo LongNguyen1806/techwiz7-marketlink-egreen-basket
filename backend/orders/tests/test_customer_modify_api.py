@@ -130,7 +130,6 @@ class TestChangeRequestForAcceptedOrder:
         assert data["status_history"][-1]["change_reason"].startswith("Change request submitted:")
 
     def test_estimate_keeps_the_prices_the_customer_saw(self, shop):
-        # v1.8: kept items keep their order price, new items the price at request time.
         order = _order(shop, quantity=2, status="ACCEPTED")
         _patch(shop.api, order, _items((shop.tomato, 3), (shop.herbs, 1)))
         shop.tomato.price = shop.herbs.price = Decimal("9.99")
@@ -160,7 +159,7 @@ class TestChangeRequestForAcceptedOrder:
 
         assert (pending["pickup_slot_id"], pending["pickup_date"]) == (slot.pk, new_date.isoformat())
         assert pending["pickup_start_at"] and pending["pickup_end_at"] and pending["cutoff_at"]
-        assert pending["items"] is None  # v1.8: items unchanged
+        assert pending["items"] is None
 
 
 @pytest.mark.django_db

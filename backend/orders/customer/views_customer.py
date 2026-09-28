@@ -31,8 +31,6 @@ from orders.services.idempotency_service import run_idempotent
 
 
 def _checkout_with_summaries(*, customer, groups) -> list:
-    # The response is built inside the same transaction: if it fails the orders roll back too, so the
-    # idempotency key can safely be released and a retry cannot create the orders a second time.
     with transaction.atomic():
         orders = place_orders(customer=customer, groups=groups)
         return OrderSummaryReadSerializer(order_summary_queryset([order.pk for order in orders]), many=True).data
@@ -42,7 +40,6 @@ def _place_orders(request) -> tuple[int, dict]:
     serializer = CheckoutWriteSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     groups = serializer.validated_data["groups"]
-    # v1.7: the lazy sweep commits on its own, before the checkout transaction starts.
     expire_overdue_before_checkout(farmer_ids=[group["farmer_id"] for group in groups])
     summaries = run_with_deadlock_retry(_checkout_with_summaries, customer=request.user, groups=groups)
     return 201, api_response(
@@ -55,8 +52,6 @@ class CustomerOrdersView(APIView):
     throttle_scope = "orders"
 
     def get_throttles(self):
-        # Pass 4B §1.4 / D-005 guard 3: every POST to this endpoint counts toward "orders" (10/hour);
-        # modify and cancel live on other endpoints and are not limited by it.
         return [ScopedRateThrottle()] if self.request.method == "POST" else super().get_throttles()
 
     def post(self, request):

@@ -17,7 +17,6 @@ from orders.services.fsm import run_with_retry_if_top_level
 
 ALL_DAYS = frozenset(range(1, 8))
 
-# Columns FA-03 may write; the save lists exactly the changed ones.
 UPDATABLE_FIELDS = (
     "stall_name",
     "contact_person",
@@ -35,7 +34,6 @@ UPDATABLE_FIELDS = (
 @dataclass(frozen=True)
 class ProfileUpdateResult:
     profile: FarmerProfile
-    # Set only when operating days were removed (FA-03 response adds deactivated_slot_count).
     deactivated_slot_count: int | None = None
 
 
@@ -61,12 +59,10 @@ def update_farmer_profile(*, farmer_id: int, data: dict[str, Any]) -> ProfileUpd
     data = dict(data)
     _resolve_coordinates(farmer_id, data)
     if "operating_days" in data:
-        # Orders whose pickup already started must not block removing a day (A-005 lazy sweep).
         expire_overdue_orders(farmer_id=farmer_id)
 
     def _execute() -> ProfileUpdateResult:
         with transaction.atomic():
-            # Lock order (§5.2): farmer_profiles -> orders (read) -> pickup_slots.
             profile = (
                 FarmerProfile.objects.select_for_update(of=("self",))
                 .select_related("user")
@@ -74,8 +70,6 @@ def update_farmer_profile(*, farmer_id: int, data: dict[str, Any]) -> ProfileUpd
             )
             deactivated = None
             if "operating_days" in data and data["operating_days"] != profile.operating_days:
-                # Enforce on every day that is no longer an operating day (not only the ones just
-                # removed), so rows created before D-031 get consistent slots too.
                 off_days = sorted(ALL_DAYS - set(data["operating_days"]))
                 count = _deactivate_off_days(farmer_id=farmer_id, off_days=off_days) if off_days else 0
                 if set(profile.operating_days or []) - set(data["operating_days"]) or count:
@@ -83,7 +77,7 @@ def update_farmer_profile(*, farmer_id: int, data: dict[str, Any]) -> ProfileUpd
 
             old_image_name = profile.image.name if "image" in data and profile.image else None
             if "image" in data:
-                data["image"].seek(0)  # a deadlock retry must upload the whole file again
+                data["image"].seek(0)
             changed = [field for field in UPDATABLE_FIELDS if field in data]
             for field in changed:
                 setattr(profile, field, data[field])
@@ -98,7 +92,6 @@ def update_farmer_profile(*, farmer_id: int, data: dict[str, Any]) -> ProfileUpd
     try:
         return run_with_retry_if_top_level(_execute)
     except IntegrityError as exc:
-        # Two requests took the same phone at once: the UNIQUE key (D-028) is the last guard.
         if "phone" in str(exc).lower():
             raise _phone_taken_error() from exc
         raise
@@ -123,7 +116,6 @@ def _deactivate_off_days(*, farmer_id: int, off_days: list[int]) -> int:
             code=ErrorCode.RESOURCE_IN_USE,
             errors={"order_ids": blocking},
         )
-    # One save per slot (not QuerySet.update) so each switched-off slot gets a history row (v1.8).
     slots = list(
         PickupSlot.objects.select_for_update(of=("self",))
         .filter(farmer_market__farmer_id=farmer_id, day_of_week__in=off_days, is_active=True)

@@ -20,11 +20,9 @@ from system.models import FlagTarget, ModerationFlag
 
 logger = logging.getLogger("marketlink")
 
-# Every note starts with this, so the queue and the log show the system raised the flag.
 AUTO_PREFIX = "Auto:"
 NOTE_MAX_LENGTH = 500
 
-# "Not as described", as shoppers say it: several low ratings on one product in a short time.
 LOW_RATING_MAX = 2
 LOW_RATING_COUNT = 3
 LOW_RATING_WINDOW_DAYS = 30
@@ -37,7 +35,6 @@ def _raise_once(target_type: str, target_id: int, note: str) -> ModerationFlag |
     ).exists()
     if already_queued:
         return None
-    # raised_by stays empty: the system raised it, and the note says so.
     return ModerationFlag.objects.create(
         target_type=target_type,
         target_id=target_id,

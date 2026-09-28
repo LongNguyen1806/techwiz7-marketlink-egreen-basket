@@ -7,8 +7,6 @@ from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
-# Prints the values the settings module ends up with. load_dotenv() never overrides a variable
-# that is already set, so the environment given here wins over the developer's .env file.
 PROBE = (
     "import marketlink_core.settings as s;"
     "print(s.DEBUG, s.ALLOWED_HOSTS, s.REST_FRAMEWORK['NUM_PROXIES'], getattr(s, 'SECURE_SSL_REDIRECT', None))"
@@ -36,7 +34,6 @@ def test_production_without_secret_key_refuses_to_start():
 
 
 def test_debug_is_off_when_the_variable_is_missing():
-    # "" counts as set for load_dotenv, so .env cannot turn DEBUG back on; "" parses as False.
     result = _load_settings(DEBUG="", SECRET_KEY="test-only-secret", ALLOWED_HOSTS="", NUM_PROXIES="0")
 
     assert result.returncode == 0, result.stderr

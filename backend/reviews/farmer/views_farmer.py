@@ -63,7 +63,6 @@ class FarmerReviewListView(FarmerReviewBaseView):
             if filters["replied"] is not None:
                 queryset = queryset.filter(reply__isnull=not filters["replied"])
             keys += [(created_at, pk, review_type) for pk, created_at in queryset.values_list("id", "created_at")]
-        # Both tables share one list (type omitted): merge by date, newest first, then paginate.
         keys.sort(key=lambda key: (key[0], key[1]), reverse=True)
 
         paginator = StandardPagination()

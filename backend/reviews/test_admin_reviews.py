@@ -23,7 +23,6 @@ PRODUCT_RESTORE = "admin-product-review-restore"
     ],
 )
 def test_display_name_is_shortened(full_name, expected):
-    # U-05 shows an abbreviated customer name on reviews.
     assert short_customer_name(full_name) == expected
 
 
@@ -82,7 +81,6 @@ def test_filter_by_rating_spans_both_tables(admin_client, farmer_review, product
     assert admin_client.get(reverse(LIST_URL_NAME), {"rating": "2"}).data["data"]["count"] == 1
     assert admin_client.get(reverse(LIST_URL_NAME), {"rating": "5"}).data["data"]["count"] == 1
     assert admin_client.get(reverse(LIST_URL_NAME), {"rating": "3"}).data["data"]["count"] == 0
-    # Out-of-range and non-numeric values fall back to no filter.
     assert admin_client.get(reverse(LIST_URL_NAME), {"rating": "9"}).data["data"]["count"] == 2
     assert admin_client.get(reverse(LIST_URL_NAME), {"rating": "abc"}).data["data"]["count"] == 2
 
@@ -102,7 +100,6 @@ def test_page_size_allow_list_applies_to_the_merged_list(admin_client, farmer_re
     data = admin_client.get(reverse(LIST_URL_NAME), {"page_size": "5"}).data["data"]
     assert data["page_size"] == 5
 
-    # 7 is not in the 5 / 10 / 20 allow-list, so it falls back to the default.
     fallback = admin_client.get(reverse(LIST_URL_NAME), {"page_size": "7"}).data["data"]
     assert fallback["page_size"] == 20
 
@@ -178,13 +175,11 @@ def test_hiding_never_deletes_the_review(admin_client, farmer_review):
         reverse(FARMER_HIDE, args=[farmer_review.id]), {"reason": "Abusive language"}, format="json"
     )
 
-    # D-016: moderation hides, it never hard-deletes.
     assert FarmerReview.objects.filter(pk=farmer_review.id).exists()
 
 
 @pytest.mark.django_db
 def test_the_two_id_spaces_do_not_cross(admin_client, farmer_review, product_review):
-    # A farmer-review route must not act on a product review that shares the id.
     admin_client.post(
         reverse(FARMER_HIDE, args=[farmer_review.id]), {"reason": "Abusive language"}, format="json"
     )
@@ -226,7 +221,6 @@ def test_an_empty_list_is_still_a_valid_page(admin_client):
 
 @pytest.mark.django_db
 def test_reviews_sort_by_rating_across_both_tables(admin_client, farmer_review, product_review):
-    # AD-22 pages over a UNION, so rating had to join the projection for this to be sortable.
     def ratings(ordering):
         response = admin_client.get(reverse(LIST_URL_NAME), {"ordering": ordering})
         return [row["rating"] for row in response.data["data"]["results"]]
@@ -237,5 +231,4 @@ def test_reviews_sort_by_rating_across_both_tables(admin_client, farmer_review, 
 
 @pytest.mark.django_db
 def test_reviews_reject_a_column_the_union_does_not_select(admin_client):
-    # comment is on both tables but not in the UNION projection, so it cannot be sorted on.
     assert admin_client.get(reverse(LIST_URL_NAME), {"ordering": "comment"}).status_code == 400

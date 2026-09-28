@@ -8,7 +8,6 @@ from orders.models import ActorRole, Order, OrderItem, OrderStatus, OrderStatusH
 from orders.services.fsm import SYSTEM_REASON_TEXT
 from orders.services.pending_change import present_pending_change
 
-# W4.1: a PLACED order this close to pickup_start_at is highlighted before it auto-expires.
 EXPIRING_SOON_HOURS = 2
 
 
@@ -109,7 +108,6 @@ class FarmerOrderSummarySerializer(serializers.ModelSerializer):
         ]
 
     def get_is_overdue(self, obj: Order) -> bool:
-        # PLACED past pickup_start_at but not swept yet (D-009).
         return obj.status == OrderStatus.PLACED and timezone.now() >= obj.pickup_start_at
 
     def get_is_expiring_soon(self, obj: Order) -> bool:
@@ -147,7 +145,6 @@ class FarmerOrderSummarySerializer(serializers.ModelSerializer):
         return len(obj.items.all())
 
     def get_stock_warning(self, obj: Order) -> bool:
-        # F-02 (D-029): current stock cannot cover an item of this PLACED order.
         if obj.status != OrderStatus.PLACED:
             return False
         return any(item.product.stock_quantity < item.quantity for item in obj.items.all())
@@ -175,7 +172,6 @@ class FarmerOrderDetailSerializer(FarmerOrderSummarySerializer):
         return {**super().get_customer(obj), "email": obj.customer.email}
 
     def get_pending_change(self, obj: Order) -> dict[str, Any] | None:
-        # Pass 4B §3.4 shape, not the raw JSON column (D-030).
         return present_pending_change(obj)
 
     def get_allowed_actions(self, obj: Order) -> list[str]:
@@ -184,7 +180,6 @@ class FarmerOrderDetailSerializer(FarmerOrderSummarySerializer):
         if obj.status == OrderStatus.PLACED:
             if now < obj.pickup_start_at:
                 actions.extend(["ACCEPT", "DECLINE"])
-                # FA-36 needs at least one item left after removal.
                 if len(obj.items.all()) > 1:
                     actions.append("MARK_ITEM_SOLD_OUT")
         elif obj.status == OrderStatus.ACCEPTED:

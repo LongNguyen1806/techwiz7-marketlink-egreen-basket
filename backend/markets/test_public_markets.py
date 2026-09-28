@@ -12,7 +12,6 @@ LIST_URL = "public-market-list"
 DETAIL_URL = "public-market-detail"
 FARMERS_URL = "public-market-farmer-list"
 
-# Ho Chi Minh City centre, then a point roughly 6 km away.
 HCMC = ("10.762622", "106.660172")
 NEARBY = ("10.800000", "106.700000")
 
@@ -41,7 +40,6 @@ def test_a_guest_can_list_markets(api_client, market):
     assert row["operating_days"] == [MONDAY, WEDNESDAY]
     assert row["open_time"] == "06:00"
     assert row["distance_km"] is None
-    # is_favorite is null for anyone who is not a signed-in customer.
     assert row["is_favorite"] is None
 
 
@@ -59,7 +57,6 @@ def test_search_and_day_filters(api_client, market, far_market):
     assert api_client.get(reverse(LIST_URL), {"q": "riverside"}).data["data"]["count"] == 1
     assert api_client.get(reverse(LIST_URL), {"day": MONDAY}).data["data"]["count"] == 1
     assert api_client.get(reverse(LIST_URL), {"day": SATURDAY}).data["data"]["count"] == 1
-    # An unusable day is ignored rather than rejected.
     assert api_client.get(reverse(LIST_URL), {"day": "99"}).data["data"]["count"] == 2
 
 
@@ -71,7 +68,6 @@ def test_distance_is_measured_from_the_given_point(api_client, market, far_marke
 
     by_name = {row["name"]: row for row in rows}
     assert by_name["Central Market"]["distance_km"] == 0.0
-    # Haversine over ~0.038 lat / 0.040 lng is a little under 6 km.
     assert 5.0 < by_name["Riverside Market"]["distance_km"] < 7.0
 
 
@@ -84,7 +80,6 @@ def test_ordering_by_distance(api_client, market, far_market):
     ).data["data"]["results"]
     assert [row["name"] for row in nearest_first] == ["Central Market", "Riverside Market"]
 
-    # Without coordinates the request falls back to name order instead of failing.
     by_name = api_client.get(reverse(LIST_URL), {"ordering": "distance"}).data["data"]["results"]
     assert [row["name"] for row in by_name] == ["Central Market", "Riverside Market"]
 
@@ -138,7 +133,6 @@ def test_market_farmers_shows_only_approved_sellers(api_client, market, farmer_m
 
     assert len(rows) == 1
     assert rows[0]["stall_name"] == "Test Stall"
-    # PU-05 carries the stall label of the market being browsed.
     assert rows[0]["markets"] == [
         {"market_id": market.id, "market_name": "Central Market", "stall_label": "Row B, Stall 12"}
     ]

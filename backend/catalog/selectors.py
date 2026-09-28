@@ -34,8 +34,6 @@ def count_products_in_category(*, category_id: int) -> int:
     )["total"]
 
 
-# AD-20. rating_avg is an aggregate over reviews, so both directions are written out by hand
-# to keep products with no reviews at the bottom either way.
 ADMIN_PRODUCT_ORDERING = both_directions(
     {
         "name": ("name",),
@@ -44,13 +42,11 @@ ADMIN_PRODUCT_ORDERING = both_directions(
         "stock_quantity": ("stock_quantity",),
         "created_at": ("created_at",),
         "is_hidden": ("is_hidden_by_admin",),
-        # Latest AI listing review; unreviewed rows sort as the lowest risk.
         "ai_risk": ("ai_risk",),
     },
     tiebreak=("-id",),
 )
 ADMIN_PRODUCT_ORDERING["newest"] = ("-created_at", "-id")
-# The approval queue is worked from the front, like any queue.
 ADMIN_PRODUCT_ORDERING["oldest"] = ("created_at", "id")
 ADMIN_PRODUCT_ORDERING["rating"] = (F("rating_avg").asc(nulls_last=True), "-id")
 ADMIN_PRODUCT_ORDERING["-rating"] = (F("rating_avg").desc(nulls_last=True), "-id")
@@ -87,19 +83,14 @@ def list_products_for_admin(
         queryset = queryset.filter(Q(name__icontains=q) | Q(farmer__stall_name__icontains=q))
     if farmer_id is not None:
         queryset = queryset.filter(farmer_id=farmer_id)
-    # One row by id, which is how the follow-up queue hands a flagged product over: the link
-    # has to land on that product, not on a page it happens to be somewhere in.
     if product_id is not None:
         queryset = queryset.filter(pk=product_id)
-    # Reviewing a queue one produce type at a time is how an admin builds a sense of what a
-    # good listing for that type looks like.
     if category_id is not None:
         queryset = queryset.filter(category_id=category_id)
     if is_hidden is not None:
         queryset = queryset.filter(is_hidden_by_admin=is_hidden)
     if review_status in ReviewStatus.values:
         queryset = queryset.filter(review_status=review_status)
-    # The admin's triage: "what did the AI say about the listings still waiting?"
     if ai_verdict in AIVerdict.values:
         queryset = queryset.filter(ai_verdict=ai_verdict)
     elif ai_verdict == "NONE":
@@ -135,7 +126,6 @@ def linked_pairs(*, product_ids: Iterable[int]) -> set[tuple[int, int]]:
 
 
 def markets_for_products(*, product_ids: Iterable[int]) -> dict[int, list[dict]]:
-    # Farmer operating days come from active pickup slots, not a stored column (§3.2).
     ids = set(product_ids)
     rows = (
         PickupSlot.objects.filter(
@@ -183,16 +173,11 @@ PRODUCT_ORDERING = {
 
 
 def public_product_base() -> QuerySet[Product]:
-    # The shared "publicly on sale" rule (§6.2, §3.3). Every public and chatbot query starts
-    # here so no branch reinvents the visibility filter.
     return (
         Product.objects.filter(
             Exists(open_stalls_for_product()),
             is_archived=False,
             is_hidden_by_admin=False,
-            # A listing reaches shoppers only once an admin has looked at it. An edit that
-            # changes what the thing *is* sends it back to PENDING and off the shopper side
-            # until it is approved again; orders already placed for it are not affected.
             review_status=ReviewStatus.APPROVED,
             farmer__status=FarmerStatus.APPROVED,
             farmer__user__is_active=True,
@@ -227,8 +212,6 @@ def public_products(
 ) -> QuerySet[Product]:
     queryset = public_product_base()
     if ids:
-        # Refreshing the cart (C-01) must also return paused and sold-out rows so the
-        # frontend can mark them Unavailable, so in_stock does not apply here.
         return queryset.filter(id__in=list(ids)[:MAX_CART_REFRESH_IDS]).order_by("id")
     if in_stock:
         queryset = queryset.filter(is_available=True, stock_quantity__gt=0)

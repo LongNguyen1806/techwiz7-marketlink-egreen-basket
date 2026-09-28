@@ -42,7 +42,6 @@ def market(db):
 
 @pytest.fixture
 def product(db, approved_farmer):
-    # Icons are unique per category now, so a fixture cannot leave it to the default.
     category = Category.objects.create(name="Vegetables", icon="carrot", display_order=1)
     created = Product.objects.create(
         farmer=approved_farmer,
@@ -51,7 +50,6 @@ def product(db, approved_farmer):
         price="2.50",
         unit=Unit.KG,
         stock_quantity=10,
-        # On sale: only admin-approved listings are public (product pre-approval).
         review_status=ReviewStatus.APPROVED,
     )
     sell_at_every_stall(approved_farmer)

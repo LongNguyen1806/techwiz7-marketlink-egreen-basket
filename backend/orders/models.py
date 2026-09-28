@@ -88,9 +88,6 @@ class Order(BaseModel):
     )
     note = models.CharField(max_length=300, null=True, blank=True)
     pending_change = models.JSONField(null=True, blank=True)
-    # Set when the admin changes the market's days or hours and this pickup no longer fits.
-    # The shopper then picks a new time (or cancels); left alone, the order is declined when
-    # the old pickup time comes. Cleared as soon as a new time is chosen.
     reschedule_requested_at = models.DateTimeField(null=True, blank=True)
     total_amount = models.DecimalField(**MONEY_FIELD_KWARGS)
     version = models.PositiveIntegerField(default=1)
@@ -115,8 +112,6 @@ class Order(BaseModel):
             models.Index(
                 fields=["market", "status", "pickup_date"], name="ord_market_status_date_idx"
             ),
-            # Admin support searches by collection day without naming a market or a status,
-            # which the composite index above cannot serve.
             models.Index(fields=["pickup_date"], name="ord_pickup_date_idx"),
             models.Index(fields=["created_at"], name="ord_created_idx"),
         ]

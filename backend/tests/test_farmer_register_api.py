@@ -12,12 +12,12 @@ URL = "/api/auth/register/farmer/"
 GEOCODE = "accounts.services.registration.geocode_address"
 
 
-@override_settings(GEOCODING_ENABLED=False)  # never call Nominatim from tests
+@override_settings(GEOCODING_ENABLED=False)
 class FarmerRegisterAPITestCase(TestCase):
     """F1: AU-02 (FR-02, G-11, D-028, D-031, D-032)."""
 
     def setUp(self):
-        cache.clear()  # throttle "register" counts live in the cache
+        cache.clear()
         self.client = APIClient()
         self.payload = {
             "email": "  New.Farmer@Example.com ",
@@ -101,7 +101,6 @@ class FarmerRegisterAPITestCase(TestCase):
         self._assert_registered_without_coordinates("notfound@example.com")
 
     def test_geocoding_crash_does_not_block_registration(self):
-        # The error is logged (captured here instead of printing a traceback).
         with mock.patch(GEOCODE, side_effect=RuntimeError("boom")), self.assertLogs("marketlink", "ERROR") as logs:
             res = self._register(email="crash@example.com", phone="0912000333")
         self.assertEqual(res.status_code, 201)

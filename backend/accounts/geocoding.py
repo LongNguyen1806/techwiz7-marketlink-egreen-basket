@@ -17,11 +17,10 @@ from django.core.cache import cache
 logger = logging.getLogger("marketlink")
 
 TIMEOUT_SECONDS = 5
-# Nominatim usage policy: max 1 request per second for the whole app (shared via the cache).
 RATE_LIMIT_KEY = "geocoding:nominatim:slot"
 RATE_LIMIT_WINDOW_SECONDS = 1
 RATE_LIMIT_MAX_WAIT_SECONDS = 2
-COORDINATE_STEP = Decimal("0.000001")  # DecimalField(max_digits=9, decimal_places=6)
+COORDINATE_STEP = Decimal("0.000001")
 
 
 def geocode_address(address: str | None) -> tuple[Decimal, Decimal] | None:
@@ -43,7 +42,7 @@ def geocode_address(address: str | None) -> tuple[Decimal, Decimal] | None:
     try:
         with urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310 - fixed https URL from settings
             results = json.loads(response.read().decode("utf-8"))
-    except (OSError, ValueError):  # URLError, timeouts and bad JSON; the address is not logged
+    except (OSError, ValueError):
         logger.warning("Geocoding request failed", exc_info=True)
         return None
     return _parse_first_result(results)

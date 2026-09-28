@@ -51,7 +51,6 @@ class LoginEmailThrottle(CheckOnlyRateThrottle):
         email = data.get("email")
         if not isinstance(email, str) or not email.strip():
             return None
-        # Hashed: the cache key never holds the raw email address.
         ident = hashlib.sha256(email.strip().lower().encode("utf-8")).hexdigest()
         return self.cache_format % {"scope": self.scope, "ident": ident}
 

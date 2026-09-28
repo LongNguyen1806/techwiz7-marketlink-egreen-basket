@@ -2,12 +2,10 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 
-MIN_DAY = 1  # Monday (ISO weekday, same as DayOfWeek)
-MAX_DAY = 7  # Sunday
+MIN_DAY = 1
+MAX_DAY = 7
 
 
-# D-031: farmer_profiles.operating_days is a JSON list, so the rules live in code, not in a DB CHECK.
-# Used by FarmerProfile.clean()/save() and, later, by the AU-02 / FA-03 serializers.
 def normalize_operating_days(value: Any) -> list[int]:
     """Return the sorted list of ISO weekdays, or raise ValidationError.
 

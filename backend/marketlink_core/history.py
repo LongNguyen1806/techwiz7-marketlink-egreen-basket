@@ -16,12 +16,10 @@ def _stamp(instance: Any, reason: str | None, user: Any) -> None:
     if reason is not None:
         instance._change_reason = reason
     if user is not UNSET:
-        # Read by simple_history before the request user; None records a system action.
         instance._history_user = user
 
 
 def _clear(instance: Any) -> None:
-    # simple_history never clears these, so a later save of the same object would reuse them.
     for attr in _STAMP_ATTRS:
         instance.__dict__.pop(attr, None)
 

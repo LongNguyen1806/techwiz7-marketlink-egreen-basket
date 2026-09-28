@@ -21,13 +21,10 @@ class FarmerRegisterAuthSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20)
     address = serializers.CharField(min_length=5, max_length=255)
     operating_days = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
-    # The pin the farmer placed on the sign-up map, when they placed one. Without it the
-    # address is looked up after the account is created (D-032).
     latitude = serializers.FloatField(min_value=-90, max_value=90, required=False)
     longitude = serializers.FloatField(min_value=-180, max_value=180, required=False)
 
     def validate_password(self, value: str) -> str:
-        # Same rule as AU-01 (§1.5 plus Django's password validators).
         return check_password_strength(value)
 
     def validate_email(self, value: str) -> str:

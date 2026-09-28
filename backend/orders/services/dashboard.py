@@ -85,7 +85,6 @@ def _top_products(completed: QuerySet) -> list[dict[str, Any]]:
     return [
         {
             "product_id": row["product_id"],
-            # Current product name (decision v1.8); the order snapshot is only a fallback.
             "name": names[row["product_id"]].name if row["product_id"] in names else row["snapshot_name"],
             "quantity_sold": row["quantity_sold"],
             "revenue": _money(row["revenue"]),
@@ -117,7 +116,6 @@ def build_farmer_dashboard(*, farmer: FarmerProfile, date_range: DateRange) -> d
         ],
         "top_products": _top_products(completed),
         "overdue_open_count": orders.filter(status__in=IN_PROGRESS_STATUSES, pickup_end_at__lte=now).count(),
-        # Loaded with the relations OrderSummary needs; serialized by the view.
         "upcoming": list(
             orders.filter(status__in=OPEN_STATUSES, pickup_end_at__gt=now)
             .select_related("customer__customer_profile", "farmer", "market")
@@ -130,7 +128,6 @@ def build_farmer_dashboard(*, farmer: FarmerProfile, date_range: DateRange) -> d
     }
 
 
-# ---- FA-01b: Stats page (insights over a chosen range; nothing that needs action today) ----
 
 STATS_TOP_PRODUCTS_LIMIT = 10
 FINISHED_STATUSES = (

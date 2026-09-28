@@ -19,29 +19,23 @@ class AuditAction(models.TextChoices):
     FARMER_REINSTATED = "FARMER_REINSTATED", "Reinstate Farmer"
     CUSTOMER_DEACTIVATED = "CUSTOMER_DEACTIVATED", "Deactivate Customer"
     CUSTOMER_ACTIVATED = "CUSTOMER_ACTIVATED", "Activate Customer"
-    # Locked by the system after repeated no-shows; details name the orders.
     CUSTOMER_AUTO_LOCKED = "CUSTOMER_AUTO_LOCKED", "Auto-lock Customer (No-shows)"
     PRODUCT_HIDDEN = "PRODUCT_HIDDEN", "Hide Product"
     PRODUCT_RESTORED = "PRODUCT_RESTORED", "Restore Product"
-    # A legal takedown, which also cancels orders - kept apart from a plain hide so the
-    # security log shows which of the two an admin actually did.
     PRODUCT_APPROVED = "PRODUCT_APPROVED", "Approve Product"
     PRODUCT_REJECTED = "PRODUCT_REJECTED", "Reject Product"
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Block Product"
     PRODUCT_UNBLOCKED = "PRODUCT_UNBLOCKED", "Unblock Product"
     REVIEW_HIDDEN = "REVIEW_HIDDEN", "Hide Review"
     REVIEW_RESTORED = "REVIEW_RESTORED", "Restore Review"
-    # v1.8: market management by Admin (AD-15, AD-16, AD-17)
     MARKET_CREATED = "MARKET_CREATED", "Create Market"
     MARKET_UPDATED = "MARKET_UPDATED", "Update Market"
     MARKET_DEACTIVATED = "MARKET_DEACTIVATED", "Deactivate Market"
     MARKET_ACTIVATED = "MARKET_ACTIVATED", "Activate Market"
     STALL_MARKET_APPROVED = "STALL_MARKET_APPROVED", "Approve Market Registration"
     STALL_MARKET_REJECTED = "STALL_MARKET_REJECTED", "Refuse Market Registration"
-    # Admin edits a stall's or a shopper's contact details (AD-03, AD-10 PATCH).
     FARMER_UPDATED = "FARMER_UPDATED", "Update Farmer Profile"
     CUSTOMER_UPDATED = "CUSTOMER_UPDATED", "Update Customer Profile"
-    # Housekeeping: unused sign-ups removed by the purge command.
     ACCOUNT_PURGED = "ACCOUNT_PURGED", "Purge Stale Accounts"
     CONTENT_FLAGGED = "CONTENT_FLAGGED", "Flag Content For Review"
     CONTENT_FLAG_RESOLVED = "CONTENT_FLAG_RESOLVED", "Resolve Flagged Content"
@@ -94,8 +88,6 @@ class ModerationFlag(BaseModel):
     """
 
     target_type = models.CharField(max_length=20, choices=FlagTarget.choices)
-    # A plain integer rather than a generic relation: the three id spaces never mix, and this
-    # stays a simple indexed lookup.
     target_id = models.PositiveBigIntegerField()
     note = models.CharField(max_length=500)
     raised_by = models.ForeignKey(
@@ -115,9 +107,6 @@ class ModerationFlag(BaseModel):
             models.Index(fields=["target_type", "target_id"], name="flag_target_idx"),
             models.Index(fields=["resolved_at"], name="flag_resolved_idx"),
         ]
-        # No conditional unique constraint here: MySQL has no partial indexes, so Django
-        # would skip it silently and leave a rule nobody enforces. "One open flag per thing"
-        # is checked in system.flags.raise_flag instead.
 
     def __str__(self) -> str:
         return f"{self.target_type} #{self.target_id}"

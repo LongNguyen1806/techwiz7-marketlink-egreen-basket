@@ -29,7 +29,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 
 from accounts.models import CustomerProfile, CustomUser, FarmerProfile, FarmerStatus, Role
-from catalog.models import Category, ModerationAction, Product, ProductMarket, ReviewStatus, Unit
+from catalog.models import Category, ModerationAction, PriceGuideline, Product, ProductMarket, ReviewStatus, Unit
 from marketlink_core.policies.roles import RoleCode
 from markets.models import DayOfWeek, FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from orders.models import (
@@ -46,8 +46,6 @@ from system.auto_flags import scan_existing
 
 DEFAULT_PASSWORD = "Pass@123"
 
-# Coordinates are the market buildings as mapped on OpenStreetMap, so the pins and the
-# "Get directions" links land on the market itself.
 MARKET_DATA = [
     {
         "name": "Thu Duc Wholesale Agricultural Market",
@@ -132,6 +130,37 @@ CATEGORY_DATA = [
     ("Tea & Coffee", "leaf", 5),
 ]
 
+# Admin price guidelines per category and unit: (min price, max price, max stock), in USD.
+# Wide enough for every sample listing above; the motorbike in the review queue is far outside.
+PRICE_GUIDELINES = {
+    "Fresh Vegetables": {
+        Unit.KG: ("0.30", "10.00", 2000),
+        Unit.BUNCH: ("0.20", "5.00", 2000),
+        Unit.EACH: ("0.20", "10.00", 2000),
+        Unit.BAG: ("0.50", "15.00", 1000),
+        Unit.PACK: ("0.30", "10.00", 1000),
+    },
+    "Fresh Fruits": {
+        Unit.KG: ("0.30", "20.00", 2000),
+        Unit.BUNCH: ("0.50", "10.00", 1000),
+        Unit.EACH: ("0.50", "30.00", 1000),
+        Unit.BOX: ("1.00", "30.00", 500),
+    },
+    "Spices & Condiments": {
+        Unit.KG: ("0.50", "50.00", 500),
+        Unit.BAG: ("0.30", "20.00", 1000),
+        Unit.PACK: ("0.30", "20.00", 1000),
+    },
+    "Rice & Grains": {
+        Unit.KG: ("0.50", "20.00", 2000),
+        Unit.BAG: ("0.50", "60.00", 1000),
+    },
+    "Tea & Coffee": {
+        Unit.BAG: ("1.00", "50.00", 500),
+        Unit.PACK: ("1.00", "50.00", 500),
+    },
+}
+
 FARMER_DATA = [
     {
         "email": "farmer_01@marketlink.com",
@@ -213,9 +242,7 @@ CUSTOMER_ADDRESSES = [
     "68 Vo Van Ngan, Linh Chieu Ward, Ho Chi Minh City",
 ]
 
-# (Category Name, Product Name, Unit, Price, Farmer Index 0..5, Description)
 PRODUCTS_DATA = [
-    # 1. Fresh Vegetables
     ("Fresh Vegetables", "Water Spinach (Rau Muong)", Unit.BUNCH, "0.80", 0, "Crisp, organically grown fresh water spinach."),
     ("Fresh Vegetables", "Bok Choy (Cai Ngot)", Unit.KG, "1.20", 0, "Tender sweet bok choy, harvested fresh daily."),
     ("Fresh Vegetables", "Mustard Greens (Cai Xanh)", Unit.KG, "1.10", 0, "Slightly peppery and nutritious mustard greens."),
@@ -241,7 +268,6 @@ PRODUCTS_DATA = [
     ("Fresh Vegetables", "Crisp Celery (Can Tay)", Unit.KG, "1.75", 5, "Aromatic, crunchy stalks of farm-fresh celery."),
     ("Fresh Vegetables", "Fresh Lemongrass (Sa Cay)", Unit.BUNCH, "0.60", 1, "Fragrant lemongrass stalks, freshly harvested."),
 
-    # 2. Fresh Fruits
     ("Fresh Fruits", "Red Watermelon (Dua Hau)", Unit.KG, "0.70", 2, "Sweet, juicy seedless red watermelon."),
     ("Fresh Fruits", "Ri6 Durian (Sau Rieng Ri6)", Unit.KG, "4.50", 2, "Creamy, highly aromatic golden Ri6 durian from Ben Tre."),
     ("Fresh Fruits", "Crunchy Jackfruit (Mit Thai)", Unit.KG, "1.75", 2, "Golden, sweet, fragrant jackfruit segments."),
@@ -267,7 +293,6 @@ PRODUCTS_DATA = [
     ("Fresh Fruits", "Passion Fruit (Chanh Day)", Unit.KG, "1.75", 5, "Tangy, intensely aromatic purple passion fruit."),
     ("Fresh Fruits", "Custard Apple (Mang Cau Ta)", Unit.KG, "3.00", 2, "Fragrant custard apple with sweet, delicate segments."),
 
-    # 3. Spices & Condiments
     ("Spices & Condiments", "Natural Sea Salt (Muoi Bien)", Unit.BAG, "0.60", 4, "Pure unrefined crystalline sea salt from Ninh Thuan (1kg)."),
     ("Spices & Condiments", "Pure Cane Sugar (Duong Mia)", Unit.BAG, "1.20", 4, "Traditional golden unrefined cane sugar (1kg)."),
     ("Spices & Condiments", "Monosodium Glutamate MSG (Bot Ngot)", Unit.BAG, "1.75", 4, "High-purity food-grade umami seasoning crystals (400g)."),
@@ -279,7 +304,6 @@ PRODUCTS_DATA = [
     ("Spices & Condiments", "Smoked Chilli Powder (Bot Ot)", Unit.PACK, "1.60", 4, "Vibrant red ground chilli spice powder (100g)."),
     ("Spices & Condiments", "Yen Bai Cinnamon Sticks (Que Cay)", Unit.PACK, "2.75", 4, "High-oil fragrant rolled cinnamon bark sticks (200g)."),
 
-    # 4. Rice & Grains
     ("Rice & Grains", "ST25 Fragrant Jasmine Rice (Gao ST25)", Unit.BAG, "9.00", 4, "World award-winning fragrant long-grain rice (5kg)."),
     ("Rice & Grains", "Black Glutinous Rice (Nep Cam)", Unit.BAG, "3.25", 4, "Rich antioxidant purple-black sticky rice (1kg)."),
     ("Rice & Grains", "Whole Wheat Grain (Lua Mi)", Unit.BAG, "2.25", 4, "Whole nutritious wheat grains for baking or porridge (1kg)."),
@@ -299,7 +323,6 @@ PRODUCTS_DATA = [
     ("Rice & Grains", "Dak Lak Macadamia Nuts (Hat Macca)", Unit.BAG, "8.75", 4, "Cracked-shell buttery macadamia nuts (500g)."),
     ("Rice & Grains", "Roasted Chestnuts (Hat De)", Unit.BAG, "4.00", 4, "Sweet, warm roasted whole chestnuts (500g)."),
 
-    # 5. Tea & Coffee
     ("Tea & Coffee", "Robusta Dark Roast Coffee (Ca Phe Robusta)", Unit.BAG, "6.25", 4, "Bold, rich Buon Ma Thuot dark roast ground coffee (500g)."),
     ("Tea & Coffee", "Cau Dat Arabica Ground Coffee (Ca Phe Arabica)", Unit.BAG, "8.25", 4, "Delicate floral aroma and bright acidity Arabica (500g)."),
     ("Tea & Coffee", "Thai Nguyen Green Tea (Tra Xanh Tan Cuong)", Unit.PACK, "4.25", 3, "Hand-rolled curled green tea leaves from Tan Cuong (200g)."),
@@ -307,7 +330,6 @@ PRODUCTS_DATA = [
 ]
 
 
-# A market closed for renovation, so "Markets closed" on the admin dashboard is not always 0.
 CLOSED_MARKET = {
     "name": "An Dong Market",
     "address": "34-36 An Dương Vương, Phường An Đông, Thành phố Hồ Chí Minh",
@@ -318,7 +340,6 @@ CLOSED_MARKET = {
     "description": "Closed for renovation. Its stalls trade at Binh Tay Market until it reopens.",
 }
 
-# Stalls that signed up but have not been approved yet (coordinates are approximate).
 PENDING_FARMER_DATA = [
     {
         "email": "farmer_07@marketlink.com",
@@ -340,9 +361,6 @@ PENDING_FARMER_DATA = [
     },
 ]
 
-# Listings an admin still has to look at, one the admin turned down, and one that is not
-# produce at all, so the AI listing review has something real to catch.
-# (Category, Name, Unit, Price, Farmer Index, Description, Review status, Review note)
 REVIEW_QUEUE_PRODUCTS = [
     ("Fresh Vegetables", "Curly Kale (Cai Xoan)", Unit.KG, "3.50", 0,
      "Tender curly kale grown without pesticides.", ReviewStatus.PENDING, None),
@@ -359,15 +377,11 @@ REVIEW_QUEUE_PRODUCTS = [
      "The photo shows a different product. Please upload your own photo of this item."),
 ]
 
-# Hidden by an admin while a complaint is checked (index into PRODUCTS_DATA).
 HIDDEN_PRODUCT_INDEX = 26
 HIDDEN_REASON = "Shoppers reported the origin on the label does not match the listing. Checking with the stall."
 
-# Five months of history, so the month picker and the reports have data to step through.
 HISTORY_DAYS = 150
-# Fixed so every run seeds the same history and screenshots can be reproduced.
 RANDOM_SEED = 20260928
-# How pickups that are already over ended, weighted.
 PAST_OUTCOMES = [
     (OrderStatus.COMPLETED, 74),
     (OrderStatus.CANCELLED, 9),
@@ -375,9 +389,7 @@ PAST_OUTCOMES = [
     (OrderStatus.EXPIRED, 6),
     (OrderStatus.NO_SHOW, 5),
 ]
-# Share of completed orders the shopper went on to review.
 REVIEW_SHARE = 0.4
-# The last customers each get this many no-shows inside the at-risk window (3 in 30 days).
 AT_RISK_CUSTOMERS = 2
 AT_RISK_NO_SHOW_DAYS_AGO = (4, 11, 19)
 
@@ -433,6 +445,7 @@ class Command(BaseCommand):
             admin_user = self._seed_admin()
             markets = self._seed_markets()
             categories = self._seed_categories()
+            self._seed_price_guidelines(categories)
             farmers = self._seed_farmers(markets)
             products = self._seed_products(categories, farmers)
             customers = self._seed_customers()
@@ -441,7 +454,6 @@ class Command(BaseCommand):
             closed_market = self._seed_closed_market()
             pending_farmers = self._seed_pending_farmers()
             queue = self._seed_review_queue(categories, farmers, products, admin_user)
-            # The automatic follow-up rules, over everything seeded above.
             follow_up = scan_existing()
 
         self.stdout.write(self.style.SUCCESS("\n========================================================"))
@@ -491,6 +503,7 @@ class Command(BaseCommand):
             "market_operating_days",
             "products",
             "product_histories",
+            "price_guidelines",
             "categories",
             "markets",
             "favorite_farmers",
@@ -562,6 +575,21 @@ class Command(BaseCommand):
             categories[name] = cat
         return categories
 
+    def _seed_price_guidelines(self, categories):
+        PriceGuideline.objects.bulk_create(
+            [
+                PriceGuideline(
+                    category=categories[category_name],
+                    unit=unit,
+                    min_price=Decimal(low),
+                    max_price=Decimal(high),
+                    max_stock=max_stock,
+                )
+                for category_name, units in PRICE_GUIDELINES.items()
+                for unit, (low, high, max_stock) in units.items()
+            ]
+        )
+
     def _link(self, product, *stalls):
         ProductMarket.objects.bulk_create(
             [ProductMarket(product=product, farmer_market=stall) for stall in stalls]
@@ -572,7 +600,7 @@ class Command(BaseCommand):
         farmers = []
         self.home_stalls = {}
         self.weekend_stalls = {}
-        for idx, data in enumerate(FARMER_DATA, start=2):  # IDs 2 to 7
+        for idx, data in enumerate(FARMER_DATA, start=2):
             user = CustomUser.objects.create(
                 id=idx,
                 email=data["email"],
@@ -614,7 +642,6 @@ class Command(BaseCommand):
                     end_time=time(9, 0),
                     is_active=True,
                 )
-            # Create pickup slots for each day
             for day in range(1, 8):
                 PickupSlot.objects.create(
                     farmer_market=fm,
@@ -664,7 +691,7 @@ class Command(BaseCommand):
     def _seed_customers(self):
         role_customer = Role.objects.get(code=RoleCode.CUSTOMER)
         customers = []
-        for idx in range(1, 21):  # 20 Customers: IDs 8 to 27
+        for idx in range(1, 21):
             user_id = idx + 7
             user = CustomUser.objects.create(
                 id=user_id,
@@ -717,7 +744,6 @@ class Command(BaseCommand):
             OrderStatusHistory.objects.bulk_create(trail)
         return len(specs)
 
-    # -- order specs -------------------------------------------------------------------------
 
     def _spec(self, *, customer, farmer, pickup_d, status, lines, note=None, review=None, slot_index=0, placed_hours_before=None):
         slots = self.slots[(farmer.pk, pickup_d.isoweekday())]
@@ -727,7 +753,6 @@ class Command(BaseCommand):
         if placed_hours_before is None:
             placed_hours_before = self.rng.randint(farmer.order_cutoff_hours + 1, 72)
         created_at = start - timedelta(hours=placed_hours_before, minutes=self.rng.randint(0, 59))
-        # Nothing is placed after the cutoff, and nothing in the future.
         created_at = min(created_at, cutoff - timedelta(minutes=5), timezone.now() - timedelta(minutes=5))
         return {
             "customer": customer,
@@ -752,14 +777,13 @@ class Command(BaseCommand):
     def _showcase_specs(self, customers, farmers, products, today):
         """The six hand-written orders, kept for demos that point at them."""
         rows = [
-            # 1. Completed order (Ba Chieu Market) with reviews
             {
                 "customer": customers[0],
                 "farmer": farmers[3],
                 "status": OrderStatus.COMPLETED,
                 "note": "Please pick the ripest tomatoes for me.",
                 "days_ago": 3,
-                "lines": [(products[10], 2), (products[12], 3)],  # Sweet potatoes & Tomatoes
+                "lines": [(products[10], 2), (products[12], 3)],
                 "review": {
                     "product_rating": 5,
                     "product_comment": "Super fresh tomatoes and sweet potatoes, taste wonderful!",
@@ -768,14 +792,13 @@ class Command(BaseCommand):
                     "reply": "Thank you so much! We are glad you enjoyed them.",
                 },
             },
-            # 2. Completed order (Binh Tay Market) with reviews
             {
                 "customer": customers[1],
                 "farmer": farmers[4],
                 "status": OrderStatus.COMPLETED,
                 "note": "Standard packaging is fine.",
                 "days_ago": 1,
-                "lines": [(products[48], 1), (products[58], 2)],  # Black Pepper & Cashews
+                "lines": [(products[48], 1), (products[58], 2)],
                 "review": {
                     "product_rating": 4,
                     "product_comment": "Aromatic pepper and crispy cashews. Will buy again.",
@@ -784,16 +807,14 @@ class Command(BaseCommand):
                     "reply": "Thank you for shopping with Cho Lon Spices!",
                 },
             },
-            # 3. Accepted order (Thu Duc Market)
             {
                 "customer": customers[0],
                 "farmer": farmers[0],
                 "status": OrderStatus.ACCEPTED,
                 "note": "I will arrive around 8:00 AM.",
                 "days_ago": -2,
-                "lines": [(products[0], 2), (products[1], 2)],  # Water Spinach & Bok Choy
+                "lines": [(products[0], 2), (products[1], 2)],
             },
-            # 4. Ready for pickup order (Tan Dinh Market)
             {
                 "customer": customers[2],
                 "farmer": farmers[5],
@@ -801,36 +822,31 @@ class Command(BaseCommand):
                 "note": "Calling ahead before pickup.",
                 "days_ago": 0,
                 "slot_index": 1,
-                "lines": [(products[39], 1), (products[41], 1)],  # Da Lat Strawberries & Cantaloupe
+                "lines": [(products[39], 1), (products[41], 1)],
             },
-            # 5. Placed order (Hoc Mon Market) - newly placed
             {
                 "customer": customers[3],
                 "farmer": farmers[1],
                 "status": OrderStatus.PLACED,
                 "note": "First time ordering online.",
                 "days_ago": -2,
-                "lines": [(products[5], 2), (products[8], 1)],  # Cabbage & Da Lat Carrots
+                "lines": [(products[5], 2), (products[8], 1)],
             },
-            # 6. Cancelled order (Binh Dien Market)
             {
                 "customer": customers[4],
                 "farmer": farmers[2],
                 "status": OrderStatus.CANCELLED,
                 "note": "Sorry, I had an unexpected schedule change.",
                 "days_ago": 2,
-                "lines": [(products[24], 1)],  # Watermelon
+                "lines": [(products[24], 1)],
             },
-            # 7-11. For the follow-up queue: two reviews that pull shoppers off MarketLink (a
-            # link, a Zalo number) and three recent 1-2 star reviews on the same mango ("not as
-            # described"). Kept polite on purpose: this data is shown in demos.
             {
                 "customer": customers[5],
                 "farmer": farmers[3],
                 "status": OrderStatus.COMPLETED,
                 "note": None,
                 "days_ago": 5,
-                "lines": [(products[12], 2)],  # Tomatoes
+                "lines": [(products[12], 2)],
                 "review": {
                     "product_rating": 2,
                     "product_comment": "Tomatoes were fine, but order direct at www.cheaptomatoes.example and save 30%.",
@@ -844,7 +860,7 @@ class Command(BaseCommand):
                 "status": OrderStatus.COMPLETED,
                 "note": None,
                 "days_ago": 6,
-                "lines": [(products[0], 3)],  # Water spinach
+                "lines": [(products[0], 3)],
                 "review": {
                     "product_rating": 5,
                     "product_comment": "Fresh greens! Zalo me on 0909 123 456, I resell them cheaper.",
@@ -859,7 +875,7 @@ class Command(BaseCommand):
                     "status": OrderStatus.COMPLETED,
                     "note": None,
                     "days_ago": days_ago,
-                    "lines": [(products[27], 2)],  # Hoa Loc Mango
+                    "lines": [(products[27], 2)],
                     "review": {
                         "product_rating": rating,
                         "product_comment": comment,
@@ -950,7 +966,6 @@ class Command(BaseCommand):
                 )
         return specs
 
-    # -- writing one order ---------------------------------------------------------------------
 
     def _create_order(self, spec):
         """Create the order, its lines and any review. Returns its status rows, unsaved."""
@@ -1020,7 +1035,6 @@ class Command(BaseCommand):
             if review is None and self.rng.random() < REVIEW_SHARE:
                 review = self._random_review()
             if review is not None:
-                # bulk_create does not return ids on MySQL, so the first line is read back.
                 first_item = OrderItem.objects.filter(order=order).order_by("id").first() if items else None
                 self._create_reviews(order, first_item, review, end)
         return trail
@@ -1054,7 +1068,6 @@ class Command(BaseCommand):
             steps.append((OrderStatus.PLACED, OrderStatus.DECLINED, Transition.T3, ActorRole.FARMER, accepted))
         elif status == OrderStatus.EXPIRED:
             steps.append((OrderStatus.PLACED, OrderStatus.EXPIRED, Transition.T8, ActorRole.SYSTEM, cutoff))
-        # A step still ahead (a pickup later today) is stamped now rather than in the future.
         return [(f, t, tr, role, min(at, now)) for f, t, tr, role, at in steps]
 
     def _random_review(self):
@@ -1092,7 +1105,6 @@ class Command(BaseCommand):
             **common,
         )
 
-    # -- things waiting for an admin -----------------------------------------------------------
 
     def _seed_closed_market(self):
         market = Market.objects.create(map_provider="OSM", is_active=False, **CLOSED_MARKET)

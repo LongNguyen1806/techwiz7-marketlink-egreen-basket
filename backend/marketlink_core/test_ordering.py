@@ -4,8 +4,6 @@ from marketlink_core.exceptions import BusinessValidationError, ErrorCode
 from marketlink_core.ordering import both_directions, resolve_ordering
 
 ALLOWED = both_directions({"name": ("stall_name",), "joined": ("date_joined",)}, tiebreak=("-id",))
-# Written in at build time, not inside a test: mutating the shared dict would leak into
-# whichever test happened to run next.
 ALLOWED["newest"] = ("-date_joined",)
 
 
@@ -21,8 +19,6 @@ def test_a_known_key_maps_to_its_columns():
 def test_descending_flips_every_column_but_keeps_the_tiebreak():
     expanded = both_directions({"rank": ("score", "-name")}, tiebreak=("-id",))
     assert expanded["rank"] == ("score", "-name", "-id")
-    # Reversing the sort has to reverse all of it; flipping only the first column would give
-    # an order that is neither the ascending one nor its opposite.
     assert expanded["-rank"] == ("-score", "name", "-id")
 
 

@@ -6,7 +6,6 @@ from orders.services.pickup_service import check_customer_pickup_date
 
 
 def _own_order(*, customer, order_id: int) -> Order:
-    # Someone else's order is "not found" (Pass 4B §6), before the shared services could answer 403.
     order = Order.objects.select_related("farmer").filter(pk=order_id, customer=customer).first()
     if order is None:
         raise ResourceNotFoundError()

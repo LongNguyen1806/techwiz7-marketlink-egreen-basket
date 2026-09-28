@@ -36,7 +36,6 @@ class CustomerDashboardView(APIView):
     permission_classes = [IsCustomer]
 
     def get(self, request):
-        # A-005: sweep the customer's overdue orders first, so they are not counted as open.
         expire_overdue_before_checkout(farmer_ids=sweep_farmers_of(request.user))
         blocks = build_customer_dashboard(customer=request.user)
         farmers = list(blocks["favorite_farmers"])

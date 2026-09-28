@@ -48,7 +48,6 @@ def test_list_is_paginated_and_counts_farmers(admin_client, market, farmer_marke
     assert response.status_code == 200
     data = response.data["data"]
     assert {"count", "page", "page_size", "total_pages", "results"} <= data.keys()
-    # AD-14 includes deactivated markets.
     assert data["count"] == 2
     central = next(row for row in data["results"] if row["name"] == "Central Market")
     assert central["operating_days"] == [MONDAY, WEDNESDAY]
@@ -281,7 +280,6 @@ def test_closing_a_market_cancels_the_orders_still_open_there(
     assert market.is_active is False
     assert order.status == OrderStatus.DECLINED
 
-    # The shopper is told, and the reason the admin typed is carried through verbatim.
     notification = Notification.objects.get(
         recipient=customer_user, type=NotificationType.MARKET_CLOSED
     )
@@ -298,7 +296,6 @@ def test_closing_a_market_switches_off_its_pickup_slots(admin_client, market, ma
 
     slot.refresh_from_db()
     assert slot.is_active is False
-    # Row by row, so the trail records each one (v1.8).
     latest = PickupSlot.history.filter(id=slot.id).order_by("history_date", "history_id").last()
     assert latest.history_change_reason == f"Market #{market.id} closed by Admin (AD-17)"
 
@@ -324,10 +321,6 @@ def test_customer_cannot_reach_the_market_admin(customer_client, market):
     assert customer_client.post(reverse(DEACTIVATE_URL_NAME, args=[market.id])).status_code == 403
 
 
-# ---------------------------------------------------------------------------
-# audit_logs (v1.8): AD-15 -> MARKET_CREATED, AD-16 -> MARKET_UPDATED,
-# AD-17 -> MARKET_DEACTIVATED / MARKET_ACTIVATED. Closures (AD-32, AD-33) write nothing.
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -365,7 +358,6 @@ def test_updating_a_market_audits_the_changed_fields_and_slot_count(
     assert response.status_code == 200
     entry = AuditLog.objects.get(action=AuditAction.MARKET_UPDATED)
     assert entry.details["market_id"] == market.id
-    # Sorted, and operating_days survives update_market() popping it off its own copy.
     assert entry.details["changed_fields"] == ["name", "operating_days"]
     assert entry.details["deactivated_slot_count"] == 1
 
@@ -400,7 +392,6 @@ def test_closing_without_a_reason_is_refused_and_writes_no_audit_row(admin_clien
 
 @pytest.mark.django_db
 def test_switching_slots_off_is_kept_in_the_audit_trail(admin_client, market, make_slot):
-    # QuerySet.update() would skip these history rows, which is why AD-16 saves row by row.
     slot = make_slot(day_of_week=WEDNESDAY, start=time(7, 0), end=time(9, 0))
 
     admin_client.patch(
@@ -514,8 +505,6 @@ def test_an_order_cancelled_by_a_closure_says_the_market_closed(
     )
 
     row = OrderStatusHistory.objects.filter(order=order).latest("id")
-    # Not FARMER_SUSPENDED_BY_ADMIN: the stall did nothing wrong, and telling the shopper
-    # otherwise is a slur on a stall that was trading normally.
     assert row.change_reason == ChangeReason.MARKET_CLOSED_BY_ADMIN
 
 
@@ -559,7 +548,6 @@ def test_stock_goes_back_when_the_orders_are_cancelled(
     )
 
     product.refresh_from_db()
-    # An ACCEPTED order had taken the stock (D-029), so closing the market must give it back.
     assert product.stock_quantity == 6
 
 
@@ -573,8 +561,6 @@ def test_a_market_that_is_already_closed_cannot_be_closed_again(admin_client, ma
         reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
     )
 
-    # 400, not 422: the error catalogue (§2.5) files INVALID_STATUS_TRANSITION as a 400 and
-    # AD-05 to AD-08 all answer with one.
     assert response.status_code == 400
     assert response.data["code"] == "INVALID_STATUS_TRANSITION"
 
@@ -604,7 +590,6 @@ def test_reopening_switches_the_closure_slots_back_on(admin_client, market, make
     response = admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
 
     slot.refresh_from_db()
-    # Otherwise every farmer has to switch each of their slots back on by hand.
     assert slot.is_active is True
     assert response.data["data"]["restored_slots"] == 1
 
@@ -623,7 +608,6 @@ def test_reopening_leaves_a_slot_the_farmer_had_already_turned_off(
     response = admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
 
     off_by_farmer.refresh_from_db()
-    # The closure never touched it, so reopening must not switch it on for them.
     assert off_by_farmer.is_active is False
     assert response.data["data"]["restored_slots"] == 0
 
@@ -644,7 +628,6 @@ def test_clearing_a_pending_change_is_kept_in_the_order_trail(
 
     order.refresh_from_db()
     assert order.pending_change is None
-    # QuerySet.update() would have cleared it with no history row at all.
     reasons = [
         row.history_change_reason
         for row in Order.history.filter(id=order.id).order_by("history_date", "history_id")
@@ -657,8 +640,6 @@ def test_the_admin_note_reaches_the_stalls_by_email(
     admin_client, market, farmer_market, farmer_user, mailoutbox, settings,
     django_capture_on_commit_callbacks,
 ):
-    # notify() defers the mail to on_commit, which a test transaction never reaches, and
-    # _send_email hands it to a thread pool. Both have to be unwound to see the message.
     settings.EMAIL_ASYNC = False
     with django_capture_on_commit_callbacks(execute=True):
         admin_client.post(
@@ -688,7 +669,6 @@ def test_the_note_is_for_the_stalls_only(
         )
 
     to_shopper = [m for m in mailoutbox if customer_user.email in m.to]
-    # The note is addressed to the stalls; a shopper reading it would only be confused.
     assert all("collect your equipment" not in m.body for m in to_shopper)
 
 
@@ -717,7 +697,6 @@ def test_a_stall_with_several_orders_is_told_once(
         sent = Notification.objects.filter(
             recipient=recipient, type=NotificationType.MARKET_CLOSED
         )
-        # One message naming the count, not one message per cancelled order.
         assert sent.count() == 1, f"{recipient.email} got {sent.count()} notifications"
         assert "3 of your orders" in sent.get().message
 
@@ -737,5 +716,4 @@ def test_an_empty_note_leaves_no_blank_section_in_the_email(
 
     sent = [m for m in mailoutbox if farmer_user.email in m.to]
     assert len(sent) == 1
-    # Whitespace is not a note; the email must not carry an empty heading for it.
     assert "note from the MarketLink team" not in sent[0].body

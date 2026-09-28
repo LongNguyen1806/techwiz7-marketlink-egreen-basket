@@ -17,7 +17,6 @@ def test_a_guest_sees_a_farmer_review_with_a_shortened_name(
     row = response.data["data"]["results"][0]
     assert row["rating"] == 2
     assert row["comment"] == "Stall was hard to find."
-    # U-05 abbreviates the customer's name and no hidden_reason leaks out.
     assert row["customer_display_name"] == "Test C."
     assert "hidden_reason" not in row
     assert "is_hidden_by_admin" not in row
@@ -38,7 +37,6 @@ def test_hidden_reviews_never_reach_a_public_page(api_client, farmer_review, app
 def test_public_reviews_use_ten_per_page(api_client, farmer_review, approved_farmer):
     data = api_client.get(reverse(FARMER_URL, args=[approved_farmer.user_id])).data["data"]
 
-    # PU-09 is marked [P10].
     assert data["page_size"] == 10
 
 
@@ -77,7 +75,6 @@ def test_the_summary_ignores_the_rating_filter(api_client, farmer_review, approv
         reverse(FARMER_URL, args=[approved_farmer.user_id]), {"rating": "5"}
     ).data["data"]
 
-    # No 5-star review exists, but the summary still describes every visible review.
     assert data["count"] == 0
     assert data["summary"]["rating_count"] == 1
     assert data["summary"]["rating_avg"] == 2.0
@@ -124,7 +121,6 @@ def test_reviews_of_a_non_public_target_are_a_404(api_client, approved_farmer, p
     approved_farmer.save(update_fields=["status"])
 
     assert api_client.get(reverse(FARMER_URL, args=[approved_farmer.user_id])).status_code == 404
-    # The product belongs to that farmer, so it is no longer public either.
     assert api_client.get(reverse(PRODUCT_URL, args=[product.id])).status_code == 404
 
 

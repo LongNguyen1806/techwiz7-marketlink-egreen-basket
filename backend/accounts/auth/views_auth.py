@@ -26,7 +26,6 @@ class FarmerRegisterView(APIView):
         serializer = FarmerRegisterAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user, _ = register_farmer(**serializer.validated_data)
-        # Security log after the commit (outside any transaction). No IP / user agent (v1.8 decision).
         log_security_event(
             action=AuditAction.ACCOUNT_REGISTERED,
             user=user,
@@ -40,7 +39,6 @@ class FarmerRegisterView(APIView):
         )
         return api_response(
             message="Registration successful. Your account is awaiting administrator approval.",
-            # P2 session tokens (sid + pwv claims), so SessionJWTAuthentication accepts them like AU-01.
             data=build_auth_payload(user),
             status_code=status.HTTP_201_CREATED,
             request=request,

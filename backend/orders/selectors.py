@@ -4,7 +4,6 @@ from catalog.selectors import public_products
 from catalog.services.stock import get_held_quantities
 from orders.models import Order, OrderItem, OrderStatus, OrderStatusHistory
 
-# C-04 "Open" tab; every other status is "History".
 OPEN_TAB = (OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.READY_FOR_PICKUP)
 
 
@@ -80,10 +79,8 @@ def reorder_items(order) -> tuple[list[tuple], list[dict]]:
         if product is None or not product.is_available:
             reason = "UNAVAILABLE"
         elif product.stock_quantity - held.get(product.pk, 0) < product.min_per_order:
-            # Less left than the stall's minimum per order is as good as sold out for a new order.
             reason = "OUT_OF_STOCK"
         else:
-            # The stall may have moved its per-order window since; the cart gets a quantity inside it.
             quantity = max(item.quantity, product.min_per_order)
             if product.max_per_order:
                 quantity = min(quantity, product.max_per_order)

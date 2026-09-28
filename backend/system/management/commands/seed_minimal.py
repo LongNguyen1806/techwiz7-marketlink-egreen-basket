@@ -15,8 +15,6 @@ from marketlink_core.policies.roles import RoleCode
 DEV_ADMIN_PASSWORD = "Admin@12345"
 DEV_DEMO_PASSWORD = "Demo@12345"
 
-# An icon belongs to one category and one only. These six are the generic ones, so they take
-# the obvious pictures and the larger demo seed steers around them.
 CATEGORIES = [
     ("Vegetables", "carrot"),
     ("Fruits", "apple"),
@@ -125,7 +123,6 @@ class Command(BaseCommand):
         admin_password = os.environ.get("SEED_ADMIN_PASSWORD")
         demo_password = os.environ.get("SEED_DEMO_PASSWORD")
 
-        # Fallback passwords are for local machines only, never for a deployed server.
         if not settings.DEBUG and not (admin_password and demo_password):
             raise CommandError(
                 "SEED_ADMIN_PASSWORD and SEED_DEMO_PASSWORD must be set when DEBUG is False."
@@ -167,10 +164,6 @@ class Command(BaseCommand):
     def _seed_categories(self) -> dict[str, Category]:
         result = {}
         for order, (name, icon) in enumerate(CATEGORIES, start=1):
-            # Freed first: the icon column is unique, so creating the row would fail before
-            # there were any rows to reconcile. The column is required too, so a category
-            # wearing this picture for want of anything better is moved to another free name
-            # rather than emptied.
             squatter = Category.objects.filter(icon=icon).exclude(name=name).first()
             if squatter is not None:
                 squatter.icon = self._free_icon()
@@ -266,8 +259,6 @@ class Command(BaseCommand):
         )
         return user
 
-    # Reviews only exist on completed orders, so the order has to be seeded first. One of them
-    # is left hidden on purpose, to give the moderation screen something to restore.
     REVIEWS = [
         {"rating": 5, "product": "Very fresh, picked the same morning.",
          "farmer": "Easy to find and packed everything neatly."},
@@ -330,7 +321,6 @@ class Command(BaseCommand):
                 quantity=2,
                 line_total=product.price * 2,
             )
-            # The last one arrives already hidden, so Restore has something to act on.
             hidden = text["rating"] == 1
             ProductReview.objects.create(
                 order_item=item,

@@ -62,7 +62,6 @@ class TestDashboardShape:
         assert set(data["counts"]) == COUNT_KEYS
 
     def test_a_brand_new_customer_sees_zeros_and_empty_lists(self, shop):
-        # C-00 shows its "You have no orders yet" empty state from this payload.
         data = _data(shop)
 
         assert data["counts"] == {"open": 0, "ready_for_pickup": 0, "completed": 0, "pending_review": 0}
@@ -82,7 +81,6 @@ class TestDashboardCounts:
 
         counts = _data(shop)["counts"]
 
-        # A READY order counts as open too: C-00 highlights it as a separate reminder card.
         assert (counts["open"], counts["ready_for_pickup"], counts["completed"]) == (3, 1, 1)
 
     def test_only_counts_own_orders(self, shop):
@@ -96,7 +94,7 @@ class TestDashboardCounts:
 
         assert _data(shop)["counts"]["pending_review"] == 1
         FarmerReview.objects.create(order=order, rating=5)
-        assert _data(shop)["counts"]["pending_review"] == 1  # an item is still unreviewed
+        assert _data(shop)["counts"]["pending_review"] == 1
         ProductReview.objects.create(order_item=item, rating=4)
         assert _data(shop)["counts"]["pending_review"] == 0
 

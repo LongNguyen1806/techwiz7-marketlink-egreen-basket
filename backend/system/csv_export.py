@@ -42,8 +42,6 @@ def stream_csv(
     writer = csv.writer(_Echo())
 
     def lines():
-        # Excel opens a UTF-8 CSV as the system codepage unless it sees a byte-order mark,
-        # which turns Vietnamese names into mojibake.
         yield "﻿"
         yield writer.writerow(headers)
         for row in rows:

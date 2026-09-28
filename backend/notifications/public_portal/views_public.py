@@ -14,7 +14,6 @@ class PublicAnnouncementListView(ListAPIView):
 
     @extend_schema(responses={200: AnnouncementPublicSerializer(many=True)})
     def get(self, request, *args, **kwargs):
-        # A signed-in user also sees the notices aimed at their role (PU-13).
         user = getattr(request, "user", None)
         role_code = (
             getattr(getattr(user, "role", None), "code", None)

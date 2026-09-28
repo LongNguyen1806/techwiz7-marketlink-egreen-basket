@@ -17,7 +17,6 @@ from notifications.models import Notification
 
 logger = logging.getLogger("marketlink")
 
-# Bulk admin actions send one email per order; the pool keeps them off the request thread.
 _email_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="marketlink-email")
 
 DEFAULT_FRONTEND_URL = "http://localhost:5173"
@@ -57,7 +56,6 @@ def serialize_notification(notification: Notification) -> dict[str, Any]:
         "message": notification.message,
         "target_url": notification.target_url,
         "is_read": notification.is_read,
-        # Same datetime format as every other API field (local timezone, ISO 8601).
         "read_at": _DATETIME_FIELD.to_representation(notification.read_at) if notification.read_at else None,
         "created_at": _DATETIME_FIELD.to_representation(notification.created_at),
     }

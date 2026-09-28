@@ -5,7 +5,6 @@ from notifications.models import Announcement, AnnouncementAudience
 
 
 def active_announcements(*, role_code: str | None = None) -> QuerySet[Announcement]:
-    # §6.2: active, already started, not yet ended, and addressed to this audience.
     now = timezone.now()
     queryset = Announcement.objects.filter(
         is_active=True, starts_at__lte=now
@@ -15,6 +14,5 @@ def active_announcements(*, role_code: str | None = None) -> QuerySet[Announceme
             Q(audience=AnnouncementAudience.ALL) | Q(audience=role_code)
         )
     else:
-        # A guest, or an admin, only sees the notices addressed to everyone.
         queryset = queryset.filter(audience=AnnouncementAudience.ALL)
     return queryset.order_by("-starts_at", "-id")

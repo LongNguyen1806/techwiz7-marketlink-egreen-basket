@@ -17,7 +17,7 @@ BODY = {
 
 @pytest.fixture(autouse=True)
 def _no_geocoding(settings):
-    settings.GEOCODING_ENABLED = False  # never call Nominatim from tests (D-032)
+    settings.GEOCODING_ENABLED = False
 
 
 def _register(api, **overrides):

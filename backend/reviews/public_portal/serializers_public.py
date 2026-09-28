@@ -35,7 +35,6 @@ def serialize_public_review(review_type: str, review) -> dict:
         "type": review_type,
         "rating": review.rating,
         "comment": review.comment,
-        # U-05: public pages never show the customer's full name.
         "customer_display_name": short_customer_name(getattr(profile, "full_name", None)),
         "product": product,
         "reply": review.reply,

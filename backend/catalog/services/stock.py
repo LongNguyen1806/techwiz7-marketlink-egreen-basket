@@ -43,7 +43,6 @@ def apply_stock_delta(
 
 
 def get_held_quantities(*, product_ids: Iterable[int]) -> dict[int, int]:
-    # Physical stock is deducted upon ACCEPTED; only active PLACED orders hold stock reservation.
     now = timezone.now()
     rows = (
         OrderItem.objects.filter(

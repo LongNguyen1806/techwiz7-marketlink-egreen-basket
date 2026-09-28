@@ -19,9 +19,6 @@ from orders.services.expiry import expire_overdue_orders
 from orders.services.fsm import record_order_placed
 from orders.services.pickup_service import resolve_pickup
 
-# v1.7 D-029: checkout reads products without locking them and never changes stock. It still locks
-# users -> customer_profiles -> farmer_profiles (shared), so an order is never created for an account that
-# AD-12 locked or a farmer that AD-07 suspended concurrently, and two tabs cannot both pass the 10-order limit.
 
 
 def _lock_customer(customer) -> CustomUser:
@@ -33,8 +30,6 @@ def _lock_customer(customer) -> CustomUser:
 
 
 def _share_lock_farmer_rows(farmer_ids) -> None:
-    # FOR SHARE (Django has no select_for_share): blocks AD-07 from suspending these farmers until we commit,
-    # while checkouts for the same farmer still run side by side. Rows are locked in primary-key order.
     table = connection.ops.quote_name(FarmerProfile._meta.db_table)
     column = connection.ops.quote_name(FarmerProfile._meta.pk.column)
     placeholders = ", ".join(["%s"] * len(farmer_ids))
@@ -108,7 +103,6 @@ def _resolve_windows(groups, farmers, now) -> list:
 
 
 def _is_published(product: Product) -> bool:
-    # Same rule as the catalogue: a listing waiting for review cannot be ordered either.
     return product.is_on_sale
 
 
@@ -127,7 +121,6 @@ def _shortage_message(product: Product, available: int) -> str:
 
 
 def _available_stock(products) -> dict[int, int]:
-    # D-029: stock_quantity already excludes accepted orders; PLACED orders still before pickup hold theirs.
     held = get_held_quantities(product_ids=products.keys())
     return {pk: max(product.stock_quantity - held.get(pk, 0), 0) for pk, product in products.items()}
 
@@ -144,10 +137,8 @@ def _validate_products(groups, products) -> None:
             elif not _is_published(product):
                 unpublished[f"{path}.product_id"] = ["This product is no longer available"]
             elif item["quantity"] < product.min_per_order:
-                # The stall's own minimum per order (min_per_order, 1 = any amount).
                 over_cap[f"{path}.quantity"] = [minimum_message(product)]
             elif product.max_per_order is not None and item["quantity"] > product.max_per_order:
-                # The stall's own per-order cap (what it can supply to one order).
                 over_cap[f"{path}.quantity"] = [cap_message(product)]
             elif stock[product.id] < item["quantity"]:
                 shortages[f"{path}.quantity"] = [_shortage_message(product, stock[product.id])]

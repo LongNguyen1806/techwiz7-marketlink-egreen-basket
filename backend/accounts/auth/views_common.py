@@ -35,7 +35,6 @@ class LoginView(RecordableThrottleViewMixin, APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
-    # Per IP (every attempt) and per email (failed attempts only, from any IP).
     throttle_classes = [ScopedRateThrottle, LoginEmailThrottle]
     throttle_scope = "login"
     portal_roles = MARKET_PORTAL_ROLES
@@ -121,7 +120,6 @@ class MeView(APIView):
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
-    # Shares the login rate (5/min), keyed per user, to stop guessing the current password with a stolen token.
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
 

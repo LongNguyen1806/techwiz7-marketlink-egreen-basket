@@ -1,6 +1,3 @@
-# audit_logs = the security log: who did which sensitive action (A-11, AD-29).
-# The audit trail below is a different thing: how one record changed over time
-# (who, when, why, old -> new), read from the django-simple-history tables (v1.8).
 
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -28,7 +25,6 @@ def _local_day_start(raw_date: str | None) -> datetime | None:
     return timezone.make_aware(datetime.combine(day, time.min))
 
 
-# AD-29.
 AUDIT_LOG_ORDERING = both_directions(
     {
         "created_at": ("created_at",),
@@ -62,7 +58,6 @@ def list_audit_logs(
 
     end = _local_day_start(date_to)
     if end is not None:
-        # `to` is inclusive, so take every row before the following midnight.
         queryset = queryset.filter(created_at__lt=end + timedelta(days=1))
 
     return queryset.order_by(
@@ -70,7 +65,6 @@ def list_audit_logs(
     )
 
 
-# Key used by the Admin API / UI -> tracked model.
 TRACKED_MODELS: dict[str, type[Model]] = {
     "farmer_profile": FarmerProfile,
     "customer_profile": CustomerProfile,
@@ -155,5 +149,4 @@ def build_change_log(
             }
         )
         previous = record
-    # The extra row was read only to diff against; it is not part of the answer.
     return entries[-limit:] if limit is not None else entries

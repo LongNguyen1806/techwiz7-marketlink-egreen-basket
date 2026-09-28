@@ -27,8 +27,6 @@ class HistoryRequestMeta(models.Model):
         abstract = True
 
 
-# Defence in depth (NFR-01): only image extensions are kept; anything else is stored without one,
-# so a crafted name such as "x.html" can never be served with an executable content type.
 SAFE_UPLOAD_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp"})
 
 

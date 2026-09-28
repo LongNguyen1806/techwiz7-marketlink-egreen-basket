@@ -4,13 +4,6 @@ from accounts.models import CustomerProfile, FarmerProfile
 from accounts.phone import normalize_phone
 from marketlink_core.exceptions import BusinessValidationError
 
-# What an admin may correct on someone else's behalf: the details a shopper or a stall would
-# phone in to have fixed. Deliberately excluded, because they carry rules of their own that
-# belong to the owner of the profile:
-#   - operating_days  (D-031: dropping a day with open orders has to be refused, and the
-#                      stall's pickup slots for that weekday switch off)
-#   - address / latitude / longitude  (D-032: coordinates are looked up from the address)
-#   - status          (that is approve / reject / suspend, AD-05 to AD-08)
 FARMER_FIELDS = ("stall_name", "contact_person", "phone", "description", "order_cutoff_hours")
 CUSTOMER_FIELDS = ("full_name", "phone", "address")
 
@@ -53,8 +46,6 @@ def _apply(profile, *, validated: dict, allowed: tuple[str, ...], actor) -> list
     if not changed:
         return []
 
-    # The history row records who made the edit, so the audit trail does not read as if the
-    # stall changed its own details.
     profile._history_user = actor
     profile._change_reason = "Edited by Admin"
     profile.save(update_fields=[*changed, "updated_at"])

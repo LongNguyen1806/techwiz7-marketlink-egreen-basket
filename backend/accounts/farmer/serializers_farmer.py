@@ -12,7 +12,6 @@ from accounts.phone import normalize_phone
 from catalog.services.farmer_product import validate_image_upload
 from marketlink_core.exceptions import BusinessValidationError
 
-# §1.5: ^(0|\+84)(3|5|7|8|9)\d{8}$ checked after normalize_phone() turns +84 into 0 (D-028).
 PHONE_PATTERN = re.compile(r"^0[35789]\d{8}$")
 COORDINATE_STEP = Decimal("0.000001")
 
@@ -67,7 +66,6 @@ class FarmerProfileUpdateSerializer(serializers.Serializer):
         max_length=1000, required=False, allow_blank=True, allow_null=True
     )
     image = serializers.FileField(required=False)
-    # Only sent when the farmer drags the pin (D-032); rounded to 6 decimals for the column.
     latitude = serializers.FloatField(min_value=-90, max_value=90, required=False)
     longitude = serializers.FloatField(min_value=-180, max_value=180, required=False)
     order_cutoff_hours = serializers.IntegerField(min_value=1, max_value=72, required=False)
@@ -83,7 +81,6 @@ class FarmerProfileUpdateSerializer(serializers.Serializer):
 
     def validate_image(self, value: Any) -> Any:
         try:
-            # The re-encoded copy is stored, never the uploaded bytes.
             return validate_image_upload(value)
         except BusinessValidationError as exc:
             raise serializers.ValidationError(exc.errors.get("image", [str(exc.detail)])) from None

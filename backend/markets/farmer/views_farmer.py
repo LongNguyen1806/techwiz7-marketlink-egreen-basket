@@ -66,7 +66,6 @@ def _farmer_market_items(
         {
             "id": fm.pk,
             "market": summaries[fm.market_id],
-            # Not in MarketSummary: lets F-07 show markets closed by an admin (AD-17).
             "is_market_active": fm.market.is_active,
             "status": fm.status,
             "stall_label": fm.stall_label,

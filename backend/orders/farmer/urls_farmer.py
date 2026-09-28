@@ -62,7 +62,6 @@ urlpatterns = [
     ),
 ]
 
-# FA-01 is mounted at api/farmer/dashboard/ from marketlink_core/urls.py.
 dashboard_urlpatterns = [
     path("", FarmerDashboardView.as_view(), name="farmer-dashboard"),
     path("stats/", FarmerStatsView.as_view(), name="farmer-stats"),

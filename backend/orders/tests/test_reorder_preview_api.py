@@ -61,7 +61,7 @@ def _data(shop, order) -> dict:
 class TestReorderPreview:
     def test_returns_current_prices_and_the_old_quantities(self, shop):
         order = _completed_order(shop, (shop.tomato, 2), (shop.herbs, 3))
-        shop.tomato.price = Decimal("4.75")  # the farmer raised the price after that order
+        shop.tomato.price = Decimal("4.75")
         shop.tomato.save()
 
         data = _data(shop, order)
@@ -110,7 +110,6 @@ class TestReorderPreview:
         ]
 
     def test_stock_held_by_someone_elses_placed_order_counts_as_sold_out(self, shop):
-        # D-029: available stock is stock_quantity minus what PLACED orders hold, as checkout computes it.
         order = _completed_order(shop, (shop.herbs, 1))
         make_order(customer=make_customer(), product=shop.herbs, quantity=5)
 
@@ -138,7 +137,6 @@ class TestReorderPreview:
         assert (Order.objects.count(), OrderItem.objects.count(), order.version) == before
 
     def test_works_for_an_open_order_too(self, shop):
-        # The API is gated on ownership only; C-04 decides where the Reorder button appears.
         order = make_order(customer=shop.customer, product=shop.tomato, market=shop.market)
 
         assert len(_data(shop, order)["items"]) == 1

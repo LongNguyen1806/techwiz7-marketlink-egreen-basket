@@ -9,8 +9,6 @@ from markets.farmer.views_farmer import (
     FarmerPickupSlotListView,
 )
 
-# Three prefixes (api/farmer/markets/, pickup-slots/, closures/) are included separately
-# from marketlink_core/urls.py.
 market_urlpatterns = [
     path("", FarmerMarketListView.as_view(), name="farmer-markets-list"),
     path("<int:farmer_market_id>/", FarmerMarketDetailView.as_view(), name="farmer-markets-detail"),

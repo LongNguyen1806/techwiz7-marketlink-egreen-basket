@@ -32,7 +32,6 @@ from orders.admin_selectors import AT_RISK_STATUSES, at_risk_threshold, at_risk_
 from orders.models import OPEN_STATUSES, Order, OrderStatus
 
 
-# AD-02. user_id breaks ties so paging never shows or skips a row twice.
 ADMIN_FARMER_ORDERING = both_directions(
     {
         "stall_name": ("stall_name",),
@@ -55,7 +54,6 @@ def list_farmers_for_admin(
     ordering: str | None = None,
 ) -> QuerySet[FarmerProfile]:
     queryset = FarmerProfile.objects.select_related("user").annotate(
-        # Archived products are soft-deleted (D-017), so the A-02 column counts the live catalogue.
         product_count=Count("products", filter=Q(products__is_archived=False), distinct=True),
         open_order_count=Count(
             "orders", filter=Q(orders__status__in=OPEN_STATUSES), distinct=True
@@ -95,8 +93,6 @@ FARMER_ORDERING = {
 
 
 def _in_stock_subquery():
-    # A subquery, not a second Count over a joined relation: two multi-valued joins in one
-    # annotate would multiply the rows and corrupt both the count and the rating average.
     return Coalesce(
         Subquery(
             Product.objects.filter(
@@ -118,7 +114,6 @@ def _in_stock_subquery():
 
 
 def public_farmer_base() -> QuerySet[FarmerProfile]:
-    # §6.2: a farmer is public only while APPROVED and their account is enabled.
     visible_review = Q(orders__farmer_review__is_hidden_by_admin=False)
     return (
         FarmerProfile.objects.filter(
@@ -138,8 +133,6 @@ def public_farmer_base() -> QuerySet[FarmerProfile]:
             in_stock_product_count=_in_stock_subquery(),
         )
         .annotate(
-            # Annotated separately: it reads the two counts above, which do not exist yet in
-            # the same annotate() call.
             popularity=(
                 F("completed_order_count") * ORDER_WEIGHT
                 + F("rating_count") * REVIEW_WEIGHT
@@ -154,7 +147,6 @@ def public_farmers(
     queryset = public_farmer_base()
     selling = FarmerMarket.objects.selling().filter(farmer_id=OuterRef("pk"))
     if q:
-        # Not the farmer's own address: searching it would locate their home.
         queryset = queryset.filter(
             Q(stall_name__icontains=q) | Q(Exists(selling.filter(market__name__icontains=q)))
         )
@@ -192,8 +184,6 @@ def public_farmers(
             .values("distance")[:1]
         )
         queryset = queryset.annotate(distance=Subquery(nearest, output_field=FloatField()))
-    # ordering=distance needs coordinates; without them it falls back to name.
-    # No explicit sort means the home page, which wants the busiest stalls first.
     key = ordering if ordering in FARMER_ORDERING else "popular"
     if key == "distance" and coordinates is None:
         key = "name"
@@ -275,8 +265,6 @@ def pickup_windows(*, farmer_id: int) -> list[dict]:
     ]
 
 
-# AD-09. The default keeps D-028's rule that customers at risk come first, so the admin sees
-# them without scrolling; every other key sorts purely by the column asked for.
 ADMIN_CUSTOMER_ORDERING = both_directions(
     {
         "full_name": ("full_name",),
@@ -389,8 +377,6 @@ def farmer_order_stats(*, farmer_id: int) -> dict:
         "no_show": rows.get(OrderStatus.NO_SHOW, 0),
     }
 
-# The Farmer branch's selectors live in accounts/farmer_selectors.py; re-exported so
-# `from accounts.selectors import ...` keeps working for both branches.
 from accounts.farmer_selectors import (  # noqa: E402,F401
     build_farmer_own_profile,
     build_farmer_public,

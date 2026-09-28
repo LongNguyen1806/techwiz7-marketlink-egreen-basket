@@ -31,7 +31,6 @@ def _cache_status() -> str:
         return "error"
 
 
-# No auth or throttling so uptime monitors are never rejected; only the database decides 200 vs 503.
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
     authentication_classes: list = []

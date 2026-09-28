@@ -7,7 +7,6 @@ from notifications.views import (
     NotificationUnreadCountView,
 )
 
-# Shared by Customer and Farmer (Pass 4B §4.6); mounted at api/notifications/.
 urlpatterns = [
     path("", NotificationListView.as_view(), name="notifications-list"),
     path("unread-count/", NotificationUnreadCountView.as_view(), name="notifications-unread-count"),

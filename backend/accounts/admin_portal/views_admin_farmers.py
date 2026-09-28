@@ -106,7 +106,6 @@ class AdminFarmerDetailView(APIView):
         data.update(
             {
                 "email": farmer.user.email,
-                # Where the farmer says they grow, for the approval decision (D-032).
                 "address": farmer.address,
                 "latitude": float(farmer.latitude) if farmer.latitude is not None else None,
                 "longitude": float(farmer.longitude) if farmer.longitude is not None else None,

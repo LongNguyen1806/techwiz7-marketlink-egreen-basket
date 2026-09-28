@@ -12,10 +12,6 @@ from accounts.auth.tokens import (
     password_version,
 )
 
-# AU-09 itself lives on the Customer branch (accounts.auth.views_common.AdminLoginView).
-# What the Admin branch has to keep proving is that the token that login hands out really
-# opens /api/admin/, because every other admin test authenticates with force_authenticate
-# and would not notice a broken token.
 
 
 @pytest.mark.django_db
@@ -39,7 +35,6 @@ def test_session_authentication_accepts_the_issued_token(admin_user):
 
 @pytest.mark.django_db
 def test_a_token_without_a_session_claim_is_refused(admin_user):
-    # Regression guard: a plain RefreshToken.for_user token has no sid, so it must be refused.
     bare = str(RefreshToken.for_user(admin_user).access_token)
 
     with pytest.raises(AuthenticationFailed):
@@ -48,7 +43,6 @@ def test_a_token_without_a_session_claim_is_refused(admin_user):
 
 @pytest.mark.django_db
 def test_the_access_token_opens_an_admin_endpoint_over_http(api_client, admin_user):
-    # No force_authenticate here: the whole authentication stack has to run for real.
     access = issue_tokens(admin_user)["access"]
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
 

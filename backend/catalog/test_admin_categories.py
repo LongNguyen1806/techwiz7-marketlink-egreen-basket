@@ -36,7 +36,6 @@ def test_list_returns_every_category_unpaginated_with_product_count(
 
     assert response.status_code == 200
     rows = response.data["data"]
-    # AD-18 has no [P] marker: data is a plain list, not a pagination object.
     assert isinstance(rows, list)
     assert [row["name"] for row in rows] == ["Vegetables", "Hidden Fruits"]
     assert rows[0]["product_count"] == 1
@@ -93,7 +92,6 @@ def test_update_renames_and_hides(admin_client, category):
     assert response.status_code == 200
     assert response.data["data"]["name"] == "Fresh Vegetables"
     assert response.data["data"]["is_active"] is False
-    # product_count must survive the update response.
     assert response.data["data"]["product_count"] == 0
 
 
@@ -135,10 +133,6 @@ def test_customer_cannot_reach_the_category_admin(customer_client, category):
     assert customer_client.delete(reverse(DETAIL_URL_NAME, args=[category.id])).status_code == 403
 
 
-# --------------------------------------------------------------- unique icons
-# A category's icon is unique and has to be one the app can actually draw. Before this, an
-# unknown name was silently rendered as a leaf, so a typo became a wrong picture on the
-# shopper's home page with nothing to notice.
 
 
 @pytest.mark.django_db
@@ -173,8 +167,6 @@ def test_two_categories_cannot_share_an_icon(admin_client, category):
 
 @pytest.mark.django_db
 def test_keeping_its_own_icon_while_renaming_is_allowed(admin_client, category):
-    # The uniqueness check must not count the row being edited, or no category could ever be
-    # renamed without also being given a new picture.
     response = admin_client.patch(
         reverse(DETAIL_URL_NAME, args=[category.id]),
         {"name": "Fresh vegetables", "icon": "carrot"},
@@ -200,8 +192,6 @@ def test_an_icon_freed_by_a_deletion_can_be_reused(admin_client, category):
 
 @pytest.mark.django_db
 def test_a_legacy_icon_name_is_stored_in_its_current_form(admin_client):
-    # "pepper" and "flame" were two names for one picture before the set was widened, which
-    # is exactly what uniqueness exists to prevent; both now mean "chilli".
     response = admin_client.post(
         reverse(LIST_URL_NAME), {"name": "Spices", "icon": "pepper"}, format="json"
     )

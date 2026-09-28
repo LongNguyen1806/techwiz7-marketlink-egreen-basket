@@ -31,7 +31,6 @@ def test_a_dry_run_reports_without_deleting(customer_user):
 
     assert customer_user.email in output
     assert "would be deleted" in output
-    # The whole point of the default: nothing is gone yet.
     assert User.objects.filter(pk=customer_user.pk).exists()
 
 
@@ -43,7 +42,6 @@ def test_apply_deletes_and_audits(customer_user):
 
     assert not User.objects.filter(pk=customer_user.pk).exists()
     entry = AuditLog.objects.get(action=AuditAction.ACCOUNT_PURGED)
-    # The emails are recorded before deletion; afterwards there is nothing left to name.
     assert entry.details["accounts"][0]["email"] == customer_user.email
     assert entry.details["count"] == 1
 
@@ -74,7 +72,6 @@ def test_an_approved_stall_is_never_purged(farmer_user):
 
     _run("--apply")
 
-    # It may have produce listed and simply be waiting for a first customer.
     assert User.objects.filter(pk=farmer_user.pk).exists()
 
 
@@ -118,8 +115,6 @@ def test_signing_in_records_last_login(api_client, customer_user):
 
     assert response.status_code == 200
     customer_user.refresh_from_db()
-    # Nothing used to write this: the JWT flow never touches Django's session login, so the
-    # column stayed NULL for everyone and any rule reading it was meaningless.
     assert customer_user.last_login is not None
 
 
@@ -138,7 +133,6 @@ def test_a_shopper_who_signs_in_is_not_purged(api_client, customer_user):
 
     _run("--apply")
 
-    # An old account that is still used every day is not rubbish, even with no orders.
     assert User.objects.filter(pk=customer_user.pk).exists()
 
 
@@ -153,13 +147,11 @@ def test_a_shopper_with_saved_favourites_is_not_purged(customer_user, farmer_use
 
     _run("--apply")
 
-    # Saved favourites are a trace of a real person, and last_login alone cannot see them.
     assert User.objects.filter(pk=customer_user.pk).exists()
 
 
 @pytest.mark.django_db
 def test_the_window_is_measured_from_the_last_sign_in(customer_user):
-    # Just inside the window: an account idle for 80 days is not yet rubbish at 3 months.
     User.objects.filter(pk=customer_user.pk).update(
         date_joined=timezone.now() - timedelta(days=400),
         last_login=timezone.now() - timedelta(days=80),
@@ -179,7 +171,6 @@ def test_a_custom_window_is_honoured(customer_user):
 
     _run("--months", "2", "--apply")
 
-    # 80 days is past a two-month window even though it survived the three-month default.
     assert not User.objects.filter(pk=customer_user.pk).exists()
 
 
@@ -195,5 +186,4 @@ def test_a_rejected_stall_keeps_its_orders_safe(admin_client, farmer_user, make_
 
     _run("--apply")
 
-    # Rejected, idle, but it traded once: deleting it would take the order history with it.
     assert User.objects.filter(pk=farmer_user.pk).exists()

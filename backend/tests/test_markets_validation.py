@@ -44,11 +44,9 @@ class MarketsValidationTestCase(TestCase):
             stall_label="Stall V1",
         )
 
-        # Open market on all 7 weekdays
         for day in range(1, 8):
             MarketOperatingDay.objects.create(market=self.market, day_of_week=day)
 
-        # Local date (Asia/Ho_Chi_Minh), same as validate_pickup_date; UTC date clashes 0h-7h.
         self.target_date = timezone.localdate() + timedelta(days=2)
         self.slot = PickupSlot.objects.create(
             farmer_market=self.farmer_market,
@@ -71,7 +69,6 @@ class MarketsValidationTestCase(TestCase):
 
     def test_pickup_date_beyond_horizon_fails(self):
         beyond_date = timezone.localdate() + timedelta(days=8)
-        # Create matching slot for that weekday
         far_slot = PickupSlot.objects.create(
             farmer_market=self.farmer_market,
             day_of_week=beyond_date.isoweekday(),
@@ -135,7 +132,6 @@ class MarketsValidationTestCase(TestCase):
         self.assertEqual(ctx.exception.code, ErrorCode.SLOT_NOT_AVAILABLE)
 
     def test_cutoff_passed_fails(self):
-        # Set cutoff hours high enough so cutoff has already passed
         self.farmer.order_cutoff_hours = 72
         self.farmer.save()
 
@@ -148,7 +144,6 @@ class MarketsValidationTestCase(TestCase):
             )
         self.assertEqual(ctx.exception.code, ErrorCode.CUTOFF_PASSED)
 
-    # --- Feature 8: D-031 operating days and separate reasons (A-019) ---
 
     def _assert_slot_not_available(self, message_part, **overrides):
         kwargs = {
@@ -170,7 +165,6 @@ class MarketsValidationTestCase(TestCase):
         self._assert_slot_not_available("does not operate")
 
     def test_invalid_operating_days_in_db_fail_closed(self):
-        # Rows written around save() (e.g. raw update) must never let a date through.
         FarmerProfile.objects.filter(pk=self.farmer.pk).update(operating_days=[])
         self._assert_slot_not_available("does not operate")
 

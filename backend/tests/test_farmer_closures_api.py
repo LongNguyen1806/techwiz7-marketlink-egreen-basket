@@ -78,7 +78,6 @@ class FarmerClosuresAPITestCase(TestCase):
             end_date=self.today + timedelta(days=end_offset),
         )
 
-    # --- FA-31 ---
 
     def test_list_hides_past_unless_requested(self):
         self._closure(-10, -8)
@@ -95,7 +94,6 @@ class FarmerClosuresAPITestCase(TestCase):
         self.assertEqual(len(res.data["data"]), 3)
         self.assertEqual(self.client.get(URL, {"include_past": "maybe"}).status_code, 400)
 
-    # --- FA-32 ---
 
     def test_create_closure(self):
         res = self.client.post(URL, {"start_date": self._days(3), "end_date": self._days(5), "reason": "  "}, format="json")
@@ -145,7 +143,6 @@ class FarmerClosuresAPITestCase(TestCase):
         res = self.client.post(URL, {"start_date": self._days(1), "end_date": self._days(2)}, format="json")
         self.assertEqual(res.status_code, 201)
 
-    # --- FA-33 ---
 
     def test_delete_closure(self):
         mine = self._closure(3, 4)

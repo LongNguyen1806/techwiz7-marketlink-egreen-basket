@@ -134,8 +134,6 @@ class DashboardOrdersByMonthView(APIView):
         summary="Orders per day for one calendar month",
     )
     def get(self, request) -> Response:
-        # Its own endpoint rather than a parameter on the dashboard: stepping through months
-        # would otherwise refetch the totals, the queue and the pending stalls every click.
         first_day = month_bounds(request.query_params.get("month"))
         return api_response(
             message="OK", request=request, data=orders_per_month(first_day=first_day)
@@ -171,7 +169,6 @@ class ReportExportView(APIView):
         summary = report_summary(date_from=date_from, date_to=date_to, market_id=market_id)
         content = build_report_workbook(summary)
 
-        # D-018 replaces the SRS reports table with one EXPORT_DATA row per download.
         log_request_event(
             request,
             action=AuditAction.EXPORT_DATA,
@@ -184,7 +181,6 @@ class ReportExportView(APIView):
             },
         )
 
-        # AD-26 returns the file itself, so this response carries no envelope.
         filename = report_filename(date_from=date_from, date_to=date_to)
         response = HttpResponse(content, content_type=XLSX_CONTENT_TYPE)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
@@ -203,7 +199,6 @@ class PublicConfigView(APIView):
 
     @extend_schema(responses={200: PublicConfigSerializer}, summary="Client bootstrap config")
     def get(self, request) -> Response:
-        # D-005: one cap on unapproved PLACED orders; the per-farmer limit is gone.
         data = {
             "ai_chat_enabled": settings.AI_CHAT_ENABLED,
             "booking_horizon_days": BOOKING_HORIZON_DAYS,
@@ -217,9 +212,6 @@ class PublicConfigView(APIView):
         )
 
 
-# The audit trail (v1.8). The contract has no AD-xx row for it, so it lives at its own path
-# and is read from a record's detail screen, not from the System log tab - that tab shows
-# audit_logs, which is a different thing and has no before/after to show.
 CHANGE_LOG_LIMIT = 50
 
 
@@ -247,17 +239,10 @@ class AdminChangeLogView(APIView):
                 "Unknown record type.",
                 errors={"model": [f"Choose one of: {', '.join(sorted(TRACKED_MODELS))}."]},
             )
-        # The record itself is not required to still exist: history rows outlive it, and a
-        # slot deleted by FA-10 or an item removed by FA-34 still has a story worth reading.
-        # An id that never existed has no history either, which is the 404 below.
         entries = build_change_log(tracked, id, limit=CHANGE_LOG_LIMIT)
-        # A record that exists but was never saved through the history (seed data written with
-        # bulk_create) simply has no changes yet; only an id that never existed is a 404.
         if not entries and not tracked.objects.filter(pk=id).exists():
             raise ResourceNotFoundError("No history for this record.")
 
-        # build_change_log reads oldest first because that is how a history is worked out;
-        # the screen wants the most recent change at the top.
         entries = list(reversed(entries))
         return api_response(
             message="OK", request=request, data=ChangeLogEntrySerializer(entries, many=True).data
@@ -291,8 +276,6 @@ class AdminFlagListView(ListAPIView):
             OpenApiParameter(
                 "resolved", bool, description="Default false: the open queue."
             ),
-            # Unpacked rather than list(...): this class now defines a method called `list`,
-            # which shadows the builtin inside the class body.
             OpenApiParameter("target_type", str, enum=[*FlagTarget.values]),
             OpenApiParameter(
                 "q", str, description="Matches the note, the resolution, or the target id."

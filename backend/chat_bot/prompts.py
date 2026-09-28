@@ -90,8 +90,6 @@ def language_hint(latest_message: str) -> str:
     return "Reply in the language and script of the user's latest message."
 
 
-# The one reply for every refusal: daily cap, too fast, model down, out of quota. Identical on
-# purpose, so nobody can tell (or probe) which limit they met. The real reason goes to the log.
 BUSY_REPLY = {
     "vi": (
         "Trợ lý đang bận, bạn vui lòng thử lại sau nhé. Trong lúc chờ, bạn vẫn có thể xem Nông sản, "

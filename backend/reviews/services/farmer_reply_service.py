@@ -33,7 +33,6 @@ def reply_to_review(*, review_type: str, review_id: int, farmer_id: int, reply: 
             review = model.objects.select_for_update(of=("self",)).filter(pk=review_id, **owner_filter).first()
             if review is None:
                 raise ResourceNotFoundError("Review not found.", code=ErrorCode.NOT_FOUND)
-            # D5 v1.8: a reply is public content, so a suspended stall cannot post one.
             if FarmerProfile.objects.filter(pk=farmer_id, status=FarmerStatus.SUSPENDED).exists():
                 raise ForbiddenActionError(
                     "Your stall is suspended, so you cannot reply to reviews.",

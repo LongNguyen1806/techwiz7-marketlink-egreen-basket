@@ -178,7 +178,6 @@ class FarmerChangeRequestTestCase(TestCase):
                 expected_version=order.version,
             )
         else:
-            # For overdue testing, manually accept and deduct initial stock to avoid T2 cutoff check
             order.status = OrderStatus.ACCEPTED
             self.product1.stock_quantity -= 2
             self.product1.save(update_fields=["stock_quantity"])
@@ -211,7 +210,6 @@ class FarmerChangeRequestTestCase(TestCase):
 
     def test_approve_change_request_reconciles_stock_deltas(self):
         order = self._create_accepted_order_with_change_request()
-        # Initial stock was 50 & 30; accepted order deducted 2 & 1 -> remaining 48 & 29
         self.product1.refresh_from_db()
         self.product2.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 48)
@@ -231,20 +229,17 @@ class FarmerChangeRequestTestCase(TestCase):
         self.assertEqual(updated_order.total_amount, Decimal("30.00"))
         self.assertEqual(updated_order.note, "Updated note from customer")
 
-        # Stock check: spinach increased by 1 -> 48 - 1 = 47. Mint removed (-1) -> 29 + 1 = 30
         self.product1.refresh_from_db()
         self.product2.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 47)
         self.assertEqual(self.product2.stock_quantity, 30)
 
-        # Order items check
         items = list(updated_order.items.all())
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0].product_id, self.product1.id)
         self.assertEqual(items[0].quantity, 3)
         self.assertEqual(items[0].line_total, Decimal("30.00"))
 
-        # History check
         history = updated_order.status_history.order_by("-id").first()
         self.assertIsNotNone(history)
         self.assertIsNone(history.transition)
@@ -253,7 +248,6 @@ class FarmerChangeRequestTestCase(TestCase):
         self.assertEqual(history.actor_role, ActorRole.FARMER)
         self.assertEqual(history.change_reason, "Farmer approved change request")
 
-        # Notification check
         notif = Notification.objects.filter(
             recipient=self.customer, type=NotificationType.ORDER_CHANGE_APPROVED
         ).first()
@@ -266,7 +260,7 @@ class FarmerChangeRequestTestCase(TestCase):
                 {
                     "product_id": self.product1.id,
                     "product_name": self.product1.name,
-                    "quantity": 100,  # Only 48 available
+                    "quantity": 100,
                     "unit": self.product1.unit,
                     "unit_price": "10.00",
                 }
@@ -282,7 +276,6 @@ class FarmerChangeRequestTestCase(TestCase):
             )
         self.assertEqual(ctx.exception.code, ErrorCode.INSUFFICIENT_STOCK)
 
-        # Order and pending_change must be preserved
         order.refresh_from_db()
         self.assertIsNotNone(order.pending_change)
         self.product1.refresh_from_db()
@@ -305,22 +298,18 @@ class FarmerChangeRequestTestCase(TestCase):
         self.assertEqual(updated_order.status, OrderStatus.ACCEPTED)
         self.assertEqual(updated_order.total_amount, Decimal("25.00"))
 
-        # Physical stock unchanged
         self.product1.refresh_from_db()
         self.product2.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 48)
         self.assertEqual(self.product2.stock_quantity, 29)
 
-        # Original items intact
         self.assertEqual(updated_order.items.count(), 2)
 
-        # History check
         history = updated_order.status_history.order_by("-id").first()
         self.assertIsNotNone(history)
         self.assertIsNone(history.transition)
         self.assertIn("Sorry, we cannot accommodate this change.", history.change_reason)
 
-        # Notification check
         notif = Notification.objects.filter(
             recipient=self.customer, type=NotificationType.ORDER_CHANGE_REJECTED
         ).first()
@@ -379,7 +368,6 @@ class FarmerChangeRequestTestCase(TestCase):
     def test_forbidden_for_other_or_suspended_farmer(self):
         order = self._create_accepted_order_with_change_request()
 
-        # Other farmer -> 404 NOT_FOUND (CT-03: out of scope is not found)
         with self.assertRaises(ResourceNotFoundError):
             approve_change_request(
                 order_id=order.id,
@@ -388,7 +376,6 @@ class FarmerChangeRequestTestCase(TestCase):
                 actor=self.other_farmer_user,
             )
 
-        # Suspended farmer
         self.farmer.status = FarmerStatus.SUSPENDED
         self.farmer.save(update_fields=["status"])
 
@@ -415,7 +402,6 @@ class FarmerChangeRequestTestCase(TestCase):
             )
         self.assertEqual(ctx.exception.code, ErrorCode.FAILED_PRECONDITION)
 
-    # ---- Review round Tính năng 2 ----
 
     def test_not_found_for_missing_or_foreign_order(self):
         order = self._create_accepted_order_with_change_request()
@@ -423,7 +409,7 @@ class FarmerChangeRequestTestCase(TestCase):
             reject_change_request(
                 order_id=order.id,
                 farmer_id=self.other_farmer.pk,
-                expected_version=order.version + 99,  # wrong version must not leak a 409
+                expected_version=order.version + 99,
                 actor=self.other_farmer_user,
             )
         with self.assertRaises(ResourceNotFoundError):
@@ -435,7 +421,6 @@ class FarmerChangeRequestTestCase(TestCase):
             )
 
     def test_approve_change_request_with_reschedule(self):
-        # 2.1: approving a new pickup date/slot used to crash with a 500.
         for day in range(1, 8):
             MarketOperatingDay.objects.create(market=self.market, day_of_week=day)
         new_date = (timezone.localtime(timezone.now()) + timedelta(days=3)).date()
@@ -470,10 +455,9 @@ class FarmerChangeRequestTestCase(TestCase):
         self.assertEqual(timezone.localtime(updated.pickup_end_at).hour, 11)
         self.assertEqual(updated.cutoff_at, updated.pickup_start_at - timedelta(hours=12))
         self.assertEqual(updated.stall_label, "Stall S1")
-        self.assertEqual(updated.items.count(), 2)  # items unchanged
+        self.assertEqual(updated.items.count(), 2)
 
     def test_malformed_pending_change_returns_422_not_500(self):
-        # 2.2: a pending_change without unit_price must not crash the approve endpoint.
         order = self._create_accepted_order_with_change_request(
             new_items=[{"product_id": self.product1.id, "quantity": 3}]
         )
@@ -491,7 +475,6 @@ class FarmerChangeRequestTestCase(TestCase):
         self.assertEqual(self.product1.stock_quantity, 48)
 
     def test_new_item_keeps_price_seen_by_customer(self):
-        # Decision A (v1.8): prices come from the request, not from the price at approval.
         order = self._create_accepted_order_with_change_request(
             new_items=[
                 {"product_id": self.product1.id, "quantity": 2, "unit_price": "10.00"},

@@ -8,13 +8,10 @@ from rest_framework_simplejwt.settings import api_settings as jwt_settings
 
 logger = logging.getLogger(__name__)
 
-# Token revocation lives in Redis (Pass 4B §1.3), in the "blacklist" cache alias.
-# Only basic commands are used (GET, MGET, SET with TTL, SET NX), so Redis >= 6 and Memurai 8.x both work.
 _REVOKED_SESSION = "auth:revoked_sid:{}"
 _USED_REFRESH = "auth:used_jti:{}"
 _PASSWORD_KEEPER = "auth:password_keeper:{}"
 
-# Only a Redis outage may be tolerated on the access path; configuration errors must surface.
 _OUTAGE_ERRORS = (ConnectionError, TimeoutError, RedisConnectionError, RedisTimeoutError, ConnectionInterrupted)
 
 

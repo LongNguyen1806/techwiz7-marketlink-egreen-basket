@@ -97,7 +97,6 @@ class TestAdminOnlyOptions:
     def test_a_reason_that_does_not_fit_the_edge_is_refused(self, make_order, admin_user):
         order = make_order(pickup_date=timezone.localdate() + timedelta(days=1))
 
-        # Market closure declines orders; it can never be stamped on a cancellation (T5).
         with pytest.raises(ValueError):
             transition_order(
                 order_id=order.id, to_status=OrderStatus.CANCELLED, actor=admin_user,

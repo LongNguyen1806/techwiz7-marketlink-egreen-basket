@@ -35,7 +35,6 @@ class TestLogin:
         assert user["farmer_status"] == "PENDING"
 
     def test_admin_is_rejected_even_with_the_right_password(self, api, admin_user):
-        # D-027: admins sign in at /api/auth/admin/login/; this portal must not reveal the account exists.
         response = _login(api, "admin@example.com")
 
         assert (response.status_code, response.json()["code"]) == (401, "INVALID_CREDENTIALS")

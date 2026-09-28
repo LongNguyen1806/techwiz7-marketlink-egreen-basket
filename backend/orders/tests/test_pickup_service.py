@@ -29,7 +29,6 @@ def shop(db):
 def _resolve(shop, **overrides):
     args = {"farmer": shop.farmer, "pickup_slot_id": shop.slot.id, "pickup_date": shop.date, "now": shop.now}
     args.update(overrides)
-    # validate_pickup_date() (markets, Farmer branch) reads the clock itself, so freeze it at "now".
     with mock.patch("django.utils.timezone.now", return_value=args["now"]):
         return resolve_pickup(**args)
 
@@ -87,7 +86,6 @@ class TestResolvePickup:
             _resolve(shop)
 
     def test_day_the_farmer_does_not_operate_is_rejected(self, shop):
-        # D-031: the date must be both a market day and one of the farmer's operating days.
         shop.farmer.operating_days = [day for day in range(1, 8) if day != shop.date.isoweekday()]
         shop.farmer.save()
 
@@ -149,7 +147,6 @@ class TestListPickupOptions:
         assert list_pickup_options(farmer=shop.farmer, now=shop.now) == []
 
     def test_farmer_without_operating_days_offers_nothing(self, shop):
-        # save() now rejects an empty list (D-031); only legacy rows can still hold one.
         FarmerProfile.objects.filter(pk=shop.farmer.pk).update(operating_days=[])
         shop.farmer.refresh_from_db()
 

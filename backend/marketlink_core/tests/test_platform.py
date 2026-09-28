@@ -37,7 +37,6 @@ class TestDeadlockRetry:
         assert caught.value.code == "CONFLICT_RETRY"
 
     def test_lock_wait_timeout_is_not_retried(self):
-        # It already waited innodb_lock_wait_timeout; the exception handler turns it into 409.
         calls = []
 
         def work():

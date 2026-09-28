@@ -43,7 +43,6 @@ class ChatMessagesView(APIView):
         return ServiceUnavailableError(busy_reply(_latest_message(request)))
 
     def throttled(self, request, wait):
-        # The 20/min burst limit: not a 429 that would name the policy, the same busy reply.
         raise self._busy(request, "per-minute throttle")
 
     def post(self, request: Request) -> Response:
@@ -56,7 +55,6 @@ class ChatMessagesView(APIView):
             result = answer(serializer.validated_data["messages"], asker)
         except AIUnavailable as exc:
             raise self._busy(request, f"model unavailable: {exc}") from exc
-        # Counted only once the model has answered: an outage does not use up anyone's day.
         limits.record_answer(request, asker)
         return api_response(
             message="OK",

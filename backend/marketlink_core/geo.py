@@ -10,7 +10,6 @@ DISTANCE_PRECISION = 2
 
 
 def parse_coordinates(params) -> tuple[Decimal, Decimal] | None:
-    # Coordinates are optional everywhere; an unusable pair simply means "no distance".
     raw_lat, raw_lng = params.get("lat"), params.get("lng")
     if raw_lat is None or raw_lng is None:
         return None
@@ -24,8 +23,6 @@ def parse_coordinates(params) -> tuple[Decimal, Decimal] | None:
 
 
 def distance_km(*, lat: Decimal, lng: Decimal, lat_field: str, lng_field: str):
-    # Haversine in SQL (D-012) so ordering=distance can be paginated by the database.
-    # ACOS returns NULL outside [-1, 1] on MySQL, so the argument is clamped first.
     origin_lat = Radians(Value(lat, output_field=DecimalField(max_digits=9, decimal_places=6)))
     origin_lng = Radians(Value(lng, output_field=DecimalField(max_digits=9, decimal_places=6)))
     target_lat = Radians(Cast(F(lat_field), FloatField()))

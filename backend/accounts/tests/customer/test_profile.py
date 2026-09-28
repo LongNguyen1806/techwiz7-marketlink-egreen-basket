@@ -77,7 +77,6 @@ class TestUpdateProfile:
         assert customer.customer_profile.phone == "0912345678"
 
     def test_phone_taken_by_a_concurrent_request_is_still_a_field_error(self, api, customer, other_customer):
-        # The pre-check misses the other customer; the UNIQUE index catches it on save.
         with mock.patch("accounts.services.customer_profile_service.phone_taken", side_effect=[False, True]):
             response = _patch(api, customer, {"phone": "0901112233"})
 

@@ -139,7 +139,6 @@ class TestListOrders:
         ("ACCEPTED", timedelta(hours=1), False),
     ])
     def test_is_expiring_soon_flags_placed_orders_two_hours_before_pickup(self, shop, status, starts_in, expected):
-        # v1.8 OrderSummary.is_expiring_soon: PLACED and at most 2 hours before pickup_start_at.
         _order(shop, status=status, pickup_start_at=timezone.now() + starts_in)
 
         assert _results(shop.api.get(LIST_URL))[0]["is_expiring_soon"] is expected
@@ -193,7 +192,6 @@ class TestOrderDetail:
 
         data = shop.api.get(_detail_url(order)).json()["data"]
 
-        # v1.8: items = null means "items unchanged"; the estimate is then the current total.
         assert data["has_pending_change"] is True
         assert (data["pending_change"]["note"], data["pending_change"]["items"]) == ("Ring me", None)
         assert data["pending_change"]["estimated_total"] == data["total_amount"]
@@ -211,7 +209,6 @@ class TestOrderDetail:
         ("COMPLETED", True, ["REVIEW", "REORDER"]),
     ])
     def test_allowed_actions(self, shop, status, before_cutoff, actions):
-        # make_order puts cutoff 12 h before pickup; a pickup 6 h away is already past cutoff.
         start = timezone.now() + (timedelta(days=3) if before_cutoff else timedelta(hours=6))
         order = _order(shop, status=status, pickup_start_at=start)
 

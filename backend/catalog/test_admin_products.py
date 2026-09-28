@@ -25,7 +25,6 @@ def test_list_is_paginated_and_names_the_farmer(admin_client, product, approved_
     assert row["name"] == "Tomato"
     assert row["farmer"] == {"id": approved_farmer.pk, "stall_name": "Test Stall"}
     assert row["category"]["name"] == "Vegetables"
-    # Money is a decimal string, never a float (D-020).
     assert row["price"] == "2.50"
     assert row["availability"] == "IN_STOCK"
     assert row["is_hidden_by_admin"] is False
@@ -75,15 +74,11 @@ def test_a_product_of_a_suspended_farmer_is_unavailable(admin_client, product, a
 def test_held_quantity_is_every_open_accepted_or_ready_order(
     admin_client, product, seller_market, make_order_with_item
 ):
-    # D-029 v1.8: stock leaves the shelf when the farmer accepts, so held_quantity counts every
-    # open ACCEPTED or READY order - including one already past its pickup time, whose goods
-    # are still off the shelf.
     make_order_with_item(product=product, quantity=3, status=OrderStatus.ACCEPTED)
     make_order_with_item(product=product, quantity=2, status=OrderStatus.READY_FOR_PICKUP)
     make_order_with_item(
         product=product, quantity=7, status=OrderStatus.ACCEPTED, days_ahead=-2
     )
-    # A finished order released its goods; a PLACED one never took any.
     make_order_with_item(product=product, quantity=4, status=OrderStatus.COMPLETED)
     make_order_with_item(product=product, quantity=5, status=OrderStatus.PLACED)
 
@@ -96,7 +91,6 @@ def test_held_quantity_is_every_open_accepted_or_ready_order(
 def test_pending_quantity_counts_orders_awaiting_the_farmer(
     admin_client, product, seller_market, make_order_with_item
 ):
-    # pending_quantity is for reconciliation only: PLACED orders whose pickup is still ahead.
     make_order_with_item(product=product, quantity=5, status=OrderStatus.PLACED)
     make_order_with_item(product=product, quantity=3, status=OrderStatus.ACCEPTED)
     make_order_with_item(
@@ -149,7 +143,6 @@ def test_hide_records_the_reason_the_actor_and_an_audit_row(admin_client, produc
     assert response.status_code == 200
     assert response.data["data"]["is_hidden_by_admin"] is True
     assert response.data["data"]["hidden_reason"] == "Misleading photo"
-    # A hidden product is no longer publicly on sale (§3.3).
     assert response.data["data"]["availability"] == "UNAVAILABLE"
 
     product.refresh_from_db()
@@ -219,7 +212,6 @@ def test_hiding_never_deletes_the_row(admin_client, product):
         reverse(HIDE_URL_NAME, args=[product.id]), {"reason": "Policy breach"}, format="json"
     )
 
-    # D-017: moderation is a soft flag, so the product survives.
     assert Product.objects.filter(pk=product.id).exists()
 
 
@@ -272,8 +264,6 @@ def test_products_reject_an_unknown_sort_column(admin_client):
 def test_unrated_products_stay_at_the_bottom_either_way(
     admin_client, product, category, approved_farmer, make_order_with_item
 ):
-    # rating is the one sort built from an expression rather than a column name, because NULL
-    # has to sink in both directions - a product nobody has reviewed is not the worst rated.
     from reviews.models import ProductReview
 
     unrated = Product.objects.create(
@@ -289,9 +279,6 @@ def test_unrated_products_stay_at_the_bottom_either_way(
         assert ids[-1] == unrated.id, f"{ordering} floated an unrated product"
 
 
-# --------------------------------------------------------------------- AD-21b
-# Block is the takedown: it hides the listing *and* kills the orders. Hide leaves the orders
-# alone. The tests below are mostly about keeping those two apart.
 
 IMPACT_URL_NAME = "admin-product-block-impact"
 BLOCK_URL_NAME = "admin-product-block"
@@ -324,7 +311,6 @@ def test_block_impact_counts_open_orders_and_distinct_customers(
     make_order_with_item(product=product, status=OrderStatus.PLACED)
     make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
     make_order_with_item(product=product, status=OrderStatus.READY_FOR_PICKUP)
-    # Finished and cancelled orders are nobody's problem any more.
     make_order_with_item(product=product, status=OrderStatus.COMPLETED)
     make_order_with_item(product=product, status=OrderStatus.CANCELLED)
 
@@ -336,7 +322,6 @@ def test_block_impact_counts_open_orders_and_distinct_customers(
         "READY_FOR_PICKUP": 1,
         "total": 3,
     }
-    # The fixture uses one shopper for all of them.
     assert data["affected_customers"] == 1
 
 
@@ -364,17 +349,14 @@ def test_block_declines_open_orders_restocks_and_audits(
     completed.refresh_from_db()
     assert placed.status == OrderStatus.DECLINED
     assert accepted.status == OrderStatus.DECLINED
-    # A finished order is history; the takedown does not reach back into it.
     assert completed.status == OrderStatus.COMPLETED
 
-    # D-029: only the ACCEPTED order had taken stock off the shelf, so only its 6 come back.
     product.refresh_from_db()
     assert product.stock_quantity == before + 6
 
     entry = AuditLog.objects.get(action=AuditAction.PRODUCT_BLOCKED)
     assert entry.user == admin_user
     assert entry.details["affected_orders"] == 2
-    # Which orders died, so the row can answer a shopper asking why theirs was cancelled.
     assert entry.details["cancelled_order_ids"] == sorted([placed.id, accepted.id])
     assert completed.id not in entry.details["cancelled_order_ids"]
 
@@ -383,9 +365,6 @@ def test_block_declines_open_orders_restocks_and_audits(
 def test_block_stamps_the_takedown_reason_not_the_suspension_one(
     admin_client, product, make_order_with_item
 ):
-    # The same DECLINED transitions serve a stall suspension and a product takedown. If the
-    # reason were still picked from the transition code alone, this shopper would be told the
-    # stall had been suspended, which never happened.
     order = make_order_with_item(product=product, status=OrderStatus.ACCEPTED)
 
     admin_client.post(
@@ -431,8 +410,6 @@ def test_block_cancels_the_whole_order_not_just_the_blocked_line(
 
     order.refresh_from_db()
     assert order.status == OrderStatus.DECLINED
-    # Both lines survive as a record, and the untouched product gets its stock back too,
-    # because the order it belonged to is gone.
     assert order.items.count() == 2
     other.refresh_from_db()
     assert other.stock_quantity == other_before + 5
@@ -489,7 +466,6 @@ def test_unblock_puts_it_back_on_sale_without_reviving_the_orders(
     assert response.data["data"]["moderation_action"] is None
     assert response.data["data"]["hidden_reason"] is None
 
-    # The whole point of the separate verb: this order stays dead.
     order.refresh_from_db()
     assert order.status == OrderStatus.DECLINED
 
@@ -510,7 +486,6 @@ def test_moderation_list_reports_the_action_and_the_open_order_count(
 
     assert row["open_order_count"] == 2
     assert row["moderation_action"] is None
-    # The rating average must survive the extra counting; it is aggregated over the same join.
     assert row["rating_count"] == 0
 
 
@@ -521,10 +496,6 @@ def test_customer_cannot_block_or_unblock(customer_client, product):
         assert method(reverse(name, args=[product.id])).status_code == 403
 
 
-# ------------------------------------------------------------ product review
-# A listing is written by a stall and shown to shoppers by an admin. These tests are mostly
-# about the two ways that can go wrong: letting an unreviewed listing through, and taking an
-# approved one off sale because its stall fixed a typo.
 
 APPROVE_URL_NAME = "admin-product-approve"
 REJECT_URL_NAME = "admin-product-reject"
@@ -580,8 +551,6 @@ def test_approving_tells_the_stall_and_audits(admin_client, product, admin_user,
 
 @pytest.mark.django_db
 def test_approving_twice_is_refused(admin_client, product):
-    # Already approved by the fixture. A second approval is a misread screen, not a no-op, so
-    # it says so rather than silently stamping a new reviewer on it.
     response = admin_client.post(reverse(APPROVE_URL_NAME, args=[product.id]))
 
     assert response.status_code == 400
@@ -637,8 +606,6 @@ def test_editing_what_the_listing_claims_to_be_sends_it_back(product):
 
 @pytest.mark.django_db
 def test_editing_price_or_stock_does_not_send_it_back(product):
-    # A stall that has to wait for an admin before correcting its own stock will stop
-    # correcting it, and the stock figure is what the whole booking flow rests on.
     assert not needs_review_again(product, ["price"])
     assert not needs_review_again(product, ["stock_quantity"])
     assert not needs_review_again(product, ["price", "stock_quantity", "is_available"])
@@ -646,8 +613,6 @@ def test_editing_price_or_stock_does_not_send_it_back(product):
 
 @pytest.mark.django_db
 def test_a_listing_sent_back_keeps_its_approved_version_on_sale(product):
-    # Hiding it while it waits would mean losing the shopfront over a typo, which teaches
-    # stalls not to fix typos.
     assert public_product_base().filter(pk=product.pk).exists()
     send_back_for_review(product)
 

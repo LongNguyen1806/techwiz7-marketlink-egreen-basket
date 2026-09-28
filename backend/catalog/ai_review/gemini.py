@@ -38,7 +38,6 @@ AI_CHECKS = (
     "OTHER",
 )
 NO_CATEGORY = "NONE"
-# Below this the model is guessing; a HIGH it is unsure about is reported as MEDIUM.
 CONFIDENT = 0.6
 
 SYSTEM_INSTRUCTION = """\
@@ -109,8 +108,6 @@ def _listing_block(listing: ListingInput, category_names: list[str], *, image_on
         if image_only
         else "Check this listing."
     )
-    # json.dumps escapes quotes and newlines; < and > are escaped too, so a seller who types
-    # "</listing>" cannot close the data block and write instructions after it.
     data = json.dumps(
         {"name": listing.name, "description": listing.description, "category": listing.category_name, "unit": listing.unit},
         ensure_ascii=False,
@@ -147,8 +144,6 @@ def _parse(raw: str, category_names: list[str], *, image_only: bool) -> tuple[li
         message = str(item.get("message") or "").strip()[:300] or check.replace("_", " ").capitalize()
         findings.append(Finding(source="ai", check=check, severity=severity, message=message))
 
-    # The two booleans back up the list: a model that says "not farm food" without a finding
-    # still gets reported.
     if payload.get("is_farm_food") is False and not any(f.check == "NOT_FARM_PRODUCE" for f in findings) and not image_only:
         findings.append(Finding(source="ai", check="NOT_FARM_PRODUCE", severity=Severity.HIGH if confidence >= CONFIDENT else Severity.MEDIUM,
                                 message="The item does not look like farm food."))
@@ -193,7 +188,6 @@ def ask_model(listing: ListingInput, category_names: list[str], *, image_only: b
         response_mime_type="application/json",
         response_schema=_schema(category_names),
         temperature=0,
-        # No tools here; also keeps SDK 2.x from warning about automatic function calling.
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
 

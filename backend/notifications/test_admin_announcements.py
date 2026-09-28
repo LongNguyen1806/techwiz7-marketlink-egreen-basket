@@ -61,7 +61,6 @@ def test_create_records_the_signed_in_admin_as_author(admin_client, admin_user, 
     assert response.status_code == 201
     assert response.data["data"]["created_by_name"] == admin_user.email
     created = Announcement.objects.get(title="Harvest festival")
-    # created_by comes from the request, never from the body.
     assert created.created_by == admin_user
 
 

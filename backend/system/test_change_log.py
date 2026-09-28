@@ -35,7 +35,6 @@ def test_an_edit_shows_the_old_and_the_new_value(admin_client, farmer_user, admi
     )
 
     entries = admin_client.get(_url("farmer_profile", profile.user_id)).data["data"]
-    # Newest first: the screen shows the most recent change at the top.
     assert entries[0]["change_type"] == "UPDATED"
     assert entries[0]["user"]["email"] == admin_user.email
     assert entries[0]["reason"] == "Edited by Admin"
@@ -67,7 +66,6 @@ def test_an_unknown_record_type_is_a_400_listing_the_valid_ones(admin_client, fa
 
 @pytest.mark.django_db
 def test_an_id_that_never_existed_is_a_404_not_an_empty_history(admin_client):
-    # An empty list would read as "this record has never changed", which is a different thing.
     assert admin_client.get(_url("farmer_profile", 9999)).status_code == 404
 
 
@@ -80,9 +78,6 @@ def test_a_customer_cannot_read_the_trail(customer_client, farmer_user):
 
 @pytest.mark.django_db
 def test_a_photo_change_is_recorded_as_its_path(admin_client, farmer_user):
-    # The history table keeps a FileField as a plain string, so what comes back is the path,
-    # not a file object. _json_safe still guards the FieldFile case, because rendering a live
-    # empty ImageFieldFile raises rather than returning null.
     profile = farmer_user.farmer_profile
     profile.image = "farmers/photo.jpg"
     profile.save(update_fields=["image", "updated_at"])
@@ -115,8 +110,6 @@ def test_the_history_survives_the_record_being_deleted(admin_client, farmer_user
 
     response = admin_client.get(_url("pickup_slot", slot_id))
 
-    # FA-10 deletes slots and FA-34 deletes order items; their history is exactly what an
-    # admin would want to look at afterwards.
     assert response.status_code == 200
     assert response.data["data"][0]["change_type"] == "DELETED"
 
@@ -131,16 +124,9 @@ def test_only_the_newest_revisions_are_read(admin_client, farmer_user, django_as
     response = admin_client.get(_url("farmer_profile", profile.user_id))
 
     assert response.status_code == 200
-    # The limit is applied in the query; reading every revision first would not scale for a
-    # product whose stock changes with each order.
     assert len(response.data["data"]) <= 50
 
 
-# ---------------------------------------------------------------------------
-# The limit is applied in the query, which makes an off-by-one easy to get wrong: the oldest
-# revision still shown has to be diffed against the one before it, and that one must not
-# itself appear in the answer.
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -156,8 +142,6 @@ def test_the_limit_keeps_the_diff_of_its_oldest_entry(farmer_user):
     entries = build_change_log(FarmerProfile, profile.user_id, limit=2)
 
     assert len(entries) == 2
-    # Oldest of the two shown: it must know it came from 'Second', which is a revision the
-    # answer deliberately does not include.
     assert entries[0]['changes'] == [
         {'field': 'contact_person', 'old': 'Second', 'new': 'Third'}
     ]
@@ -177,7 +161,6 @@ def test_a_limit_larger_than_the_history_returns_all_of_it(farmer_user):
 
     entries = build_change_log(FarmerProfile, profile.user_id, limit=50)
 
-    # The selector speaks 'type'; the serializer is what renames it to change_type.
     assert [e['type'] for e in entries] == ['CREATED', 'UPDATED']
     assert entries[0]['changes'] == []
 
@@ -195,7 +178,6 @@ def test_values_that_json_cannot_render_are_coerced(admin_client, farmer_user):
 
     assert response.status_code == 200
     changed = {c['field']: c for c in response.data['data'][0]['changes']}
-    # Decimal reaches the renderer as a string rather than blowing up or losing precision.
     assert changed['latitude']['new'] == '10.762622'
     assert changed['latitude']['old'] is None
 
@@ -213,7 +195,6 @@ def test_a_shoppers_profile_now_has_a_trail_too(admin_client, customer_user, adm
 
     response = admin_client.get(_url("customer_profile", profile.user_id))
 
-    # The admin can edit these details, so the before/after has to be readable here as well.
     assert response.status_code == 200
     assert response.data["data"][0]["changes"] == [
         {"field": "full_name", "old": "Test Customer", "new": "Linh Pham"}
@@ -223,7 +204,6 @@ def test_a_shoppers_profile_now_has_a_trail_too(admin_client, customer_user, adm
 
 @pytest.mark.django_db
 def test_a_record_saved_without_history_is_an_empty_list_not_a_404(admin_client, farmer_user):
-    # seed_demo writes with bulk_create, which simple-history does not see.
     profile = farmer_user.farmer_profile
     profile.history.all().delete()
 

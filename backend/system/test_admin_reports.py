@@ -36,7 +36,6 @@ def test_revenue_counts_only_completed_orders(admin_client, market, make_order, 
     row = data["revenue_by_market"][0]
     assert row["market_name"] == "Central Market"
     assert row["completed_orders"] == 2
-    # Money is a decimal string, never a float (D-020).
     assert row["revenue"] == "15.50"
 
 
@@ -123,7 +122,6 @@ def test_top_farmers_reports_revenue_and_rating(
     row = rows[0]
     assert row["farmer_id"] == approved_farmer.user_id
     assert row["stall_name"] == "Test Stall"
-    # The rating join must not multiply the order rows.
     assert row["completed_orders"] == 2
     assert row["revenue"] == "14.00"
     assert row["rating_avg"] == 4.0
@@ -240,7 +238,6 @@ def test_export_returns_a_three_sheet_workbook_and_audits(
     revenue = workbook["Revenue by market"]
     assert [cell.value for cell in revenue[1]] == ["Market", "Completed orders", "Revenue (USD)"]
     assert revenue.cell(row=2, column=1).value == "Central Market"
-    # Revenue is written as a number so Excel can sum the column.
     assert revenue.cell(row=2, column=3).value == 12.5
 
     entry = AuditLog.objects.get(action=AuditAction.EXPORT_DATA)

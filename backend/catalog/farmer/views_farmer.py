@@ -48,7 +48,6 @@ from orders.farmer.serializers_farmer import FarmerOrderSummarySerializer
 from orders.services.fsm import run_with_retry_if_top_level
 
 PRODUCT_STATES = ("in_stock", "out_of_stock", "unavailable", "hidden", "archived", "in_review", "rejected")
-# Fields FA-14 may change; the save lists exactly the changed ones (never a full-row write).
 UPDATABLE_FIELDS = (
     "name",
     "price",
@@ -67,7 +66,6 @@ def _reviewable_changes(product: Product, before: dict[str, Any], had_image: boo
     """REVIEWABLE_FIELDS whose value really changed. The form resends every field on save, so
     "present in the body" is not "changed"; a re-sent name must not send the listing back."""
     changed = [field for field, old in before.items() if getattr(product, field) != old]
-    # A new file is always a new image; a null only counts when there was one to remove.
     if "image" in validated and (validated["image"] or had_image):
         changed.append("image")
     return changed
@@ -143,7 +141,6 @@ class FarmerBaseProductView(APIView):
         return profile
 
     def _check_can_write(self, profile: FarmerProfile, *, require_approved: bool) -> None:
-        # Pass 4B §5.4: every write endpoint of a suspended farmer returns FARMER_SUSPENDED.
         if profile.status == FarmerStatus.SUSPENDED:
             raise ForbiddenActionError(
                 "Your stall is suspended, so products cannot be changed.",
@@ -231,7 +228,6 @@ class FarmerProductListView(FarmerBaseProductView):
                 set_product_markets(product=product, market_ids=market_ids)
             else:
                 sell_everywhere(product=product)
-            # New listings start PENDING; the AI advises the admin in the background.
             schedule_listing_review(product.pk)
         return api_response(
             message="Product created successfully.",
@@ -252,7 +248,7 @@ class FarmerProductDetailView(FarmerBaseProductView):
         """FA-14: partial update under a row lock; restock alert when stock goes 0 -> > 0 (D-025)."""
         profile = self._get_farmer_profile(request)
         self._check_can_write(profile, require_approved=True)
-        self._get_farmer_product(profile, pk)  # 404 before validating the body
+        self._get_farmer_product(profile, pk)
 
         serializer = FarmerProductUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -261,7 +257,6 @@ class FarmerProductDetailView(FarmerBaseProductView):
 
         def _execute() -> tuple[Product, int]:
             with transaction.atomic():
-                # Lock first so a concurrent accept (T2) cannot be overwritten by a stale row.
                 product = self._get_farmer_product(profile, pk, lock=True)
                 if product.is_archived or product.is_hidden_by_admin:
                     raise UnprocessableEntityError(
@@ -280,7 +275,6 @@ class FarmerProductDetailView(FarmerBaseProductView):
                         value = validated[field]
                         setattr(product, field, value.strip() if field == "name" else value)
                         changed.append(field)
-                # Either end may change alone, so the pair is checked against the resulting row.
                 window_error = order_window_error(product.min_per_order, product.max_per_order)
                 if window_error:
                     raise BusinessValidationError(
@@ -291,13 +285,10 @@ class FarmerProductDetailView(FarmerBaseProductView):
                 if "market_ids" in validated:
                     set_product_markets(product=product, market_ids=validated["market_ids"])
 
-                # Changing what the listing is (name, description, image, category) takes it off
-                # the shopper side until an admin approves it again; open orders keep going.
                 sent_back = needs_review_again(product, _reviewable_changes(product, before, had_image, validated))
                 if sent_back:
                     send_back_for_review(product)
                 if product.review_status == ReviewStatus.PENDING:
-                    # Unchanged content is not reviewed twice (content hash), so this is cheap.
                     schedule_listing_review(product.pk)
 
                 restock_notified = 0
@@ -323,7 +314,6 @@ class FarmerProductDetailView(FarmerBaseProductView):
         product = self._get_farmer_product(profile, pk)
         product.is_archived = True
         save_with_history(product, update_fields=["is_archived", "updated_at"], reason="Archived by farmer")
-        # An archived listing is off sale for good; the AI's question about it no longer needs an answer.
         close_ai_flags(product.pk, resolution="Listing archived by the stall.")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -426,7 +416,6 @@ class FarmerWeeklyTemplatePreviewView(FarmerBaseProductView):
         preview = preview_weekly_template(farmer=profile)
         data = {
             "rows": preview["rows"],
-            # OrderSummary gives the dialog the version needed for If-Match on Complete / No-show.
             "overdue_orders": FarmerOrderSummarySerializer(
                 preview["overdue_orders"], many=True, context={"request": request}
             ).data,

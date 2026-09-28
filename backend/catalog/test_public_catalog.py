@@ -27,8 +27,6 @@ def make_product(category, approved_farmer):
             price=price,
             unit=Unit.KG,
             stock_quantity=stock,
-            # These stand for listings already on sale. A fresh Product() is PENDING, which
-            # is the right default for the model and the wrong one for a shopper's view.
             review_status=overrides.pop("review_status", ReviewStatus.APPROVED),
             **overrides,
         )
@@ -46,7 +44,6 @@ def test_categories_are_a_plain_active_only_list(api_client, category):
 
     assert response.status_code == 200
     rows = response.data["data"]
-    # PU-02 has no [P] marker.
     assert isinstance(rows, list)
     assert [row["name"] for row in rows] == ["Vegetables"]
     assert set(rows[0]) == {"id", "name", "icon", "display_order"}
@@ -108,8 +105,6 @@ def test_the_ids_parameter_ignores_in_stock_for_the_cart(api_client, make_produc
         reverse(PRODUCTS_URL), {"ids": f"{sold_out.id},{archived.id}"}
     ).data["data"]["results"]
 
-    # Refreshing the cart keeps sold-out rows so they can be marked Unavailable, but an
-    # archived product is gone for good.
     assert [row["name"] for row in rows] == ["Sold out"]
 
 
@@ -197,7 +192,6 @@ def test_market_and_day_filters_use_active_slots(
         "count"
     ] == 1
     assert api_client.get(reverse(PRODUCTS_URL), {"market_id": quiet.id}).data["data"]["count"] == 0
-    # Day 1 has an active slot; day 3's slot is switched off.
     assert api_client.get(reverse(PRODUCTS_URL), {"day": "1"}).data["data"]["count"] == 1
     assert api_client.get(reverse(PRODUCTS_URL), {"day": "3"}).data["data"]["count"] == 0
 

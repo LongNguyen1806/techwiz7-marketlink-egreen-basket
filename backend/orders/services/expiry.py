@@ -62,7 +62,7 @@ def _expire_change_request(order_id: int) -> bool:
                 order,
                 update_fields=["pending_change", "version", "updated_at"],
                 reason=f"Order #{order.pk}: change request expired",
-                user=None,  # system action (lazy sweep)
+                user=None,
             )
 
             OrderStatusHistory.objects.create(
@@ -87,7 +87,6 @@ def _expire_change_request(order_id: int) -> bool:
 
 def _cancel_unrescheduled(order_id: int) -> None:
     """The market moved, no new time was settled, and the old one has come."""
-    # Read before the decline clears it: a request still waiting means the shopper did answer.
     stall_silent = Order.objects.filter(pk=order_id, pending_change__isnull=False).exists()
     why = (
         "the stall did not confirm the new pickup time"
@@ -100,7 +99,6 @@ def _cancel_unrescheduled(order_id: int) -> None:
         actor=None,
         actor_role=ActorRole.ADMIN,
         admin_change_reason=ChangeReason.MARKET_SCHEDULE_CHANGED_BY_ADMIN,
-        # Told below in words that fit; ORDER_DECLINED would blame the stall.
         notify_customer=False,
     )
     context = {**build_order_context(order), "why": why}
@@ -124,8 +122,6 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
     """A-005 lazy sweep. Each order runs in its own transaction; returns the number expired."""
     now = timezone.now()
 
-    # 0. Orders still waiting for a new pickup time once the old one has come (Q2: declined,
-    # stock back). First, so step 1 does not expire them as if the stall had ignored them.
     unrescheduled = Order.objects.filter(
         status__in=OPEN_STATUSES,
         reschedule_requested_at__isnull=False,
@@ -143,7 +139,6 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
         except Exception:  # noqa: BLE001 - see W3.2
             _handle_order_failure(order_id, "cancel the unrescheduled order")
 
-    # 1. Expire PLACED orders whose pickup has started (A-005, D-029: stock unchanged)
     overdue_placed = Order.objects.filter(status=OrderStatus.PLACED, pickup_start_at__lte=now)
     if farmer_id is not None:
         overdue_placed = overdue_placed.filter(farmer_id=farmer_id)
@@ -158,7 +153,6 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
                 actor_role=ActorRole.SYSTEM,
             )
         except BusinessValidationError as exc:
-            # Someone else moved the order (e.g. the farmer accepted it) between the scan and the lock.
             if exc.code != ErrorCode.INVALID_STATUS_TRANSITION:
                 _handle_order_failure(order_id, "expire")
             continue
@@ -167,7 +161,6 @@ def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
             continue
         expired += 1
 
-    # 2. Drop change requests of ACCEPTED orders whose pickup has started (D-030, CT-21)
     overdue_changes = Order.objects.filter(
         status=OrderStatus.ACCEPTED,
         pickup_start_at__lte=now,

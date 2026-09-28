@@ -104,12 +104,12 @@ class FarmerStatsAPITestCase(TestCase):
         return res.data["data"]
 
     def test_kpis_follow_the_range_and_compare_with_the_period_before(self):
-        self._order(_S.COMPLETED, day_offset=-1, items=[(self.mango, 2, Decimal("3.00"))])  # 6.00 Anna
-        self._order(_S.COMPLETED, day_offset=-2, items=[(self.lime, 4, Decimal("1.00"))])  # 4.00 Anna again
+        self._order(_S.COMPLETED, day_offset=-1, items=[(self.mango, 2, Decimal("3.00"))])
+        self._order(_S.COMPLETED, day_offset=-2, items=[(self.lime, 4, Decimal("1.00"))])
         self._order(_S.COMPLETED, day_offset=-3, customer=self.binh, items=[(self.mango, 1, Decimal("5.00"))])
         self._order(_S.CANCELLED, day_offset=-2, items=[(self.mango, 9, Decimal("3.00"))])
-        self._order(_S.PLACED, day_offset=0, items=[(self.lime, 1, Decimal("1.00"))])  # open: not finished
-        self._order(_S.COMPLETED, day_offset=-9, items=[(self.mango, 1, Decimal("8.00"))])  # the 7 days before
+        self._order(_S.PLACED, day_offset=0, items=[(self.lime, 1, Decimal("1.00"))])
+        self._order(_S.COMPLETED, day_offset=-9, items=[(self.mango, 1, Decimal("8.00"))])
         self._order(_S.COMPLETED, day_offset=-1, items=[(self.mango, 1, Decimal("99.00"))], farmer=self.other_farmer)
 
         data = self._get()

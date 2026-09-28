@@ -11,7 +11,6 @@ PHONE_PATTERN = r"^(0|\+84)(3|5|7|8|9)\d{8}$"
 
 
 def clean_phone(value: str) -> str:
-    # D-028: "+84 91 234 5678" and "091.234.5678" are the same number; validate and store 0xxxxxxxxx.
     phone = normalize_phone(value)
     if not re.fullmatch(PHONE_PATTERN, phone):
         raise serializers.ValidationError("Invalid phone number")

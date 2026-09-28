@@ -102,7 +102,6 @@ class FavoriteProductsView(_FavoriteListView):
     serializer_class_read = ProductCardSerializer
 
     def public_queryset(self, request):
-        # in_stock=False: sold-out favorites stay on C-08 for the restock label.
         return public_products(in_stock=False)
 
     def serializer_context(self, request, page) -> dict:

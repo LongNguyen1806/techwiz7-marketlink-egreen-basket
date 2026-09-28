@@ -34,19 +34,15 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             await self._reject()
             return
 
-        # No ORM here, so the lookup need not queue on the single thread-sensitive worker.
         payload = await sync_to_async(verify_and_consume_ws_ticket, thread_sensitive=False)(ticket=ticket)
         if not payload or "user_id" not in payload:
             await self._reject()
             return
-        # The account may have been locked in the seconds since the ticket was issued.
         if not await _is_active_user(payload["user_id"]):
             await self._reject()
             return
 
         self.user_id = payload["user_id"]
-        # user_<id> receives notifications and account-lock disconnects; session_<sid> receives
-        # the logout disconnect of this one device.
         self.groups_joined = [user_group(self.user_id)]
         if payload.get("sid"):
             self.groups_joined.append(session_group(payload["sid"]))
@@ -67,8 +63,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(payload)
 
     async def force_disconnect(self, event):
-        # Sent after a logout or an account lock: the client must fetch a new ticket (AU-08),
-        # which a locked or logged-out session can no longer get.
         await self.close(code=CLOSE_CODE_UNAUTHORIZED)
 
     async def _reject(self):

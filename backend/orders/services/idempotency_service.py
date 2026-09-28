@@ -10,10 +10,6 @@ from orders.exceptions import IdempotencyInProgressError, IdempotencyKeyReusedEr
 
 logger = logging.getLogger(__name__)
 
-# Pass 4B §5.1 step 1. Needs a shared cache (Redis, USE_REDIS=True) when running more than one worker.
-# The processing claim must outlive a checkout that waits on several row locks (up to 50 s each) and one
-# deadlock retry. If a worker dies mid-request the key stays "in progress" for this long; a duplicate
-# order is still impossible afterwards because D-005 allows one open order per farmer.
 PROCESSING_TTL_SECONDS = 5 * 60
 RESULT_TTL_SECONDS = 24 * 60 * 60
 
@@ -42,7 +38,7 @@ def _claim(*, user_id, key: str, request_hash: str) -> tuple[str | None, dict | 
             return token, None
         entry = cache.get(cache_key)
         if entry is None:
-            continue  # freed between add() and get(); try to claim it once more
+            continue
         if entry["hash"] != request_hash:
             raise IdempotencyKeyReusedError()
         if entry["state"] == "processing":
@@ -75,6 +71,5 @@ def run_idempotent(*, user_id, key: str, payload, action) -> IdempotentResult:
     try:
         cache.set(cache_key, {"state": "done", "hash": request_hash, "status": status, "body": body}, timeout=RESULT_TTL_SECONDS)
     except Exception:
-        # The orders are already committed; losing the replay copy must not turn their 201 into a 500.
         logger.warning("Could not store idempotent response for %s", cache_key, exc_info=True)
     return IdempotentResult(status=status, body=body, replayed=False)

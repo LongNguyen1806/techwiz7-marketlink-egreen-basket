@@ -47,7 +47,6 @@ def stale_accounts(*, months: int = DEFAULT_MONTHS):
 
     return (
         User.objects.filter(
-            # Never signed in and created long ago, or signed in once and not since.
             Q(last_login__isnull=True, date_joined__lt=cutoff) | Q(last_login__lt=cutoff)
         )
         .filter(
@@ -100,7 +99,6 @@ class Command(BaseCommand):
             self.stderr.write("--months must be at least 1.")
             return
 
-        # Listed before deleting: once the rows are gone the emails are gone with them.
         rows = [
             {"id": user.pk, "email": user.email, "role": user.role.code if user.role_id else None}
             for user in stale_accounts(months=months)
@@ -123,7 +121,6 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             User.objects.filter(pk__in=[row["id"] for row in rows]).delete()
-            # No request behind a cron run, so this goes in without IP or endpoint.
             log_security_event(
                 action=AuditAction.ACCOUNT_PURGED,
                 user=None,

@@ -41,7 +41,6 @@ class DeadlockRetryTestCase(SimpleTestCase):
         self.assertEqual(calls["count"], 1)
 
     def test_no_retry_inside_outer_transaction(self):
-        # InnoDB rolls back the whole transaction on deadlock, so the caller must retry.
         fn, calls = _failing(1213, times=1)
         in_atomic = SimpleNamespace(in_atomic_block=True)
         with mock.patch.object(fsm.transaction, "get_connection", return_value=in_atomic):

@@ -32,8 +32,7 @@ from reviews.models import ProductReview
 
 logger = logging.getLogger("marketlink")
 
-MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024  # 2MB per F-05 spec
-# NFR-01: extension + MIME + magic bytes. The stored extension comes from the decoded format.
+MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 IMAGE_FORMAT_EXTENSIONS = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}
@@ -76,8 +75,6 @@ def validate_image_upload(file: Any) -> Any:
 
     if image_format not in IMAGE_FORMAT_EXTENSIONS:
         raise _image_error("Unsupported image format. Allowed: JPG, PNG, WEBP.")
-    # A small file can still declare a huge canvas (a "decompression bomb"): check the pixel
-    # count before anything decodes the picture.
     if pixels > MAX_IMAGE_PIXELS:
         raise _image_error("Image dimensions are too large (at most 36 megapixels).")
 
@@ -91,7 +88,6 @@ def _probe_image(content: bytes) -> tuple[str, int]:
     """Read the format and pixel count from the header only, without decoding the picture."""
     try:
         with warnings.catch_warnings():
-            # Pillow only warns between 89 and 179 megapixels; treat that as invalid too.
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(io.BytesIO(content)) as probe:
                 image_format = (probe.format or "").upper()
@@ -113,7 +109,6 @@ def _reencode(content: bytes, image_format: str) -> bytes:
     """Decode and save again: only the pixels survive, never metadata or appended bytes."""
     try:
         with Image.open(io.BytesIO(content)) as source:
-            # EXIF is dropped below, so its rotation flag is applied to the pixels first.
             image = ImageOps.exif_transpose(source)
             output = io.BytesIO()
             if image_format == "JPEG":
@@ -148,8 +143,6 @@ def notify_restock_for_product(*, product: Product) -> int:
     notified = 0
     for fav in favorites:
         try:
-            # Savepoint per customer: one failure is rolled back alone and never breaks
-            # the caller's transaction (FA-14 / FA-18).
             with transaction.atomic():
                 notify(
                     recipient=fav.customer,
@@ -248,7 +241,6 @@ def build_product_metrics(*, farmer: FarmerProfile, product_ids: list[int]) -> d
         for product_id in ids
     }
     return {
-        # D-029 / v1.8 option A: every open ACCEPTED / READY order, even past its pickup time.
         "held": {row["product_id"]: row["total"] for row in held_rows},
         "pending": get_pending_quantities(product_ids=ids),
         "ratings": {
@@ -264,15 +256,12 @@ def preview_weekly_template(*, farmer: FarmerProfile) -> dict[str, Any]:
     held_quantity only includes ACCEPTED and READY_FOR_PICKUP orders with pickup_end_at > now.
     overdue_orders is a queryset of Order objects; the view renders them as OrderSummary.
     """
-    # 1. Sweep overdue orders
     expire_overdue_orders(farmer_id=farmer.pk)
 
-    # 2. Query products with weekly default quantity or all unarchived products
     products = list(
         Product.objects.filter(farmer=farmer, is_archived=False).select_related("category").order_by("name", "id")
     )
     product_ids = [p.id for p in products]
-    # Markets each product is sold at, so the page can filter by market.
     market_ids: dict[int, list[int]] = {}
     for product_id, market_id in (
         ProductMarket.objects.filter(product_id__in=product_ids)
@@ -322,7 +311,6 @@ def preview_weekly_template(*, farmer: FarmerProfile) -> dict[str, Any]:
             }
         )
 
-    # 3. Overdue orders still open (ACCEPTED or READY_FOR_PICKUP past pickup_end_at, A-004 point 5)
     overdue_orders = (
         Order.objects.filter(
             farmer=farmer,
@@ -352,7 +340,6 @@ def apply_weekly_template(*, farmer: FarmerProfile, product_ids: list[int] | Non
 
     def _execute() -> dict[str, int]:
         with transaction.atomic():
-            # Lock products of this farmer by id (Pass 4A lock order)
             templated = Product.objects.select_for_update(of=("self",)).filter(
                 farmer=farmer, is_archived=False, weekly_default_quantity__isnull=False
             )
@@ -376,7 +363,6 @@ def apply_weekly_template(*, farmer: FarmerProfile, product_ids: list[int] | Non
                 )
                 updated_count += 1
 
-                # D-025 trigger: stock moves from 0 to > 0
                 if old_stock == 0 and new_stock > 0 and p.is_on_sale:
                     total_restock_notified += notify_restock_for_product(product=p)
 

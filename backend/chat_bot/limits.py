@@ -58,5 +58,5 @@ def record_answer(request, asker: Asker) -> None:
     cache.add(key, 0, timeout=_seconds_to_midnight())
     try:
         cache.incr(key)
-    except ValueError:  # expired between add and incr (just past midnight)
+    except ValueError:
         cache.set(key, 1, timeout=_seconds_to_midnight())

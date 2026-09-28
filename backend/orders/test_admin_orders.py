@@ -15,7 +15,6 @@ def test_admin_can_find_an_order_by_its_number(admin_client, market, make_order)
 
     response = admin_client.get(reverse(LIST_URL), {"q": str(order.id)})
 
-    # Support is read a number off a screen; typing it has to find the order.
     assert response.status_code == 200
     assert [row["id"] for row in response.data["data"]["results"]] == [order.id]
 
@@ -46,7 +45,6 @@ def test_the_date_filter_reads_the_pickup_day(admin_client, market, make_order):
         reverse(LIST_URL), {"from": str(today + timedelta(days=5))}
     )
 
-    # Support is asked about the day of collection, not the day the order was created.
     assert inside.data["data"]["count"] == 1
     assert outside.data["data"]["count"] == 0
 
@@ -71,7 +69,6 @@ def test_an_unknown_order_is_a_404(admin_client):
 def test_the_order_screens_are_read_only(admin_client, market, make_order):
     order = make_order(pickup_date=timezone.localdate() + timedelta(days=1))
 
-    # D-033: the admin does not act on individual orders. Looking is allowed; changing is not.
     for method, url in (
         ("post", reverse(LIST_URL)),
         ("patch", reverse(DETAIL_URL, args=[order.id])),

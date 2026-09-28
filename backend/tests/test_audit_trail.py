@@ -65,7 +65,6 @@ class AuditTrailTestCase(TestCase):
         )
         self.client.force_authenticate(user=self.farmer_user)
 
-    # --- helpers ---
 
     def _order(self, status=_S.PLACED, *, days_ahead=3, items=None) -> Order:
         pickup_date = timezone.localdate() + timedelta(days=days_ahead)
@@ -94,7 +93,6 @@ class AuditTrailTestCase(TestCase):
     def _latest(self, model, object_id):
         return model.history.filter(**{model._meta.pk.attname: object_id}).order_by("-history_date", "-history_id").first()
 
-    # --- products ---
 
     def test_price_change_is_traced_with_old_and_new_value(self):
         res = self.client.patch(f"/api/farmer/products/{self.product.pk}/", {"price": "3.50"}, format="json")
@@ -102,7 +100,6 @@ class AuditTrailTestCase(TestCase):
         log = build_change_log(Product, self.product.pk)
         self.assertEqual([entry["type"] for entry in log], ["CREATED", "UPDATED"])
         self.assertEqual(log[-1]["user"], {"id": self.farmer_user.pk, "email": self.farmer_user.email})
-        # build_change_log returns JSON-safe values (AD-34 serves them as-is): Decimal -> string.
         self.assertIn({"field": "price", "old": "2.00", "new": "3.50"}, log[-1]["changes"])
 
     def test_accepting_an_order_traces_stock_with_the_order(self):
@@ -120,7 +117,7 @@ class AuditTrailTestCase(TestCase):
 
     def test_system_expiry_is_recorded_without_user(self):
         order = self._order(days_ahead=-1)
-        self.assertEqual(self.client.get("/api/farmer/orders/", {"tab": "placed"}).status_code, 200)  # lazy sweep
+        self.assertEqual(self.client.get("/api/farmer/orders/", {"tab": "placed"}).status_code, 200)
         record = self._latest(Order, order.pk)
         self.assertEqual(record.status, _S.EXPIRED)
         self.assertIsNone(record.history_user)
@@ -135,7 +132,6 @@ class AuditTrailTestCase(TestCase):
         self.assertEqual(record.stock_quantity, 20)
         self.assertTrue(record.history_change_reason.startswith("Weekly template applied"))
 
-    # --- orders ---
 
     def test_change_request_keeps_the_items_before_the_change(self):
         order = self._order(_S.ACCEPTED, items=[(self.product, 2, Decimal("2.00")), (self.product_b, 1, Decimal("1.50"))])
@@ -160,7 +156,6 @@ class AuditTrailTestCase(TestCase):
         new_item = order.items.get()
         self.assertTrue(OrderItem.history.filter(id=new_item.pk, history_type="+", history_change_reason=reason).exists())
         self.assertEqual(self._latest(Order, order.pk).history_change_reason, reason)
-        # Stock delta of the change (+1 lettuce back, -1 spinach) is traced too.
         self.assertEqual(self._latest(Product, self.product_b.pk).history_change_reason, reason)
 
     def test_item_marked_sold_out_is_traced(self):
@@ -176,7 +171,6 @@ class AuditTrailTestCase(TestCase):
         self.assertIn("marked sold out (Lettuce)", removed.history_change_reason)
         self.assertEqual(self._latest(Product, self.product_b.pk).stock_quantity, 0)
 
-    # --- markets, slots, time off ---
 
     def test_market_join_rename_and_leave(self):
         other_market = Market.objects.create(
@@ -238,7 +232,6 @@ class AuditTrailTestCase(TestCase):
         self.assertEqual([entry["type"] for entry in log], ["CREATED", "DELETED"])
         self.assertEqual(log[-1]["user"]["id"], self.farmer_user.pk)
 
-    # --- registration (audit_logs) ---
 
     def test_registration_is_logged_without_ip(self):
         client = APIClient()

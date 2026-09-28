@@ -57,7 +57,6 @@ class TestRunIdempotent:
 
     def test_failed_request_never_erases_another_requests_result(self):
         def slow_then_fail():
-            # Our claim expired meanwhile and a retry with the same key finished first.
             cache.set(CACHE_KEY, {"state": "done", "hash": fingerprint({"a": 1}), "status": 201, "body": {"id": 7}})
             raise RuntimeError("limit exceeded")
 

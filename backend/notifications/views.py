@@ -10,7 +10,7 @@ from marketlink_core.responses import api_response
 from notifications.models import Notification
 from notifications.services import serialize_notification
 
-DROPDOWN_MAX_LIMIT = 10  # N-01 bell dropdown
+DROPDOWN_MAX_LIMIT = 10
 BOOLEAN_VALUES = {"true": True, "false": False}
 
 
@@ -67,7 +67,6 @@ class NotificationUnreadCountView(NotificationBaseView):
 class NotificationMarkReadView(NotificationBaseView):
     def post(self, request: Request, notification_id: int) -> Response:
         """NO-03: idempotent; a second call keeps the first read_at."""
-        # One conditional UPDATE: no lock needed, and a concurrent read-all cannot be overwritten.
         Notification.objects.filter(pk=notification_id, recipient=request.user, is_read=False).update(
             is_read=True, read_at=timezone.now()
         )

@@ -103,11 +103,6 @@ CATEGORY_ICONS: tuple[str, ...] = (
     "wheat",
 )
 
-# Names an earlier database may still hold, so a seeded install can be migrated rather than
-# hand-edited. Two kinds live here: "pepper" and "flame" were two names for one picture, which
-# is exactly what the uniqueness rule exists to prevent; the rest are pictures of prepared
-# food - pizza, beer, ice cream - that were dropped because this is a market for what a farm
-# grows, not a menu.
 LEGACY_ICON_ALIASES = {
     "pepper": "chilli",
     "flame": "chilli",

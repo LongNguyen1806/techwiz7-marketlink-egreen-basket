@@ -6,7 +6,6 @@ from markets.serializers import ClosureSerializer
 
 
 class FarmerSummarySerializer(serializers.ModelSerializer):
-    # farmer_profiles is keyed by user_id, so the profile pk is the user id.
     id = serializers.IntegerField(source="user_id", read_only=True)
     rating_avg = serializers.SerializerMethodField()
     rating_count = serializers.IntegerField(read_only=True, default=0)

@@ -100,7 +100,6 @@ class TestPickingANewTime:
         assert order.pickup_date == old_day
         assert order.pending_change["pickup_slot_id"] == monday_slot.pk
         assert order.pending_change["pickup_date"] == _next(MONDAY).isoformat()
-        # Still waiting for a time that fits, until the stall says yes.
         assert order.reschedule_requested_at is not None
 
     def test_the_stall_approving_moves_it_and_clears_the_mark(
@@ -178,7 +177,6 @@ class TestPickingANewTime:
 @pytest.mark.django_db
 class TestTheNewTimeFollowsTheRules:
     def test_a_time_past_the_stall_cutoff_is_refused(self, make_order, make_slot, open_farmer, market):
-        # Stall cutoff is 12 hours. A slot starting a couple of hours from now is too late.
         soon = timezone.localtime() + timedelta(hours=2)
         market.operating_days.get_or_create(day_of_week=soon.isoweekday())
         market.open_time, market.close_time = time(0, 0), time(23, 59)
@@ -202,7 +200,6 @@ class TestTheNewTimeFollowsTheRules:
             _reschedule(order, saturday_slot, _next(6))
 
     def test_a_slot_outside_the_market_hours_is_refused(self, make_order, make_slot, open_farmer):
-        # The market runs 06:00-12:00; an active slot at 13:00 must still not be bookable.
         late = make_slot(day_of_week=MONDAY, start=time(13, 0), end=time(14, 0))
         order = _flag(make_order(pickup_date=_next(WEDNESDAY)))
 
@@ -314,7 +311,6 @@ class TestThroughTheCustomerApi:
         assert data["allowed_actions"] == ["MODIFY", "RESCHEDULE", "CANCEL"]
 
     def test_the_edit_form_moves_the_order(self, customer_client, make_order, make_slot, open_farmer):
-        # The customer API books today .. today + 6, so the new day is taken from inside that.
         slot = make_slot(day_of_week=WEDNESDAY, start=time(10, 0), end=time(11, 0))
         new_day = _next(WEDNESDAY)
         order = _flag(make_order(pickup_date=new_day), past_cutoff=True)
@@ -323,7 +319,6 @@ class TestThroughTheCustomerApi:
         response = customer_client.patch(
             f"/api/customer/orders/{order.pk}/",
             {
-                # The form always sends the lines back as they are.
                 "items": [{"product_id": item.product_id, "quantity": 2}],
                 "pickup_slot_id": slot.pk,
                 "pickup_date": new_day.isoformat(),

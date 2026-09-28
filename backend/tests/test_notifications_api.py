@@ -35,7 +35,6 @@ class NotificationsAPITestCase(TestCase):
         )
         self.admin = CustomUser.objects.create(email="notif_admin@marketlink.local", role=admin_role)
 
-        # 12 for the customer (oldest first), 3 of them already read; 2 for the farmer.
         base = timezone.now() - timedelta(hours=1)
         self.customer_items = []
         for index in range(12):
@@ -56,7 +55,6 @@ class NotificationsAPITestCase(TestCase):
             read_at=timezone.now() if is_read else None,
         )
 
-    # --- NO-01 ---
 
     def test_list_is_paginated_newest_first_and_only_mine(self):
         res = self.client.get(URL, {"page_size": 5})
@@ -96,14 +94,12 @@ class NotificationsAPITestCase(TestCase):
                 self.assertEqual(res.data["code"], ErrorCode.VALIDATION_ERROR)
                 self.assertIn(field, res.data["errors"])
 
-    # --- NO-02 ---
 
     def test_unread_count(self):
         res = self.client.get(f"{URL}unread-count/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["data"], {"unread_count": 9})
 
-    # --- NO-03 ---
 
     def test_mark_one_as_read_is_idempotent(self):
         target = self.customer_items[5]
@@ -124,7 +120,6 @@ class NotificationsAPITestCase(TestCase):
         self.farmer_items[0].refresh_from_db()
         self.assertFalse(self.farmer_items[0].is_read)
 
-    # --- NO-04 ---
 
     def test_mark_all_as_read_only_touches_mine(self):
         res = self.client.post(f"{URL}read-all/")
@@ -135,7 +130,6 @@ class NotificationsAPITestCase(TestCase):
         self.assertEqual(Notification.objects.filter(recipient=self.farmer, is_read=False).count(), 2)
         self.assertEqual(self.client.post(f"{URL}read-all/").data["data"], {"updated_count": 0})
 
-    # --- access ---
 
     def test_farmer_uses_the_same_endpoints(self):
         self.client.force_authenticate(user=self.farmer)
@@ -149,7 +143,6 @@ class NotificationsAPITestCase(TestCase):
         self.client.force_authenticate(user=None)
         self.assertEqual(self.client.get(f"{URL}unread-count/").status_code, 401)
 
-    # --- WebSocket payload ---
 
     def test_websocket_payload_matches_api_shape(self):
         payload = serialize_notification(self.customer_items[0])

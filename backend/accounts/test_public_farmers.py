@@ -66,7 +66,6 @@ def approved_farmer(farmer_user):
     profile.status = FarmerStatus.APPROVED
     profile.latitude = "10.800000"
     profile.longitude = "106.700000"
-    # D-031: operating_days is declared on the profile, not derived from the pickup slots.
     profile.operating_days = [1, 3]
     profile.save(
         update_fields=["status", "latitude", "longitude", "operating_days"]
@@ -130,7 +129,6 @@ def test_only_approved_and_enabled_farmers_are_public(api_client, approved_farme
 def test_operating_days_come_from_the_profile(api_client, approved_farmer, stall):
     row = api_client.get(reverse(LIST_URL)).data["data"]["results"][0]
 
-    # D-031: whatever the slots say, the chips come from farmer_profiles.operating_days.
     assert row["operating_days"] == [1, 3]
     assert row["markets"] == [
         {
@@ -170,7 +168,6 @@ def test_in_stock_count_ignores_hidden_and_sold_out_products(
 def test_the_rating_average_survives_the_product_count(
     api_client, approved_farmer, stall, category, market
 ):
-    # Two multi-valued relations in one query would multiply rows and corrupt both numbers.
     from datetime import datetime
 
     from orders.models import Order, OrderStatus
@@ -222,7 +219,6 @@ def test_upcoming_closures_respect_the_horizon(api_client, approved_farmer, stal
 
 @pytest.mark.django_db
 def test_distance_is_to_the_market_not_the_farm(api_client, approved_farmer, stall):
-    # Standing on the farmer's own pin: the stall is still ~6 km away, at its market.
     response = api_client.get(
         reverse(LIST_URL), {"lat": "10.800000", "lng": "106.700000", "ordering": "distance"}
     )
@@ -233,7 +229,6 @@ def test_distance_is_to_the_market_not_the_farm(api_client, approved_farmer, sta
     at_market = api_client.get(reverse(LIST_URL), {"lat": "10.762622", "lng": "106.660172"})
     assert at_market.data["data"]["results"][0]["distance_km"] == 0.0
 
-    # Without coordinates the same ordering falls back to name instead of failing.
     assert api_client.get(reverse(LIST_URL), {"ordering": "distance"}).status_code == 200
 
 
@@ -247,11 +242,8 @@ def test_filters_by_market_day_and_category(api_client, approved_farmer, stall, 
 
     assert api_client.get(reverse(LIST_URL), {"market_id": stall.market_id}).data["data"]["count"] == 1
     assert api_client.get(reverse(LIST_URL), {"market_id": "9999"}).data["data"]["count"] == 0
-    # D-031: present on day X means the day is on the profile AND a slot is switched on.
     assert api_client.get(reverse(LIST_URL), {"day": "1"}).data["data"]["count"] == 1
-    # Day 3 is an operating day but its slot is off.
     assert api_client.get(reverse(LIST_URL), {"day": "3"}).data["data"]["count"] == 0
-    # Day 5 has no slot and is not an operating day either.
     assert api_client.get(reverse(LIST_URL), {"day": "5"}).data["data"]["count"] == 0
     assert api_client.get(reverse(LIST_URL), {"category_id": category.id}).data["data"]["count"] == 1
     assert api_client.get(reverse(LIST_URL), {"category_id": "9999"}).data["data"]["count"] == 0
@@ -263,7 +255,6 @@ def test_search_matches_stall_or_market_name_but_not_the_farm_address(
 ):
     assert api_client.get(reverse(LIST_URL), {"q": "test stall"}).data["data"]["count"] == 1
     assert api_client.get(reverse(LIST_URL), {"q": "central market"}).data["data"]["count"] == 1
-    # "34 Market Street" is the farmer's own address; searching it must not find them.
     assert api_client.get(reverse(LIST_URL), {"q": "34 Market Street"}).data["data"]["count"] == 0
     assert api_client.get(reverse(LIST_URL), {"q": "nowhere"}).data["data"]["count"] == 0
 
@@ -275,7 +266,6 @@ def test_the_detail_adds_contact_details_and_pickup_windows(api_client, approved
     assert data["contact_person"] == "Test Farmer"
     assert data["phone"] == "0907654321"
     assert data["order_cutoff_hours"] == 12
-    # The farmer's own address and pin are for the admin only.
     assert "address" not in data
     assert "latitude" not in data
     assert "longitude" not in data
@@ -283,7 +273,6 @@ def test_the_detail_adds_contact_details_and_pickup_windows(api_client, approved
     window = data["pickup_windows"][0]
     assert window["market_name"] == "Central Market"
     assert window["stall_label"] == "Row B, Stall 12"
-    # Only active slots are published.
     assert [slot["day_of_week"] for slot in window["slots"]] == [1]
     assert window["slots"][0]["start_time"] == "07:00"
 
@@ -394,10 +383,6 @@ def test_an_unknown_farmer_is_a_404(api_client):
     assert api_client.get(reverse(DETAIL_URL, args=[9999])).status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# The guest home page ranking. A completed order counts double a review: somebody paid and
-# collected, which is a stronger signal than a free-to-leave comment.
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -422,11 +407,9 @@ def test_the_busiest_stall_comes_first_by_default(
 def test_a_sale_counts_double_a_review(
     api_client, approved_farmer, stall, market, make_farmer, make_completed_order
 ):
-    # Two sales, no reviews: 2x2 = 4.
     make_completed_order(farmer=approved_farmer)
     make_completed_order(farmer=approved_farmer)
 
-    # One sale with a review: 1x2 + 1 = 3. Fewer points, so it ranks below.
     smaller = make_farmer(email="small@marketlink.test", stall_name="Small Stall")
     smaller.status = FarmerStatus.APPROVED
     smaller.save(update_fields=["status"])
@@ -444,12 +427,9 @@ def test_a_sale_counts_double_a_review(
 def test_enough_reviews_can_overturn_a_one_sale_lead(
     api_client, approved_farmer, stall, market, make_farmer, make_completed_order
 ):
-    # Four sales, nobody reviewed: 4x2 = 8.
     for _ in range(4):
         make_completed_order(farmer=approved_farmer)
 
-    # Three sales, every one reviewed: 3x2 + 3 = 9. One fewer sale, but ahead overall -
-    # reviews count for less than a sale, not for nothing.
     talked_about = make_farmer(email="talked@marketlink.test", stall_name="Talked About")
     talked_about.status = FarmerStatus.APPROVED
     talked_about.save(update_fields=["status"])

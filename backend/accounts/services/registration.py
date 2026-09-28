@@ -64,7 +64,6 @@ def register_farmer(
                 status=FarmerStatus.PENDING,
             )
     except IntegrityError as exc:
-        # Two sign-ups with the same email / phone at once: the UNIQUE keys are the last guard.
         message = str(exc).lower()
         if "email" in message:
             raise _email_exists_error() from exc
@@ -75,8 +74,6 @@ def register_farmer(
     if latitude is not None:
         return user, profile
 
-    # D-032: outside the transaction; a failed lookup leaves the coordinates empty and never
-    # breaks the registration (F-08 then shows "Location not found").
     try:
         coordinates = geocode_address(address)
     except Exception:  # noqa: BLE001 - geocoding is best effort

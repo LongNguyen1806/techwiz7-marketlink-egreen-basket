@@ -57,13 +57,11 @@ def _group(farmer, slot, pickup_date, *items, note=None):
 
 
 def _checkout(shop, *groups):
-    # validate_pickup_date() and the held-stock query read the clock themselves, so freeze it at shop.now.
     with mock.patch("django.utils.timezone.now", return_value=shop.now):
         return place_orders(customer=shop.customer, groups=list(groups), now=shop.now)
 
 
 def _real_past():
-    # expire_overdue_orders() is called outside _checkout, with the real clock.
     return timezone.now() - timedelta(hours=1)
 
 
@@ -82,7 +80,6 @@ class TestPlaceOrders:
         items = {item.product_id: item for item in order.items.all()}
         assert (items[shop.tomato.id].unit_price, items[shop.tomato.id].line_total) == (Decimal("2.50"), Decimal("5.00"))
         assert items[shop.tomato.id].product_name == shop.tomato.name
-        # v1.7 D-029: placing an order only checks stock; the farmer's acceptance (T2) takes it.
         assert (shop.tomato.stock_quantity, shop.herbs.stock_quantity) == (10, 3)
         history = order.status_history.get()
         assert (history.from_status, history.to_status, history.transition) == (None, "PLACED", "T1")
@@ -120,7 +117,6 @@ class TestPlaceOrders:
         assert not Order.objects.exists()
 
     def test_several_orders_with_the_same_farmer_are_allowed(self, shop):
-        # D-005 v1.5: a customer who forgot an item simply places another order with the same farmer.
         make_order(customer=shop.customer, product=shop.tomato)
 
         orders = _checkout(shop, _group(shop.farmer_a, shop.slot_a, shop.date, (shop.herbs, 1)))

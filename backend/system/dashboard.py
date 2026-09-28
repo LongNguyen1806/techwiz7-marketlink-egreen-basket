@@ -18,8 +18,6 @@ from system.flags import open_flags
 DASHBOARD_DAYS = 30
 PENDING_FARMER_LIMIT = 5
 MONTH_FORMAT = "%Y-%m"
-# The platform did not exist before this, and a month a year ahead is a typo rather than a
-# question. Bounds stop a hand-typed ?month= from asking for year 9999.
 EARLIEST_YEAR = 2024
 
 
@@ -32,9 +30,6 @@ def _orders_per_day(*, days: int) -> list[dict]:
 
 
 def _count_by_day(first_day: date, last_day: date) -> Counter:
-    # TruncDate and __date lookups compile to CONVERT_TZ, which returns NULL unless the MySQL
-    # timezone tables are loaded, so the window is a datetime range and the buckets are
-    # counted in Python.
     window_start = timezone.make_aware(datetime.combine(first_day, time.min))
     window_end = timezone.make_aware(datetime.combine(last_day + timedelta(days=1), time.min))
     stamps = Order.objects.filter(
@@ -81,7 +76,6 @@ def orders_per_month(*, first_day: date) -> dict:
 
 
 def orders_by_status(*, queryset=None) -> list[dict]:
-    # Every status is listed, zeros included, so the bar chart keeps a stable shape.
     source = Order.objects.all() if queryset is None else queryset
     counts = dict(
         source.values("status").annotate(total=Count("id")).values_list("status", "total")
@@ -98,7 +92,6 @@ def dashboard_snapshot() -> dict:
             "markets_active": Market.objects.filter(is_active=True).count(),
             "orders": Order.objects.count(),
         },
-        # Counts alone say how the platform is doing; these say what is waiting for someone.
         "needs_attention": _needs_attention(),
         "orders_by_day": _orders_per_day(days=DASHBOARD_DAYS),
         "orders_by_status": orders_by_status(),
@@ -128,6 +121,5 @@ def _needs_attention() -> dict:
         "flags_open": open_flags().count(),
         "customers_at_risk": list_customers_for_admin(at_risk=True).count(),
         "hidden_products": Product.objects.filter(is_hidden_by_admin=True).count(),
-        # Markets closed while stalls still list them, which strands those stalls.
         "markets_closed": Market.objects.filter(is_active=False).count(),
     }

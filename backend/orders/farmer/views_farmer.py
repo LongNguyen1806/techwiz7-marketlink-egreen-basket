@@ -36,14 +36,12 @@ _S = OrderStatus
 HISTORY_STATUSES = [_S.COMPLETED, _S.CANCELLED, _S.DECLINED, _S.NO_SHOW, _S.EXPIRED]
 IN_PROGRESS_STATUSES = [_S.ACCEPTED, _S.READY_FOR_PICKUP]
 
-# FA-19 tabs: statuses + default ordering (placed FIFO; accepted / ready by pickup time; history newest first).
 TAB_RULES: dict[str, tuple[list[str], tuple[str, ...]]] = {
     "placed": ([_S.PLACED], ("created_at", "id")),
     "accepted": ([_S.ACCEPTED], ("pickup_start_at", "id")),
     "ready": ([_S.READY_FOR_PICKUP], ("pickup_start_at", "id")),
     "history": (HISTORY_STATUSES, ("-created_at", "-id")),
 }
-# W4.1: the placed tab may also be sorted by pickup time so orders about to expire come first.
 PLACED_ORDERINGS = {"created_at": ("created_at", "id"), "pickup_start_at": ("pickup_start_at", "id")}
 BOOLEAN_VALUES = ("true", "false")
 
@@ -104,7 +102,6 @@ def _detail_queryset() -> QuerySet:
 
 
 def _detail_response(request: Request, order_id: int, message: str) -> Response:
-    # Reload after an action so the response always has the full OrderDetail shape.
     order = _detail_queryset().get(id=order_id)
     data = FarmerOrderDetailSerializer(order, context={"request": request}).data
     return api_response(message=message, data=data, request=request)
@@ -212,7 +209,6 @@ class FarmerOrderDeclineView(FarmerBaseOrderView):
             )
 
         data = serializer.validated_data
-        # None = not declared; [] = declared "nothing sold out" (required for T4, W1.2).
         mark_all_sold_out = False
         sold_out_product_ids: list[int] | None = None
         if "mark_sold_out" in data:
@@ -221,7 +217,6 @@ class FarmerOrderDeclineView(FarmerBaseOrderView):
         elif "mark_sold_out_product_ids" in data:
             sold_out_product_ids = data["mark_sold_out_product_ids"]
 
-        # Stock restore and sold-out marking run inside one FSM transaction (orders -> products).
         order = transition_order(
             order_id=order_id,
             to_status=OrderStatus.DECLINED,
@@ -393,7 +388,6 @@ class FarmerOrderTabCountsView(FarmerBaseOrderView):
             "placed": base_qs.filter(status=_S.PLACED).count(),
             "accepted": base_qs.filter(status=_S.ACCEPTED).count(),
             "ready": base_qs.filter(status=_S.READY_FOR_PICKUP).count(),
-            # Same definition as FA-19 overdue=true: ACCEPTED / READY past pickup_end_at.
             "overdue": base_qs.filter(
                 status__in=IN_PROGRESS_STATUSES, pickup_end_at__lt=timezone.now()
             ).count(),
@@ -462,11 +456,10 @@ class FarmerDashboardView(FarmerBaseOrderView):
     def get(self, request: Request) -> Response:
         """FA-01 (F-01): KPIs, revenue by day, best sellers, overdue warning, upcoming orders."""
         date_range = resolve_date_range(request.query_params.get("from"), request.query_params.get("to"))
-        # Read the row fresh: status / status_reason drive the banner, never trust a cached relation.
         farmer = FarmerProfile.objects.filter(pk=request.user.pk).first()
         if farmer is None:
             raise ResourceNotFoundError("Farmer profile not found.", code=ErrorCode.NOT_FOUND)
-        expire_overdue_orders(farmer_id=farmer.pk)  # D-009: fresh figures after the lazy sweep
+        expire_overdue_orders(farmer_id=farmer.pk)
 
         data = build_farmer_dashboard(farmer=farmer, date_range=date_range)
         data["upcoming"] = FarmerOrderSummarySerializer(
@@ -482,6 +475,6 @@ class FarmerStatsView(FarmerBaseOrderView):
         farmer = FarmerProfile.objects.filter(pk=request.user.pk).first()
         if farmer is None:
             raise ResourceNotFoundError("Farmer profile not found.", code=ErrorCode.NOT_FOUND)
-        expire_overdue_orders(farmer_id=farmer.pk)  # D-009: expired orders counted as expired
+        expire_overdue_orders(farmer_id=farmer.pk)
 
         return api_response(message="OK", data=build_farmer_stats(farmer=farmer, date_range=date_range), request=request)

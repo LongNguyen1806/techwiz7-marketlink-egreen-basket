@@ -34,7 +34,6 @@ NO_REASON_TEXT = "No reason given."
 
 T = TypeVar("T")
 
-# ORDER_CANCELLED_CUSTOMER_LOCKED: tell the farmer what happened to stock (D-015, D-029).
 LOCKED_STOCK_RETURNED_NOTE = "The items have been returned to your online stock."
 LOCKED_STOCK_UNCHANGED_NOTE = "The order had not been accepted yet, so your stock did not change."
 
@@ -49,8 +48,6 @@ SYSTEM_REASON_TEXT = {
     ChangeReason.SYSTEM_EXPIRED: "The order was not confirmed before the pickup time.",
 }
 
-# Admin never types a reason into an order (D-033): each admin cascade stamps a fixed system
-# code. The first code of each group is the default, so AD-07 / AD-12 need not pass one.
 ADMIN_DECLINE_REASONS = (
     ChangeReason.FARMER_SUSPENDED_BY_ADMIN,
     ChangeReason.MARKET_CLOSED_BY_ADMIN,
@@ -70,8 +67,6 @@ class TransitionRule:
 _S = OrderStatus
 _R = ActorRole
 
-# Placed orders hold virtual reservation; physical stock is deducted upon ACCEPTED (T2).
-# Therefore, cancellations from PLACED (T3, T5, T8) do not restore physical stock.
 TRANSITIONS: dict[tuple[str | None, str], TransitionRule] = {
     (None, _S.PLACED): TransitionRule(Transition.T1, frozenset({_R.CUSTOMER})),
     (_S.PLACED, _S.ACCEPTED): TransitionRule(Transition.T2, frozenset({_R.FARMER})),
@@ -131,7 +126,6 @@ def transition_order(
             )
             if order is None:
                 raise ResourceNotFoundError("Order not found.", code=ErrorCode.NOT_FOUND)
-            # Ownership first so an order outside the actor's scope never reveals its state.
             _check_ownership(order, actor, actor_role)
             rule = TRANSITIONS.get((order.status, to_status))
             if rule is None:
@@ -146,12 +140,9 @@ def transition_order(
                 order, rule, actor_role, sold_out_ids, mark_all_sold_out
             )
 
-            # Audit trail (v1.8): every history row of this action names the order and the edge;
-            # system actions (lazy sweep) are recorded without a user.
             history_user = None if actor_role == _R.SYSTEM else actor
             history_reason = f"Order #{order.pk}: {order.status} -> {to_status} ({rule.code})"
 
-            # Locking order: orders (already locked above) -> products (sorted by id)
             if rule.code == Transition.T2:
                 _deduct_stock(order, reason=history_reason, user=history_user)
             elif rule.restores_stock:
@@ -260,7 +251,6 @@ def _resolve_sold_out_targets(
             )
         return set()
 
-    # T4 returns stock, so the farmer must say explicitly which items are gone (W1.2).
     if rule.code == Transition.T4 and not declared:
         raise BusinessValidationError(
             "Please state which items are sold out before declining an accepted order.",
@@ -344,8 +334,6 @@ def _check_preconditions(
         return reason
 
     if actor_role == _R.CUSTOMER:
-        # An order waiting for a new pickup time can always be dropped: the shopper is only
-        # past the cutoff because the market moved, not because they left it late.
         if (
             code in (Transition.T5, Transition.T6)
             and now >= order.cutoff_at
@@ -357,7 +345,6 @@ def _check_preconditions(
         return reason
 
     if actor_role == _R.ADMIN:
-        # Fixed system reason prevents leaking internal administrative notes into end-user emails.
         return _admin_change_reason(code, admin_reason)
 
     if code == Transition.T8:
@@ -388,7 +375,6 @@ def _restore_stock(order: Order, *, reason: str, user: Any) -> None:
 
 
 def _mark_products_sold_out(product_ids: set[int], *, reason: str, user: Any) -> None:
-    # Runs after any T4 restock so the final stock of these products is exactly 0.
     for product in lock_products(product_ids=product_ids).values():
         if product.stock_quantity != 0:
             product.stock_quantity = 0
@@ -409,7 +395,6 @@ def _send_notifications(
     code = rule.code
 
     if not notify_customer and code in (Transition.T3, Transition.T4, Transition.T12):
-        # The caller tells the customer itself: one MARKET_CLOSED or MARKET_UPDATED per customer.
         return
     if code == Transition.T2:
         notify(recipient=customer, event_type=NotificationType.ORDER_ACCEPTED, context=context)

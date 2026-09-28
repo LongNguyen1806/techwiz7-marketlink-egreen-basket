@@ -7,6 +7,12 @@ MODELS = ("Product", "HistoricalProduct", "PriceGuideline")
 
 
 def piece_to_each(apps, schema_editor):
+    # Guidelines of a category that is gone (an old seed truncated categories with foreign key
+    # checks off) break the update below and can never be used; drop them first.
+    Category = apps.get_model("catalog", "Category")
+    apps.get_model("catalog", "PriceGuideline").objects.exclude(
+        category_id__in=Category.objects.values("id")
+    ).delete()
     for name in MODELS:
         apps.get_model("catalog", name).objects.filter(unit="PIECE").update(unit="EACH")
 

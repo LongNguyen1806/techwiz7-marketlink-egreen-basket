@@ -172,11 +172,9 @@ class FarmerOrdersAPITestCase(TestCase):
         return order
 
     def test_permission_denied_for_unauthenticated_or_customer(self):
-        # 1. Unauthenticated -> 401
         res = self.client.get("/api/farmer/orders/")
         self.assertEqual(res.status_code, 401)
 
-        # 2. Customer -> 403
         self.client.force_authenticate(user=self.customer)
         res = self.client.get("/api/farmer/orders/")
         self.assertEqual(res.status_code, 403)
@@ -194,7 +192,6 @@ class FarmerOrdersAPITestCase(TestCase):
 
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Default tab = placed (FA-19); tab counts live only in FA-20
         res = self.client.get("/api/farmer/orders/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data["data"]["results"]), 1)
@@ -232,7 +229,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertIn("ACCEPT", detail["allowed_actions"])
         self.assertIn("DECLINE", detail["allowed_actions"])
 
-        # Attempt to access another farmer's order -> 404
         other_order = self._create_order(farmer=self.other_farmer, status=OrderStatus.PLACED)
         res_other = self.client.get(f"/api/farmer/orders/{other_order.id}/")
         self.assertEqual(res_other.status_code, 404)
@@ -241,11 +237,9 @@ class FarmerOrdersAPITestCase(TestCase):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED, qty1=2, qty2=1)
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Missing If-Match header -> 428
         res_missing = self.client.post(f"/api/farmer/orders/{order.id}/accept/")
         self.assertEqual(res_missing.status_code, 428)
 
-        # Success with If-Match
         res = self.client.post(
             f"/api/farmer/orders/{order.id}/accept/",
             HTTP_IF_MATCH=str(order.version),
@@ -253,7 +247,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["data"]["status"], OrderStatus.ACCEPTED)
 
-        # Stock deducted: product1: 40 - 2 = 38, product2: 20 - 1 = 19
         self.product1.refresh_from_db()
         self.product2.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 38)
@@ -275,20 +268,16 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["data"]["status"], OrderStatus.DECLINED)
 
-        # Product2 marked sold out (stock_quantity = 0)
         self.product2.refresh_from_db()
         self.assertEqual(self.product2.stock_quantity, 0)
 
     def test_ready_and_complete_order_api(self):
-        # Create an accepted order whose cutoff has already passed
         order = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
-        # Shift cutoff_at into past to allow T9
         order.cutoff_at = timezone.now() - timedelta(minutes=5)
         order.save(update_fields=["cutoff_at"])
 
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Ready for pickup (T9)
         res_ready = self.client.post(
             f"/api/farmer/orders/{order.id}/ready/",
             HTTP_IF_MATCH=str(order.version),
@@ -297,7 +286,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res_ready.data["data"]["status"], OrderStatus.READY_FOR_PICKUP)
         order.refresh_from_db()
 
-        # Complete (T10)
         res_comp = self.client.post(
             f"/api/farmer/orders/{order.id}/complete/",
             HTTP_IF_MATCH=str(order.version),
@@ -306,7 +294,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res_comp.data["data"]["status"], OrderStatus.COMPLETED)
 
     def test_no_show_order_api(self):
-        # An order past pickup_end_at
         order = self._create_order(
             farmer=self.farmer, status=OrderStatus.READY_FOR_PICKUP, is_overdue=True
         )
@@ -320,13 +307,11 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["data"]["status"], OrderStatus.NO_SHOW)
 
-        # Stock restored for T11
         self.product1.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, initial_stock + 2)
 
     def test_approve_and_reject_change_request_api(self):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED, qty1=2, qty2=0)
-        # Deduct initial stock for ACCEPTED order
         self.product1.stock_quantity -= 2
         self.product1.save(update_fields=["stock_quantity"])
 
@@ -350,7 +335,6 @@ class FarmerOrdersAPITestCase(TestCase):
 
         self.client.force_authenticate(user=self.farmer_user)
 
-        # 1. Reject change request
         res_reject = self.client.post(
             f"/api/farmer/orders/{order.id}/change-request/reject/",
             data={"reason": "Cannot add more spinach today"},
@@ -362,7 +346,6 @@ class FarmerOrdersAPITestCase(TestCase):
         order.refresh_from_db()
         self.assertIsNone(order.pending_change)
 
-        # 2. Add pending_change again and Approve
         order.pending_change = {
             "items": [
                 {
@@ -396,7 +379,6 @@ class FarmerOrdersAPITestCase(TestCase):
 
         self.client.force_authenticate(user=self.farmer_user)
 
-        # prep-list/ was removed (duplicate of FA-21)
         self.assertEqual(self.client.get("/api/farmer/orders/prep-list/").status_code, 404)
 
         res_pick = self.client.get(f"/api/farmer/orders/picking-list/?pickup_date={pickup_date}")
@@ -405,7 +387,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(coriander["total_quantity"], 4)
         self.assertEqual(coriander["order_count"], 2)
 
-        # FA-37 requires pickup_date
         self.assertEqual(self.client.get("/api/farmer/orders/grouped-by-customer/").status_code, 400)
         res_grp = self.client.get(f"/api/farmer/orders/grouped-by-customer/?pickup_date={pickup_date}")
         self.assertEqual(res_grp.status_code, 200)
@@ -425,13 +406,10 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.data["code"], ErrorCode.NOT_FOUND)
 
     def test_bug6_other_farmer_order_returns_404_not_403_or_409(self):
-        # Order belongs to farmer 1
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
 
-        # Farmer 2 tries to access/accept with wrong version or right version
         self.client.force_authenticate(user=self.other_farmer_user)
 
-        # Even with wrong If-Match version, it MUST return 404, NOT 409 (no leakage!)
         res_wrong_version = self.client.post(
             f"/api/farmer/orders/{order.id}/accept/",
             HTTP_IF_MATCH="999",
@@ -439,7 +417,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res_wrong_version.status_code, 404)
         self.assertEqual(res_wrong_version.data["code"], ErrorCode.NOT_FOUND)
 
-        # With matching version, MUST return 404, NOT 403 (CT-03)
         res_matching_version = self.client.post(
             f"/api/farmer/orders/{order.id}/accept/",
             HTTP_IF_MATCH=str(order.version),
@@ -448,7 +425,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res_matching_version.data["code"], ErrorCode.NOT_FOUND)
 
     def test_bug2_decline_accepted_order_t4_with_mark_sold_out_stock_becomes_zero(self):
-        # Initial stock was 40 and 20. When order was accepted, stock was deducted by 2 and 1.
         self.product1.stock_quantity = 38
         self.product1.save(update_fields=["stock_quantity"])
         self.product2.stock_quantity = 19
@@ -461,7 +437,6 @@ class FarmerOrdersAPITestCase(TestCase):
 
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Decline T4 and mark product1 sold out
         res = self.client.post(
             f"/api/farmer/orders/{order.id}/decline/",
             data={
@@ -474,11 +449,9 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["data"]["status"], OrderStatus.DECLINED)
 
-        # Product1 MUST be 0 (sold out), NOT 40 (restored) and NOT 2 (0 + 2 restored)
         self.product1.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 0)
 
-        # Product2 was NOT marked sold out, so it should be restored properly: 19 + 1 = 20
         self.product2.refresh_from_db()
         self.assertEqual(self.product2.stock_quantity, 20)
 
@@ -486,7 +459,6 @@ class FarmerOrdersAPITestCase(TestCase):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Create an unrelated product for this farmer (not in order)
         unrelated_prod = Product.objects.create(
             review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
@@ -497,7 +469,6 @@ class FarmerOrdersAPITestCase(TestCase):
             stock_quantity=50,
         )
 
-        # Attempt to mark an unrelated product sold out in this order's decline -> 400
         res = self.client.post(
             f"/api/farmer/orders/{order.id}/decline/",
             data={
@@ -510,9 +481,8 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.data["code"], ErrorCode.VALIDATION_ERROR)
         unrelated_prod.refresh_from_db()
-        self.assertEqual(unrelated_prod.stock_quantity, 50)  # Untouched!
+        self.assertEqual(unrelated_prod.stock_quantity, 50)
 
-        # Also support mark_sold_out: true (FA-24 doc)
         res_bool = self.client.post(
             f"/api/farmer/orders/{order.id}/decline/",
             data={
@@ -545,7 +515,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertIsNone(order.pending_change)
 
     def test_bug8_allowed_actions_excludes_accept_decline_past_pickup_start(self):
-        # Order is PLACED but pickup_start_at is in the past
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         past_time = timezone.now() - timedelta(minutes=10)
         order.cutoff_at = past_time - timedelta(hours=1)
@@ -572,10 +541,10 @@ class FarmerOrdersAPITestCase(TestCase):
         placed = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
-        self._create_order(farmer=self.farmer, status=OrderStatus.COMPLETED)  # finished: not counted
-        self._create_order(farmer=self.other_farmer, status=OrderStatus.PLACED)  # another stall
+        self._create_order(farmer=self.farmer, status=OrderStatus.COMPLETED)
+        self._create_order(farmer=self.other_farmer, status=OrderStatus.PLACED)
         past = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
-        past.pickup_date = timezone.localdate() - timedelta(days=1)  # before today: left out
+        past.pickup_date = timezone.localdate() - timedelta(days=1)
         past.save(update_fields=["pickup_date"])
 
         self.client.force_authenticate(user=self.farmer_user)
@@ -601,10 +570,8 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res.data["data"]["pickup_date"], today_str)
 
     def test_placed_order_accept_fails_when_stock_insufficient_and_declining_with_sold_out_sets_zero(self):
-        # Customer placed order with Product 1 (5 bunches) and Product 2 (2 bunches)
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED, qty1=5, qty2=2)
 
-        # Farmer's physical stock for Product 1 is only 4 (less than 5)
         self.product1.stock_quantity = 4
         self.product1.save(update_fields=["stock_quantity"])
         self.product2.stock_quantity = 20
@@ -612,7 +579,6 @@ class FarmerOrdersAPITestCase(TestCase):
 
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Farmer attempts to ACCEPT order -> Fails because 1 item is out of stock / insufficient
         res_accept = self.client.post(
             f"/api/farmer/orders/{order.id}/accept/",
             HTTP_IF_MATCH=str(order.version),
@@ -621,13 +587,11 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res_accept.data["code"], ErrorCode.INSUFFICIENT_STOCK)
         self.assertIn(str(self.product1.id), res_accept.data["errors"])
 
-        # Order remains PLACED, version unchanged, stock untouched
         order.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.PLACED)
         self.product1.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 4)
 
-        # Farmer declines with reason and marks Product 1 as sold out
         res_decline = self.client.post(
             f"/api/farmer/orders/{order.id}/decline/",
             data={
@@ -640,16 +604,13 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(res_decline.status_code, 200)
         self.assertEqual(res_decline.data["data"]["status"], OrderStatus.DECLINED)
 
-        # Product 1 is set to 0 (sold out), Product 2 remains 20
         self.product1.refresh_from_db()
         self.assertEqual(self.product1.stock_quantity, 0)
         self.product2.refresh_from_db()
         self.assertEqual(self.product2.stock_quantity, 20)
 
-    # ---- Review round 2: 1.6, 1.8, N5, W1.2 ----
 
     def test_other_farmer_invalid_transition_returns_404_not_400(self):
-        # COMPLETE is not a valid edge from PLACED; ownership must still be checked first.
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         self.client.force_authenticate(user=self.other_farmer_user)
         res = self.client.post(
@@ -698,7 +659,6 @@ class FarmerOrdersAPITestCase(TestCase):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED, qty1=2, qty2=1)
         self.client.force_authenticate(user=self.farmer_user)
 
-        # No declaration -> 400, order unchanged
         res_missing = self.client.post(
             f"/api/farmer/orders/{order.id}/decline/",
             data={"reason": "Cannot prepare this order"},
@@ -710,7 +670,6 @@ class FarmerOrdersAPITestCase(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.ACCEPTED)
 
-        # Explicit "nothing sold out" -> 200, every item returns to stock
         res_ok = self.client.post(
             f"/api/farmer/orders/{order.id}/decline/",
             data={"reason": "Cannot prepare this order", "mark_sold_out": False},
@@ -734,7 +693,6 @@ class FarmerOrdersAPITestCase(TestCase):
         )
         self.assertEqual(res.status_code, 200)
 
-    # ---- FA-36: mark one item of a PLACED order as sold out (W1.1) ----
 
     def _mark_item_url(self, order: Order, product: Product) -> str:
         return f"/api/farmer/orders/{order.id}/items/{product.id}/mark-sold-out/"
@@ -765,7 +723,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertIsNone(history.transition)
         self.assertEqual(history.change_reason, "Farmer marked out of stock: Basil")
 
-        # Customer agreed by phone -> farmer accepts the remaining items (T2)
         res_accept = self.client.post(
             f"/api/farmer/orders/{order.id}/accept/", HTTP_IF_MATCH=str(data["version"])
         )
@@ -785,7 +742,6 @@ class FarmerOrdersAPITestCase(TestCase):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Product not in the order -> 404
         other_product = Product.objects.create(
             review_status=ReviewStatus.APPROVED,
             farmer=self.farmer,
@@ -798,23 +754,19 @@ class FarmerOrdersAPITestCase(TestCase):
         res = self.client.post(self._mark_item_url(order, other_product), HTTP_IF_MATCH=str(order.version))
         self.assertEqual(res.status_code, 404)
 
-        # Missing If-Match -> 428
         res = self.client.post(self._mark_item_url(order, self.product1))
         self.assertEqual(res.status_code, 428)
 
-        # Another farmer -> 404
         self.client.force_authenticate(user=self.other_farmer_user)
         res = self.client.post(self._mark_item_url(order, self.product1), HTTP_IF_MATCH=str(order.version))
         self.assertEqual(res.status_code, 404)
 
-        # ACCEPTED order -> 422 FAILED_PRECONDITION (use decline T4 instead)
         accepted = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED)
         self.client.force_authenticate(user=self.farmer_user)
         res = self.client.post(self._mark_item_url(accepted, self.product1), HTTP_IF_MATCH=str(accepted.version))
         self.assertEqual(res.status_code, 422)
         self.assertEqual(res.data["code"], ErrorCode.FAILED_PRECONDITION)
 
-    # ---- Tính năng 2: OrderDetail.pending_change shape (Pass 4B §3.4) ----
 
     def test_order_detail_presents_pending_change(self):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED, qty1=2, qty2=0)
@@ -843,7 +795,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(item["stock_available"], 40)
 
 
-    # ---- Tính năng 4: FA-19 → FA-22, FA-37, W4.1 ----
 
     def test_list_rejects_invalid_parameters(self):
         self.client.force_authenticate(user=self.farmer_user)
@@ -884,7 +835,7 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertEqual(len(res.data["data"]["results"]), 2)
 
         counts = self.client.get("/api/farmer/orders/tab-counts/").data["data"]
-        self.assertEqual(counts["overdue"], 1)  # ACCEPTED past pickup_end_at is counted
+        self.assertEqual(counts["overdue"], 1)
 
     def test_placed_tab_can_sort_by_pickup_time_and_flags_expiring_soon(self):
         later = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED)
@@ -897,7 +848,7 @@ class FarmerOrdersAPITestCase(TestCase):
         self.client.force_authenticate(user=self.farmer_user)
 
         default = self.client.get("/api/farmer/orders/?tab=placed").data["data"]["results"]
-        self.assertEqual([o["id"] for o in default], [later.id, soon.id])  # FIFO by created_at
+        self.assertEqual([o["id"] for o in default], [later.id, soon.id])
 
         by_pickup = self.client.get("/api/farmer/orders/?tab=placed&ordering=pickup_start_at").data["data"]["results"]
         self.assertEqual([o["id"] for o in by_pickup], [soon.id, later.id])
@@ -906,7 +857,6 @@ class FarmerOrdersAPITestCase(TestCase):
         self.assertFalse(flags[later.id])
 
     def test_stock_warning_uses_current_stock_only(self):
-        # Stock 20 for Basil; one PLACED order needs 6 -> no warning (4.2 regression).
         ok_order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED, qty1=1, qty2=6)
         short_order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED, qty1=1, qty2=25)
         self.client.force_authenticate(user=self.farmer_user)
@@ -949,7 +899,6 @@ class FarmerOrdersAPITestCase(TestCase):
     def test_status_history_translates_system_codes(self):
         order = self._create_order(farmer=self.farmer, status=OrderStatus.PLACED, is_overdue=True)
         self.client.force_authenticate(user=self.farmer_user)
-        # The list endpoint runs the lazy sweep: PLACED past pickup_start_at -> EXPIRED (T8)
         self.client.get("/api/farmer/orders/?tab=history")
         detail = self.client.get(f"/api/farmer/orders/{order.id}/").data["data"]
         expired_row = detail["status_history"][-1]

@@ -35,7 +35,6 @@ def _lock_farmer_order(*, order_id: int, farmer_id: int, expected_version: int, 
         .filter(id=order_id)
         .first()
     )
-    # Ownership before anything else: an order outside the farmer's scope is simply not found.
     if order is None or order.farmer_id != farmer_id:
         raise ResourceNotFoundError("Order not found.", code=ErrorCode.NOT_FOUND)
     if order.farmer.status == FarmerStatus.SUSPENDED:
@@ -107,14 +106,12 @@ def approve_change_request(
                             code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                         )
                     old_qty = old_items[product_id].quantity if product_id in old_items else 0
-                    # max_per_order is not re-checked here: the stall itself is approving the change.
                     if new_qty > old_qty and not product.is_on_sale:
                         raise UnprocessableEntityError(
                             f"Product {product.name} is not available.",
                             code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                         )
 
-                # Positive delta returns stock, negative delta takes it (D-030).
                 deltas = {}
                 for product_id in all_product_ids:
                     old_qty = old_items[product_id].quantity if product_id in old_items else 0
@@ -124,9 +121,6 @@ def approve_change_request(
                 if deltas:
                     apply_stock_delta(products=locked_products, deltas=deltas, reason=history_reason)
 
-                # Prices come from the request: the price the customer saw (decision A, v1.8).
-                # One save / delete per row (never bulk_create or queryset delete) so the audit
-                # trail keeps the items as they were before the change (v1.8).
                 for old_item in old_items.values():
                     delete_with_history(old_item, reason=history_reason)
                 new_order_items = [
@@ -166,7 +160,6 @@ def approve_change_request(
                 order.note = change.note
                 update_fields.append("note")
 
-            # The new time was the answer to a market schedule change: the order fits again.
             if schedule is not None and order.reschedule_requested_at is not None:
                 order.reschedule_requested_at = None
                 update_fields.append("reschedule_requested_at")

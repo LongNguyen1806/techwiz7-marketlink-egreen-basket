@@ -11,12 +11,9 @@ from system.auto_flags import (
     safely,
 )
 
-# D-016: only COMPLETED orders, one Farmer review per order, one review per order item.
-# The UNIQUE indexes on farmer_reviews.order_id / product_reviews.order_item_id are the final guard.
 
 
 def _own_order(*, customer, order_id: int) -> Order:
-    # Someone else's order is "not found", so ids cannot be probed.
     order = Order.objects.filter(pk=order_id, customer=customer).first()
     if order is None:
         raise ResourceNotFoundError()
@@ -41,7 +38,6 @@ def _create_once(model, **fields):
         with transaction.atomic():
             return model.objects.create(**fields)
     except IntegrityError as exc:
-        # A concurrent request saved the same review first.
         raise ReviewNotAllowedError() from exc
 
 

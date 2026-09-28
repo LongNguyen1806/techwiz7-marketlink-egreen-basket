@@ -39,22 +39,18 @@ class WebSocketTicketTestCase(TransactionTestCase):
         ticket = create_ws_ticket(user_id=self.user.pk, role=RoleCode.CUSTOMER)
         self.assertTrue(len(ticket) > 20)
 
-        # 1. First consumption succeeds
         payload = verify_and_consume_ws_ticket(ticket=ticket)
         self.assertIsNotNone(payload)
         self.assertEqual(payload["user_id"], self.user.pk)
         self.assertEqual(payload["role"], RoleCode.CUSTOMER)
 
-        # 2. Second consumption fails (single-use guarantee, CT-16)
         second_attempt = verify_and_consume_ws_ticket(ticket=ticket)
         self.assertIsNone(second_attempt)
 
     def test_ws_ticket_endpoint_au08(self):
-        # Unauthenticated -> 401
         res = self.client.post("/api/auth/ws-ticket/")
         self.assertEqual(res.status_code, 401)
 
-        # Authenticated -> 200
         self.client.force_authenticate(user=self.user)
         res_auth = self.client.post("/api/auth/ws-ticket/")
         self.assertEqual(res_auth.status_code, 200)
@@ -62,13 +58,11 @@ class WebSocketTicketTestCase(TransactionTestCase):
         self.assertIn("ticket", data)
         self.assertEqual(data["expires_in"], 30)
 
-        # Consume ticket
         payload = verify_and_consume_ws_ticket(ticket=data["ticket"])
         self.assertIsNotNone(payload)
         self.assertEqual(payload["user_id"], self.user.pk)
 
     def test_ws_ticket_admin_forbidden(self):
-        # AU-08 is for Customer and Farmer only; Admin has no notification bell (N-01).
         admin_role, _ = Role.objects.get_or_create(code=RoleCode.ADMIN, defaults={"name": "Admin"})
         admin = CustomUser.objects.create(email="ws_admin@marketlink.local", role=admin_role)
         self.client.force_authenticate(user=admin)
@@ -100,10 +94,8 @@ class WebSocketTicketTestCase(TransactionTestCase):
         self.assertEqual(payload, {"user_id": farmer_user.pk, "role": RoleCode.FARMER})
 
     async def test_websocket_consumer_invalid_ticket_closes_4401(self):
-        # Connect with invalid ticket
         communicator = WebsocketCommunicator(application, "/ws/notifications/?ticket=invalid-uuid-123")
         connected, close_code = await communicator.connect()
-        # Per note 2 / CT-16: connection accepts then closes with code 4401
         self.assertTrue(connected)
         message = await communicator.receive_output()
         self.assertEqual(message["type"], "websocket.close")
@@ -116,7 +108,6 @@ class WebSocketTicketTestCase(TransactionTestCase):
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
 
-        # Dispatch notification to user
         notification = await sync_to_async(notify)(
             recipient=self.user,
             event_type=NotificationType.ACCOUNT_STATUS_CHANGED,
@@ -159,7 +150,6 @@ class WsTicketServiceTestCase(SimpleTestCase):
 
     @override_settings(USE_REDIS=False)
     def test_locmem_lost_delete_race_is_rejected(self):
-        # Another connection deleted the key between our get() and delete().
         with mock.patch.object(ws_ticket, "cache") as fake_cache:
             fake_cache.get.return_value = {"user_id": 1, "role": "CUSTOMER"}
             fake_cache.delete.return_value = False
@@ -175,7 +165,6 @@ class WsTicketServiceTestCase(SimpleTestCase):
             self.assertEqual(fake.calls, [("set", key, ws_ticket.DEFAULT_TTL)])
             self.assertEqual(json.loads(fake.store[key]), {"user_id": 7, "role": "FARMER"})
 
-            # Upper-case form of the same UUID maps to the same key.
             payload = verify_and_consume_ws_ticket(ticket=f"  {ticket.upper()}  ")
             self.assertEqual(payload, {"user_id": 7, "role": "FARMER"})
             self.assertIsNone(verify_and_consume_ws_ticket(ticket=ticket))

@@ -21,24 +21,17 @@ def _index(
     review_id: int | None = None,
 ) -> QuerySet:
     queryset = model.objects.all()
-    # The two tables have separate id spaces, so an id is only meaningful together with the
-    # kind; the caller always passes both or neither.
     if review_id is not None:
         queryset = queryset.filter(pk=review_id)
     if rating is not None:
         queryset = queryset.filter(rating=rating)
     if is_hidden is not None:
         queryset = queryset.filter(is_hidden_by_admin=is_hidden)
-    # rating joins the projection so the union can be sorted by it; a UNION can only order by
-    # columns it actually selects.
     return queryset.annotate(
         review_type=Value(review_type, output_field=CharField())
     ).values("id", "created_at", "review_type", "rating")
 
 
-# AD-22. Only columns the UNION selects can be sorted on, so this list is deliberately short.
-# id is not a tiebreak here: the two tables have separate id spaces, so it would interleave
-# unrelated rows. created_at already orders the union well enough.
 ADMIN_REVIEW_ORDERING = both_directions(
     {"created_at": ("created_at",), "rating": ("rating",)}
 )
@@ -53,10 +46,6 @@ def list_reviews_for_admin(
     is_hidden: bool | None = None,
     ordering: str | None = None,
 ) -> QuerySet:
-    # The two review kinds live in separate tables, so AD-22 pages over a UNION of their
-    # ids and lets hydrate_reviews() load the rows for the page only.
-    # An id without a kind would match a row in each table, so asking for one by id narrows
-    # to that kind as well.
     if review_id is not None and review_type is None:
         review_id = None
     parts = []
@@ -115,7 +104,6 @@ RATING_VALUES = (1, 2, 3, 4, 5)
 
 
 def public_farmer_reviews(*, farmer_id: int, rating: int | None = None) -> QuerySet[FarmerReview]:
-    # §6.2: hidden reviews never appear on public pages.
     queryset = FarmerReview.objects.filter(
         order__farmer_id=farmer_id, is_hidden_by_admin=False
     ).select_related("order__customer__customer_profile")
@@ -134,7 +122,6 @@ def public_product_reviews(*, product_id: int, rating: int | None = None) -> Que
 
 
 def rating_summary(queryset: QuerySet) -> dict:
-    # The summary covers every visible review, not just the filtered page.
     rows = queryset.values_list("rating", flat=True)
     counts = Counter(rows)
     total = sum(counts.values())
@@ -145,8 +132,6 @@ def rating_summary(queryset: QuerySet) -> dict:
         "distribution": {str(value): counts.get(value, 0) for value in RATING_VALUES},
     }
 
-# The Farmer branch's selectors live in reviews/farmer_selectors.py; re-exported so
-# `from reviews.selectors import ...` keeps working for both branches.
 from reviews.farmer_selectors import (  # noqa: E402,F401
     TYPE_FARMER,
     TYPE_PRODUCT,

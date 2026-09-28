@@ -76,7 +76,6 @@ class FarmerReviewsAPITestCase(TestCase):
         order1 = self._order(self.farmer, [self.basil])
         order2 = self._order(self.farmer, [self.basil])
         other_order = self._order(self.other_farmer, [self.other_mint])
-        # Oldest -> newest: stall 5*, basil 2* (hidden), stall 3* replied, basil 4*
         self.stall_review = self._review(FarmerReview, base, order=order1, rating=5, comment="Great stall")
         self.hidden_review = self._review(
             ProductReview, base + timedelta(hours=1), order_item=order1.items.first(), rating=2,
@@ -122,7 +121,6 @@ class FarmerReviewsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200, res.data)
         return res.data["data"]
 
-    # --- FA-28 ---
 
     def test_list_merges_both_types_newest_first(self):
         data = self._list()
@@ -165,7 +163,6 @@ class FarmerReviewsAPITestCase(TestCase):
                 self.assertEqual(res.status_code, 400)
                 self.assertIn(field, res.data["errors"])
 
-    # --- FA-29 / FA-30 ---
 
     def test_reply_to_stall_review(self):
         res = self.client.post(f"/api/farmer/farmer-reviews/{self.stall_review.pk}/reply/", {"reply": "  Thank you!  "}, format="json")

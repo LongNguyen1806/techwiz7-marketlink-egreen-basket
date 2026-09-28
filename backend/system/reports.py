@@ -15,7 +15,6 @@ ZERO = "0.00"
 
 
 def parse_report_range(params) -> tuple[date, date, int | None]:
-    # `from` is a Python keyword, so the range cannot be a plain Serializer with that field name.
     errors: dict[str, list[str]] = {}
     parsed: dict[str, date] = {}
     for key in ("from", "to"):
@@ -58,8 +57,6 @@ def _money(value) -> str:
 
 
 def _ratings_for(farmer_ids: list[int]) -> dict[int, float]:
-    # A separate query on purpose: adding Avg over farmer reviews to the revenue aggregate
-    # would join a second multi-valued relation and multiply the order rows.
     rows = (
         FarmerProfile.objects.filter(user_id__in=farmer_ids)
         .annotate(
@@ -71,8 +68,6 @@ def _ratings_for(farmer_ids: list[int]) -> dict[int, float]:
 
 
 def report_summary(*, date_from: date, date_to: date, market_id: int | None = None) -> dict:
-    # A-09 reports on pickup_date, the day the sale actually happens; the
-    # (market_id, status, pickup_date) index exists for exactly this query.
     orders = Order.objects.filter(pickup_date__gte=date_from, pickup_date__lte=date_to)
     if market_id is not None:
         orders = orders.filter(market_id=market_id)

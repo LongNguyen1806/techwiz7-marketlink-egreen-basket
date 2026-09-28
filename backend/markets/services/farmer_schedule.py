@@ -62,7 +62,6 @@ def _open_order_ids(**filters: Any) -> list[int]:
     )
 
 
-# --- Markets (FA-05, FA-06, FA-07) ---
 
 
 def join_market(*, farmer_id: int, market_id: int, stall_label: str) -> FarmerMarket:
@@ -85,7 +84,7 @@ def join_market(*, farmer_id: int, market_id: int, stall_label: str) -> FarmerMa
 
     try:
         return run_with_retry_if_top_level(_execute)
-    except IntegrityError as exc:  # UNIQUE (farmer, market) is the last guard
+    except IntegrityError as exc:
         raise _invalid({"market_id": ["You already sell at this market."]}) from exc
 
 
@@ -118,8 +117,6 @@ def leave_market(*, farmer_id: int, farmer_market_id: int) -> None:
                     code=ErrorCode.RESOURCE_IN_USE,
                     errors={"order_ids": blocking},
                 )
-            # Past orders keep their data: orders.pickup_slot is SET_NULL, market/stall are snapshots.
-            # Slots are deleted one by one first so the audit trail records each of them (v1.8).
             reason = f"Farmer left market #{farmer_market.market_id}"
             for slot in PickupSlot.objects.select_for_update(of=("self",)).filter(
                 farmer_market=farmer_market
@@ -188,7 +185,6 @@ def reject_market_request(*, farmer_market_id: int, reason: str, actor) -> dict[
     return summary
 
 
-# --- Pickup slots (FA-08, FA-09, FA-10) ---
 
 
 def _validate_slot(
@@ -226,7 +222,6 @@ def _validate_slot(
             )
 
     if check_overlap and "end_time" not in errors:
-        # Decision (b) v1.8: no overlap inside the same market on the same day; another market is fine.
         overlapping = PickupSlot.objects.filter(
             farmer_market=farmer_market,
             day_of_week=day_of_week,
@@ -306,7 +301,6 @@ def update_pickup_slot(*, farmer_id: int, slot_id: int, changes: dict[str, Any])
                 profile=profile,
                 farmer_market=farmer_market,
                 exclude_slot_id=slot.pk,
-                # Switching a slot off must always work, even if it no longer fits (D-022).
                 check_overlap=merged["is_active"] or bool({"day_of_week", "start_time", "end_time"} & set(changes)),
                 **merged,
             )
@@ -340,7 +334,6 @@ def delete_pickup_slot(*, farmer_id: int, slot_id: int) -> None:
     run_with_retry_if_top_level(_execute)
 
 
-# --- Time off (FA-32, FA-33, D-023) ---
 
 
 def create_farmer_closure(*, farmer_id: int, start_date: date, end_date: date, reason: str | None) -> FarmerClosure:
@@ -356,7 +349,7 @@ def create_farmer_closure(*, farmer_id: int, start_date: date, end_date: date, r
 
     def _execute() -> FarmerClosure:
         with transaction.atomic():
-            _lock_profile(farmer_id)  # serializes the overlap check (§5.2, D-023)
+            _lock_profile(farmer_id)
             clash = (
                 FarmerClosure.objects.filter(
                     farmer_id=farmer_id, start_date__lte=end_date, end_date__gte=start_date

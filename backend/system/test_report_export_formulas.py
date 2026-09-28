@@ -31,5 +31,4 @@ def test_formula_like_names_are_exported_as_plain_text(admin_client, market, app
     stall_cell = workbook["Top farmers"]["A2"]
     assert (market_cell.value, market_cell.data_type) == (MARKET_FORMULA, "s")
     assert (stall_cell.value, stall_cell.data_type) == (STALL_FORMULA, "s")
-    # Numbers stay numbers so Excel can still sum the revenue column.
     assert workbook["Revenue by market"]["C2"].data_type == "n"

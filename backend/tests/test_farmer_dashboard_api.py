@@ -109,10 +109,10 @@ class FarmerDashboardAPITestCase(TestCase):
         self.assertEqual(data["status"], FarmerStatus.APPROVED)
 
     def test_range_kpis_follow_pickup_date(self):
-        self._order(_S.COMPLETED, day_offset=-1, items=[(self.mango, 2, Decimal("3.00"))])  # 6.00
-        self._order(_S.COMPLETED, day_offset=-3, items=[(self.lime, 5, Decimal("1.00"))])  # 5.00
+        self._order(_S.COMPLETED, day_offset=-1, items=[(self.mango, 2, Decimal("3.00"))])
+        self._order(_S.COMPLETED, day_offset=-3, items=[(self.lime, 5, Decimal("1.00"))])
         self._order(_S.CANCELLED, day_offset=-2, items=[(self.mango, 9, Decimal("3.00"))])
-        self._order(_S.COMPLETED, day_offset=-10, items=[(self.kale, 1, Decimal("50.00"))])  # outside range
+        self._order(_S.COMPLETED, day_offset=-10, items=[(self.kale, 1, Decimal("50.00"))])
         self._order(_S.COMPLETED, day_offset=-1, items=[(self.mango, 1, Decimal("99.00"))], farmer=self.other_farmer)
 
         data = self._get()
@@ -170,7 +170,7 @@ class FarmerDashboardAPITestCase(TestCase):
         far = self._order(_S.ACCEPTED, day_offset=6, items=[(self.mango, 1, Decimal("1.00"))])
         near = self._order(_S.PLACED, day_offset=1, items=[(self.mango, 1, Decimal("1.00"))])
         mid = self._order(_S.READY_FOR_PICKUP, day_offset=3, items=[(self.mango, 1, Decimal("1.00"))])
-        self._order(_S.ACCEPTED, day_offset=-1, items=[(self.mango, 1, Decimal("1.00"))])  # pickup ended
+        self._order(_S.ACCEPTED, day_offset=-1, items=[(self.mango, 1, Decimal("1.00"))])
         self._order(_S.CANCELLED, day_offset=1, items=[(self.mango, 1, Decimal("1.00"))])
         for day in range(7, 11):
             self._order(_S.ACCEPTED, day_offset=day, items=[(self.mango, 1, Decimal("1.00"))])

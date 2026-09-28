@@ -195,7 +195,6 @@ class OrderExpiryTestCase(TestCase):
         initial_version = order.version
 
         count = expire_overdue_orders(farmer_id=self.farmer.pk)
-        # PLACED count is 0, but pending_change was cleared
         self.assertEqual(count, 0)
 
         order.refresh_from_db()
@@ -242,26 +241,19 @@ class OrderExpiryTestCase(TestCase):
         self.assertEqual(order_f2.status, OrderStatus.PLACED)
 
     def test_get_weekly_pattern_held_and_pending_quantities(self):
-        # 1. Active PLACED order (qty=3)
         self._create_order(farmer=self.farmer, is_overdue=False, status=OrderStatus.PLACED, qty=3)
-        # 2. Active ACCEPTED order (qty=4)
         self._create_order(farmer=self.farmer, is_overdue=False, status=OrderStatus.ACCEPTED, qty=4)
-        # 3. Active READY_FOR_PICKUP order (qty=2)
         self._create_order(
             farmer=self.farmer, is_overdue=False, status=OrderStatus.READY_FOR_PICKUP, qty=2
         )
-        # 4. ACCEPTED order whose pickup window has ended (qty=5) -> excluded (previous cycle, A-004)
         self._create_order(farmer=self.farmer, is_overdue=True, status=OrderStatus.ACCEPTED, qty=5)
 
         held = get_weekly_pattern_held_quantities(product_ids=[self.product.id])
-        # Only active ACCEPTED (4) + READY_FOR_PICKUP (2) = 6
         self.assertEqual(held.get(self.product.id), 6)
 
         pending = get_pending_quantities(product_ids=[self.product.id])
-        # Only active PLACED (3)
         self.assertEqual(pending.get(self.product.id), 3)
 
-        # Normal checkout held reservation counts only active PLACED (3)
         checkout_held = get_held_quantities(product_ids=[self.product.id])
         self.assertEqual(checkout_held.get(self.product.id), 3)
 
@@ -274,17 +266,14 @@ class OrderExpiryTestCase(TestCase):
         ).count()
         self.assertEqual(overdue_remaining, 0)
 
-    # ---- Tính năng 3 review ----
 
     def test_apply_weekly_template_runs_lazy_sweep_first(self):
-        # 3.1: FA-18 must sweep before locking products (A-005, Pass 4A lock order).
         order = self._create_order(farmer=self.farmer, is_overdue=True)
         apply_weekly_template(farmer=self.farmer)
         order.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.EXPIRED)
 
     def test_one_failing_order_does_not_stop_the_sweep(self):
-        # W3.2: at top level a broken order is logged and the others still expire.
         broken = self._create_order(farmer=self.farmer, is_overdue=True)
         healthy = self._create_order(farmer=self.farmer, is_overdue=True)
         real_transition = expiry_service.transition_order
@@ -306,7 +295,6 @@ class OrderExpiryTestCase(TestCase):
         self.assertEqual(healthy.status, OrderStatus.EXPIRED)
 
     def test_failure_inside_caller_transaction_is_raised(self):
-        # W3.2: inside the caller's transaction the error must not be swallowed.
         self._create_order(farmer=self.farmer, is_overdue=True)
         with mock.patch.object(
             expiry_service, "transition_order", side_effect=RuntimeError("simulated failure")
@@ -314,10 +302,8 @@ class OrderExpiryTestCase(TestCase):
             with self.assertRaises(RuntimeError):
                 expire_overdue_orders(farmer_id=self.farmer.pk)
 
-    # ---- Tính năng 6 review ----
 
     def test_weekly_held_counts_orders_inside_pickup_window(self):
-        # 6.1: pickup started but not ended -> goods are still held (A-004: pickup_end_at > now).
         order = self._create_order(farmer=self.farmer, status=OrderStatus.ACCEPTED, qty=4)
         now = timezone.now()
         order.cutoff_at = now - timedelta(hours=3)

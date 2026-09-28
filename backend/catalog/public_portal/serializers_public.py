@@ -48,8 +48,6 @@ class ProductCardSerializer(serializers.ModelSerializer):
         return {"id": product.farmer_id, "stall_name": product.farmer.stall_name}
 
     def get_availability(self, product) -> str:
-        # Rows reaching a public endpoint already pass the §6.2 visibility filter, so only
-        # the seller's own switches are left to check.
         if not product.is_available:
             return Availability.UNAVAILABLE
         return Availability.IN_STOCK if product.stock_quantity else Availability.OUT_OF_STOCK

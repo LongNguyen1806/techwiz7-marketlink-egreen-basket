@@ -33,7 +33,6 @@ def test_list_returns_a_plain_array_of_current_closures(admin_client, market, cl
 
     assert response.status_code == 200
     rows = response.data["data"]
-    # AD-31 has no [P] marker: data is a plain list.
     assert isinstance(rows, list)
     assert rows[0]["reason"] == "Lunar New Year closure"
     assert set(rows[0]) == {"id", "start_date", "end_date", "reason"}
@@ -256,7 +255,6 @@ def test_customer_cannot_reach_the_closure_admin(customer_client, market, closur
 
 @pytest.mark.django_db
 def test_closure_periods_are_not_written_to_the_audit_log(admin_client, market, closure, today):
-    # v1.8 puts market closures deliberately outside audit_logs, unlike AD-15 -> AD-17.
     admin_client.post(
         reverse(LIST_URL_NAME, args=[market.id]),
         {

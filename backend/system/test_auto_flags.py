@@ -62,8 +62,6 @@ def make_order(customer_user, farmer, market, product):
     return _make
 
 
-# The word lists themselves are covered in catalog/test_ai_rules.py. Here the filter is
-# stubbed, so the wiring is tested without spelling out offensive words in the code.
 FAKE_HIT = ["<offensive word>"]
 PROFANITY = "system.auto_flags.find_profanity"
 
@@ -86,7 +84,6 @@ def test_an_offensive_review_goes_to_the_queue(customer_user, make_order):
     assert flag.note.startswith(AUTO_PREFIX)
     assert "offensive language" in flag.note
     assert flag.raised_by is None
-    # Only queued: the review stays up until an admin decides.
     review.refresh_from_db()
     assert review.is_hidden_by_admin is False
 
@@ -158,7 +155,7 @@ def test_two_low_ratings_are_not_enough(customer_user, make_order):
 def test_the_third_no_show_flags_the_shopper(customer_user, make_order, farmer, django_capture_on_commit_callbacks):
     for _ in range(2):
         make_order(status=OrderStatus.NO_SHOW)
-    ready = make_order(status=OrderStatus.READY_FOR_PICKUP, days_ago=1)  # window already over
+    ready = make_order(status=OrderStatus.READY_FOR_PICKUP, days_ago=1)
 
     with django_capture_on_commit_callbacks(execute=True):
         transition_order(
@@ -214,7 +211,6 @@ def test_the_command_flags_what_is_already_there(customer_user, make_order):
 
     assert open_flags(FlagTarget.PRODUCT_REVIEW).count() == 1
     assert open_flags(FlagTarget.CUSTOMER).count() == 1
-    # Running it again adds nothing.
     assert scan_existing() == {"reviews": 0, "replies": 0, "products": 0, "customers": 0}
 
 

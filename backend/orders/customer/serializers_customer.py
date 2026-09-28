@@ -9,7 +9,6 @@ from rest_framework import serializers
 from orders.models import Order, OrderItem, OrderStatus
 from orders.services.pending_change import present_pending_change
 
-# v1.8 OrderSummary.is_expiring_soon: a PLACED order at most this many hours before pickup starts.
 EXPIRING_SOON_HOURS = 2
 
 
@@ -51,7 +50,6 @@ class OrderSummaryReadSerializer(serializers.ModelSerializer):
     farmer = serializers.SerializerMethodField()
     market = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
-    # Money is USD DECIMAL(10,2); DRF renders it as a string such as "12.50" to avoid float rounding.
     total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
@@ -73,7 +71,6 @@ class OrderSummaryReadSerializer(serializers.ModelSerializer):
         )
 
     def get_has_pending_change(self, order) -> bool:
-        # D-030: an ACCEPTED order with a change request waiting for the farmer.
         return order.pending_change is not None
 
     def get_needs_new_pickup(self, order) -> bool:
@@ -107,7 +104,7 @@ class CustomerOrderListQuerySerializer(serializers.Serializer):
     """CU-05 query string."""
 
     tab = serializers.ChoiceField(choices=["open", "history"], required=False)
-    status = serializers.CharField(required=False)  # comma-separated, e.g. "PLACED,ACCEPTED"
+    status = serializers.CharField(required=False)
     farmer_id = serializers.IntegerField(min_value=1, required=False)
     pickup_from = serializers.DateField(required=False)
     pickup_to = serializers.DateField(required=False)
@@ -121,7 +118,6 @@ class CustomerOrderListQuerySerializer(serializers.Serializer):
         return statuses
 
 
-# Pass 4A order_status_history.change_reason: system codes are translated when returned (Pass 4B §3.4).
 SYSTEM_REASON_TEXT = {
     "SYSTEM_EXPIRED": "The order expired because the farmer did not confirm it before pickup.",
     "FARMER_SUSPENDED_BY_ADMIN": "The farmer's stall is no longer accepting orders.",
@@ -143,7 +139,6 @@ class CustomerStatusHistoryReadSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
 
     def get_actor_name(self, entry) -> str | None:
-        # Admin and system steps stay anonymous (D-033); customers see who acted by stall or own name.
         actor = entry.actor
         if actor is None or entry.actor_role not in ("CUSTOMER", "FARMER"):
             return None
@@ -173,7 +168,6 @@ class CustomerOrderItemReadSerializer(serializers.Serializer):
 
 
 def _has_review(obj, related_name: str) -> bool:
-    # Reverse one-to-one (Order.farmer_review, OrderItem.product_review) raises when there is no review.
     try:
         getattr(obj, related_name)
     except ObjectDoesNotExist:
@@ -227,7 +221,6 @@ class CustomerOrderDetailReadSerializer(OrderSummaryReadSerializer):
         ]
 
     def get_pending_change(self, order) -> dict | None:
-        # v1.8 shared presenter (Farmer branch): prices the customer saw when sending the request.
         return present_pending_change(order)
 
     def get_review_state(self, order) -> dict | None:

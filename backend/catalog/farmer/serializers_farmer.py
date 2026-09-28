@@ -89,7 +89,7 @@ class FarmerProductSerializer(serializers.ModelSerializer):
         return rating[1] if rating else 0
 
     def get_is_favorite(self, obj: Product) -> None:
-        return None  # only meaningful for customers
+        return None
 
     def get_markets(self, obj: Product) -> list[dict[str, Any]]:
         return self._metrics(obj)["markets"].get(obj.id, [])
@@ -114,7 +114,6 @@ class FarmerProductCreateSerializer(serializers.Serializer):
     unit = serializers.ChoiceField(choices=Unit.choices, required=True)
     stock_quantity = serializers.IntegerField(min_value=0, required=True)
     weekly_default_quantity = serializers.IntegerField(min_value=0, required=False, allow_null=True)
-    # Per-order window: at least min_per_order (default 1), at most max_per_order (empty = no cap).
     min_per_order = serializers.IntegerField(min_value=1, max_value=MAX_ORDER_QUANTITY, required=False)
     max_per_order = serializers.IntegerField(
         min_value=1, max_value=MAX_ORDER_QUANTITY, required=False, allow_null=True
@@ -132,7 +131,6 @@ class FarmerProductCreateSerializer(serializers.Serializer):
         return value
 
     def validate_image(self, value: Any) -> Any:
-        # The re-encoded copy is stored, never the uploaded bytes.
         return validate_image_upload(value) if value else value
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
@@ -155,7 +153,6 @@ class FarmerProductUpdateSerializer(serializers.Serializer):
     unit = serializers.ChoiceField(choices=Unit.choices, required=False)
     stock_quantity = serializers.IntegerField(min_value=0, required=False)
     weekly_default_quantity = serializers.IntegerField(min_value=0, required=False, allow_null=True)
-    # Per-order window: at least min_per_order (default 1), at most max_per_order (empty = no cap).
     min_per_order = serializers.IntegerField(min_value=1, max_value=MAX_ORDER_QUANTITY, required=False)
     max_per_order = serializers.IntegerField(
         min_value=1, max_value=MAX_ORDER_QUANTITY, required=False, allow_null=True
@@ -173,7 +170,6 @@ class FarmerProductUpdateSerializer(serializers.Serializer):
         return value
 
     def validate_image(self, value: Any) -> Any:
-        # The re-encoded copy is stored, never the uploaded bytes.
         return validate_image_upload(value) if value else value
 
 

@@ -35,7 +35,6 @@ def test_the_queue_shows_the_open_items_oldest_first(admin_client, admin_user):
 
     rows = admin_client.get(reverse(LIST_URL)).data["data"]["results"]
 
-    # A queue is worked from the front, so oldest first - the opposite of a log.
     assert [row["target_id"] for row in rows] == [3, 1, 2]
 
 
@@ -51,7 +50,6 @@ def test_the_same_thing_cannot_be_queued_twice(admin_client, admin_user):
         format="json",
     )
 
-    # Raising a second flag on the same thing is a duplicate, not a new problem.
     assert response.status_code == 400
     assert response.data["code"] == "RESOURCE_IN_USE"
 
@@ -88,7 +86,6 @@ def test_the_same_thing_can_be_queued_again_after_it_was_resolved(admin_client, 
         format="json",
     )
 
-    # The uniqueness rule covers open flags only; a thing can go wrong more than once.
     assert response.status_code == 201
 
 
@@ -118,7 +115,6 @@ def test_a_note_is_required(admin_client):
         format="json",
     )
 
-    # A queue item with no explanation is no more useful than an unread catalogue.
     assert response.status_code == 400
     assert "note" in response.data["errors"]
 
@@ -136,16 +132,12 @@ def test_the_dashboard_counts_what_is_waiting(admin_client, admin_user, farmer_u
 
     waiting = admin_client.get(reverse("admin-dashboard")).data["data"]["needs_attention"]
 
-    # Counts an admin can act on, as opposed to counts that just describe the platform.
     assert waiting["flags_open"] == 1
     assert waiting["stalls_awaiting_approval"] == 1
     assert "customers_at_risk" in waiting
     assert "hidden_products" in waiting
 
 
-# ------------------------------------------------------- queue search + links
-# The queue names a flagged thing by number. Without a link and a line of the content, every
-# decision starts with the admin going off to find the row by hand.
 
 
 @pytest.mark.django_db
@@ -168,7 +160,6 @@ def test_a_flagged_product_carries_a_link_and_a_preview(admin_client, admin_user
 
     row = admin_client.get(reverse(LIST_URL)).data["data"]["results"][0]
 
-    # Products have their own screen; only reviews live on the moderation one now.
     assert row["target_url"] == f"/admin/products?product_id={product.id}"
     assert product.name in row["target_preview"]
 
@@ -190,7 +181,6 @@ def test_a_flagged_stall_links_to_its_own_page(admin_client, admin_user, approve
 
 @pytest.mark.django_db
 def test_a_flag_whose_target_is_gone_still_lists(admin_client, admin_user):
-    # The flag outlives the row it points at, and the queue must not 500 because of it.
     raise_flag(
         target_type=FlagTarget.PRODUCT, target_id=999_999, note="Gone now", actor=admin_user
     )
@@ -213,7 +203,6 @@ def test_queue_search_matches_the_note_and_the_target_number(admin_client, admin
     by_note = admin_client.get(reverse(LIST_URL), {"q": "price"}).data["data"]
     assert [row["target_id"] for row in by_note["results"]] == [321]
 
-    # An admin refers to a flagged thing by its number, with or without the hash.
     for term in ("321", "#321"):
         by_id = admin_client.get(reverse(LIST_URL), {"q": term}).data["data"]
         assert [row["target_id"] for row in by_id["results"]] == [321], term

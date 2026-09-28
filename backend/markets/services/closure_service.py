@@ -10,7 +10,6 @@ from marketlink_core.exceptions import (
 from markets.models import Market, MarketClosure
 from orders.models import OPEN_STATUSES
 
-# How many order ids the error payload names before it stops; A-06 shows a short list.
 MAX_REPORTED_ORDER_IDS = 20
 
 

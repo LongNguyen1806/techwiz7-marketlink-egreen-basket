@@ -39,9 +39,6 @@ def _autosize(sheet, columns: int) -> None:
 
 
 def _keep_text_as_text(cells) -> None:
-    # openpyxl stores any string starting with "=" as a formula. Names come from users (a
-    # farmer picks the stall name), so every text cell is forced back to plain text: a name
-    # like "=HYPERLINK(...)" is shown, never evaluated, when an admin opens the file.
     for cell in cells:
         if isinstance(cell.value, str):
             cell.data_type = "s"
@@ -56,7 +53,6 @@ def build_report_workbook(summary: dict) -> bytes:
         for cell in sheet[1]:
             cell.font = Font(bold=True)
         for row in summary[key]:
-            # Money is a decimal string in JSON (D-020); Excel needs a number to sum it.
             sheet.append(
                 [float(row[f]) if f == "revenue" else row[f] for f in fields]
             )

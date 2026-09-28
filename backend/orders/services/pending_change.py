@@ -151,7 +151,6 @@ def present_pending_change(order: Order) -> dict[str, Any] | None:
     try:
         change = parse_pending_change(order.pending_change)
     except UnprocessableEntityError:
-        # Never break the order detail page; FA-34 reports the problem when the farmer acts.
         logger.warning("Order %s has an invalid pending_change", order.pk)
         return None
 

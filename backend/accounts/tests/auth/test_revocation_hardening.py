@@ -25,7 +25,6 @@ class TestPasswordChangeExemptionIsScoped:
         body = {"current_password": PASSWORD, "new_password": "Papaya2027z", "confirm_password": "Papaya2027z"}
         assert api.post(CHANGE_PASSWORD, body, format="json", **bearer(device["access"])).status_code == 200
 
-        # Password reset again outside the API (Django admin / manage.py changepassword).
         customer.refresh_from_db()
         customer.set_password("Guava2028q")
         customer.save()

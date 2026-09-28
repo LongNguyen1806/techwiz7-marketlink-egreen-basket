@@ -153,7 +153,6 @@ class TestRegisterPhoneUniqueness:
     def test_concurrent_sign_up_losing_on_phone_reports_the_phone(self, api):
         api.post(URL, _payload(phone="0912345678"), format="json")
 
-        # The pre-check passes (race), then the UNIQUE index rejects the insert.
         with mock.patch("accounts.services.customer_registration_service.phone_taken", side_effect=[False, True]):
             response = api.post(URL, _payload(email="bob@example.com", phone="0912345678"), format="json")
 

@@ -3,7 +3,6 @@ from typing import Any
 from rest_framework.exceptions import APIException
 
 
-# Frozen Error Catalog (Pass 4B §2.5): add a code to the spec before adding it here.
 class ErrorCode:
     VALIDATION_ERROR = "VALIDATION_ERROR"
     EMAIL_EXISTS = "EMAIL_EXISTS"
@@ -63,7 +62,6 @@ class DomainError(APIException):
         super().__init__(detail=message or self.default_detail)
         self.code = code or self.default_code
         self.errors = errors or {}
-        # Extra payload for error responses, e.g. {"available": {...}} on INSUFFICIENT_STOCK (Pass 4B §5.1).
         self.data = data or {}
 
 

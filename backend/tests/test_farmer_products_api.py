@@ -37,7 +37,6 @@ class FarmerProductsAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-        # Roles
         self.farmer_role, _ = Role.objects.get_or_create(
             code=RoleCode.FARMER, defaults={"name": "Farmer"}
         )
@@ -45,7 +44,6 @@ class FarmerProductsAPITestCase(TestCase):
             code=RoleCode.CUSTOMER, defaults={"name": "Customer"}
         )
 
-        # Farmer 1 (Approved)
         self.farmer_user = CustomUser.objects.create(
             email="farmer1@marketlink.local",
             role=self.farmer_role,
@@ -72,7 +70,6 @@ class FarmerProductsAPITestCase(TestCase):
             farmer=self.farmer_profile, market=self.home_market, stall_label="Home row, Stall 1"
         )
 
-        # Farmer 2 (Pending approval)
         self.pending_farmer_user = CustomUser.objects.create(
             email="farmer_pending@marketlink.local",
             role=self.farmer_role,
@@ -88,7 +85,6 @@ class FarmerProductsAPITestCase(TestCase):
             operating_days=[1, 2, 3],
         )
 
-        # Customer
         self.customer_user = CustomUser.objects.create(
             email="customer1@marketlink.local",
             role=self.customer_role,
@@ -100,10 +96,8 @@ class FarmerProductsAPITestCase(TestCase):
             address="City Center",
         )
 
-        # Category
         self.category = Category.objects.create(name="Vegetables", is_active=True)
 
-        # Products for Farmer 1
         self.prod1 = Product.objects.create(
             review_status=ReviewStatus.APPROVED,
             farmer=self.farmer_profile,
@@ -132,7 +126,6 @@ class FarmerProductsAPITestCase(TestCase):
     def test_fa11_list_products_and_stock_quantities(self):
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Create market & pickup slot for an active order
         now = timezone.now()
         market = Market.objects.create(
             name="Downtown Market",
@@ -183,7 +176,6 @@ class FarmerProductsAPITestCase(TestCase):
         items = res.data["data"]["results"]
         self.assertEqual(len(items), 2)
 
-        # FarmerProduct (Pass 4B §3.3): pending = PLACED quantity, held = ACCEPTED / READY quantity
         tomato_item = next(i for i in items if i["id"] == self.prod1.id)
         self.assertEqual(tomato_item["stock_quantity"], 20)
         self.assertEqual(tomato_item["pending_quantity"], 5)
@@ -200,18 +192,15 @@ class FarmerProductsAPITestCase(TestCase):
     def test_fa11_filtering_by_state(self):
         self.client.force_authenticate(user=self.farmer_user)
 
-        # in_stock
         res_in_stock = self.client.get("/api/farmer/products/?state=in_stock")
         self.assertEqual(len(res_in_stock.data["data"]["results"]), 1)
         self.assertEqual(res_in_stock.data["data"]["results"][0]["id"], self.prod1.id)
 
-        # out_of_stock
         res_out = self.client.get("/api/farmer/products/?state=out_of_stock")
         self.assertEqual(len(res_out.data["data"]["results"]), 1)
         self.assertEqual(res_out.data["data"]["results"][0]["id"], self.prod2.id)
 
     def test_fa12_create_product_approved_vs_pending(self):
-        # 1. Pending farmer cannot create -> 403 FARMER_NOT_APPROVED
         self.client.force_authenticate(user=self.pending_farmer_user)
         payload = {
             "name": "Sweet Corn",
@@ -224,7 +213,6 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(res_pending.status_code, 403)
         self.assertEqual(res_pending.data["code"], ErrorCode.FARMER_NOT_APPROVED)
 
-        # 2. Approved farmer can create -> 201
         self.client.force_authenticate(user=self.farmer_user)
         res_approved = self.client.post("/api/farmer/products/", payload)
         self.assertEqual(res_approved.status_code, 201)
@@ -234,7 +222,6 @@ class FarmerProductsAPITestCase(TestCase):
     def test_fa12_ct18_disguised_executable_rejected(self):
         self.client.force_authenticate(user=self.farmer_user)
 
-        # CT-18: Fake jpg with binary exe contents
         fake_image = SimpleUploadedFile(
             name="malicious.jpg",
             content=b"MZ\x90\x00\x03\x00\x00\x00\x04\x00\x00\x00This is a fake PE executable",
@@ -258,7 +245,6 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["data"]["name"], self.prod1.name)
 
-        # Other farmer cannot see/edit
         self.client.force_authenticate(user=self.pending_farmer_user)
         res_other = self.client.get(f"/api/farmer/products/{self.prod1.id}/")
         self.assertEqual(res_other.status_code, 404)
@@ -266,10 +252,8 @@ class FarmerProductsAPITestCase(TestCase):
     def test_fa14_patch_restock_alert_d025(self):
         self.client.force_authenticate(user=self.farmer_user)
 
-        # Customer adds prod2 (stock 0) to favorites
         FavoriteProduct.objects.create(customer=self.customer_user, product=self.prod2)
 
-        # Farmer patches prod2 stock from 0 to 10 -> triggers RESTOCK alert
         res = self.client.patch(
             f"/api/farmer/products/{self.prod2.id}/",
             {"stock_quantity": 10},
@@ -279,7 +263,6 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(res.data["data"]["stock_quantity"], 10)
         self.assertEqual(res.data["data"]["restock_notified"], 1)
 
-        # Verify notification was created in database
         notif = Notification.objects.filter(
             recipient=self.customer_user,
             type=NotificationType.RESTOCK,
@@ -290,13 +273,11 @@ class FarmerProductsAPITestCase(TestCase):
     def test_fa15_soft_delete_and_fa16_mark_sold_out(self):
         self.client.force_authenticate(user=self.farmer_user)
 
-        # FA-16 mark sold out
         res_sold_out = self.client.post(f"/api/farmer/products/{self.prod1.id}/mark-sold-out/")
         self.assertEqual(res_sold_out.status_code, 200)
         self.prod1.refresh_from_db()
         self.assertEqual(self.prod1.stock_quantity, 0)
 
-        # FA-15 soft delete
         res_delete = self.client.delete(f"/api/farmer/products/{self.prod1.id}/")
         self.assertEqual(res_delete.status_code, 204)
         self.prod1.refresh_from_db()
@@ -305,9 +286,6 @@ class FarmerProductsAPITestCase(TestCase):
     def test_fa17_and_fa18_weekly_template(self):
         self.client.force_authenticate(user=self.farmer_user)
 
-        # prod1: weekly_default=25, current=20.
-        # prod2: weekly_default=15, current=0.
-        # FA-17 Preview
         res_preview = self.client.get("/api/farmer/products/weekly-template-preview/")
         self.assertEqual(res_preview.status_code, 200)
         rows = res_preview.data["data"]["rows"]
@@ -316,14 +294,11 @@ class FarmerProductsAPITestCase(TestCase):
         row_tomato = next(r for r in rows if r["product_id"] == self.prod1.id)
         self.assertEqual(row_tomato["new_stock"], 25)
 
-        # Customer favorites prod2 (currently stock 0)
         FavoriteProduct.objects.create(customer=self.customer_user, product=self.prod2)
 
-        # FA-18 Apply
         res_apply = self.client.post("/api/farmer/products/apply-weekly-template/", {})
         self.assertEqual(res_apply.status_code, 200)
         self.assertEqual(res_apply.data["data"]["updated_count"], 2)
-        # prod2 was 0, now 15 -> restock alert triggered!
         self.assertEqual(res_apply.data["data"]["restock_notified"], 1)
 
         self.prod1.refresh_from_db()
@@ -331,7 +306,6 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(self.prod1.stock_quantity, 25)
         self.assertEqual(self.prod2.stock_quantity, 15)
 
-    # ---- Tính năng 5 review ----
 
     def test_suspended_farmer_cannot_write_products(self):
         self.farmer_profile.status = FarmerStatus.SUSPENDED
@@ -353,7 +327,6 @@ class FarmerProductsAPITestCase(TestCase):
         for res in responses:
             self.assertEqual(res.status_code, 403)
             self.assertEqual(res.data["code"], ErrorCode.FARMER_SUSPENDED)
-        # Reads still work (Pass 4B §5.4)
         self.assertEqual(self.client.get("/api/farmer/products/").status_code, 200)
         self.prod1.refresh_from_db()
         self.assertEqual(self.prod1.stock_quantity, 20)
@@ -379,12 +352,10 @@ class FarmerProductsAPITestCase(TestCase):
 
     def test_image_extension_and_mime_are_checked(self):
         self.client.force_authenticate(user=self.farmer_user)
-        # Valid JPEG bytes but an HTML extension -> rejected (NFR-01)
         res = self._create_with_image(
             SimpleUploadedFile("page.html", create_test_image("JPEG"), content_type="image/jpeg")
         )
         self.assertEqual(res.status_code, 400)
-        # Valid JPEG bytes and extension but a non-image MIME type -> rejected
         res = self._create_with_image(
             SimpleUploadedFile("photo.jpg", create_test_image("JPEG"), content_type="text/html")
         )
@@ -392,7 +363,6 @@ class FarmerProductsAPITestCase(TestCase):
 
     def test_stored_extension_follows_real_image_format(self):
         self.client.force_authenticate(user=self.farmer_user)
-        # PNG content uploaded with a .JPG name -> stored as .png, never with the client's name
         res = self._create_with_image(
             SimpleUploadedFile("Holiday.JPG", create_test_image("PNG"), content_type="image/jpeg")
         )
@@ -419,7 +389,6 @@ class FarmerProductsAPITestCase(TestCase):
         slot = PickupSlot.objects.create(
             farmer_market=fm, day_of_week=3, start_time=time(8, 0), end_time=time(10, 0), is_active=True
         )
-        # ACCEPTED order already past pickup, not closed yet -> still counted (option A)
         order = Order.objects.create(
             customer=self.customer_user,
             farmer=self.farmer_profile,
@@ -467,13 +436,10 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(sold_out["availability"], "OUT_OF_STOCK")
 
     def test_patch_only_writes_changed_fields(self):
-        # 5.1: a name-only PATCH must not rewrite stock_quantity.
         self.client.force_authenticate(user=self.farmer_user)
         with mock.patch.object(Product, "save", autospec=True, side_effect=Product.save) as save:
             res = self.client.patch(f"/api/farmer/products/{self.prod1.id}/", {"name": "Heirloom Tomato"}, format="json")
         self.assertEqual(res.status_code, 200)
-        # First save is the edit itself; a renamed approved listing then saves again to go back
-        # into review, which touches only the review columns.
         update_fields = save.call_args_list[0].kwargs["update_fields"]
         self.assertIn("name", update_fields)
         self.assertNotIn("stock_quantity", update_fields)
@@ -491,7 +457,6 @@ class FarmerProductsAPITestCase(TestCase):
         self.prod2.refresh_from_db()
         self.assertEqual(self.prod2.stock_quantity, 5)
 
-    # ---- Tính năng 6: weekly template (FA-17, FA-18) ----
 
     def _order_for_prod1(self, *, qty: int, start_offset: timedelta, end_offset: timedelta, status: str) -> Order:
         now = timezone.now()
@@ -533,7 +498,6 @@ class FarmerProductsAPITestCase(TestCase):
         return order
 
     def test_fa18_during_market_keeps_goods_of_orders_being_picked_up(self):
-        # prod1 template = 25; an ACCEPTED order of 5 kg is inside its pickup window right now.
         self._order_for_prod1(
             qty=5, start_offset=-timedelta(minutes=30), end_offset=timedelta(minutes=90),
             status=OrderStatus.ACCEPTED,
@@ -547,7 +511,7 @@ class FarmerProductsAPITestCase(TestCase):
         res = self.client.post("/api/farmer/products/apply-weekly-template/", {})
         self.assertEqual(res.status_code, 200)
         self.prod1.refresh_from_db()
-        self.assertEqual(self.prod1.stock_quantity, 20)  # 25 - 5, not 25
+        self.assertEqual(self.prod1.stock_quantity, 20)
 
     def test_fa17_overdue_orders_are_order_summaries(self):
         overdue = self._order_for_prod1(
@@ -559,10 +523,9 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(len(preview["overdue_orders"]), 1)
         row = preview["overdue_orders"][0]
         self.assertEqual(row["id"], overdue.id)
-        self.assertEqual(row["version"], overdue.version)  # needed for If-Match on Complete / No-show
+        self.assertEqual(row["version"], overdue.version)
         self.assertEqual(row["customer"]["full_name"], "Alice Customer")
         self.assertEqual(row["total_amount"], "7.00")
-        # An overdue order does not hold goods for the new week
         tomato = next(r for r in preview["rows"] if r["product_id"] == self.prod1.id)
         self.assertEqual(tomato["held_quantity"], 0)
 
@@ -595,7 +558,7 @@ class FarmerProductsAPITestCase(TestCase):
         self.prod1.refresh_from_db()
         self.prod2.refresh_from_db()
         self.assertEqual(self.prod2.stock_quantity, 15)
-        self.assertEqual(self.prod1.stock_quantity, 20)  # its weekly stock is 25, but it was not chosen
+        self.assertEqual(self.prod1.stock_quantity, 20)
 
     def test_fa18_apply_skips_another_farmers_product(self):
         other_product = Product.objects.create(
@@ -618,7 +581,6 @@ class FarmerProductsAPITestCase(TestCase):
         other_product.refresh_from_db()
         self.assertEqual(other_product.stock_quantity, 3)
 
-    # ---- Listing review after an edit, and the per-order cap ----
 
     def test_renaming_an_approved_listing_sends_it_back_for_review_and_off_the_shelf(self):
         self.client.force_authenticate(user=self.farmer_user)
@@ -711,7 +673,6 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertIn("min_per_order", created.data["errors"])
 
         self.assertEqual(self.client.patch(url, {"max_per_order": 4}, format="json").status_code, 200)
-        # Only one end changes, so the pair is checked against the saved row.
         too_high = self.client.patch(url, {"min_per_order": 5}, format="json")
         self.assertEqual(too_high.status_code, 400)
         self.assertIn("min_per_order", too_high.data["errors"])

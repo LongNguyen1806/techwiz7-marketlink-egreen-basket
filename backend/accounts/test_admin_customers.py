@@ -124,8 +124,6 @@ def test_the_at_risk_flag_needs_enough_recent_no_shows(admin_client, customer_us
 
 @pytest.mark.django_db
 def test_expired_orders_never_make_a_customer_at_risk(admin_client, customer_user, make_order):
-    # D-028: an order expires because the farmer did not confirm it, so it is not the
-    # customer's fault and must never count.
     for _ in range(at_risk_threshold() + 2):
         make_order(status=OrderStatus.EXPIRED)
 
@@ -193,8 +191,6 @@ def test_the_impact_dialog_counts_open_orders_and_farmers(
 def test_locking_cancels_every_open_order_and_restores_stock(
     admin_client, customer_user, product, make_order
 ):
-    # D-015 / §5.4: T5, T6 and T13 all land on CANCELLED, but only the orders that actually
-    # took stock give it back - D-029 means a PLACED order never deducted any.
     placed = make_order(status=OrderStatus.PLACED, quantity=2)
     accepted = make_order(status=OrderStatus.ACCEPTED, quantity=3)
     ready = make_order(status=OrderStatus.READY_FOR_PICKUP, quantity=1)
@@ -217,7 +213,6 @@ def test_locking_cancels_every_open_order_and_restores_stock(
     assert completed.status == OrderStatus.COMPLETED
 
     product.refresh_from_db()
-    # Only the ACCEPTED (3) and READY_FOR_PICKUP (1) orders held stock; the PLACED one did not.
     assert product.stock_quantity == stock_before + 3 + 1
 
 
@@ -231,7 +226,6 @@ def test_locking_writes_the_admin_change_reason(admin_client, customer_user, mak
 
     row = OrderStatusHistory.objects.get(order=ready)
     assert row.to_status == OrderStatus.CANCELLED
-    # READY_FOR_PICKUP -> CANCELLED is T13, reserved for an admin.
     assert row.transition == Transition.T13
     assert row.actor_role == "ADMIN"
     assert row.actor == admin_user
@@ -305,7 +299,6 @@ def test_unlocking_clears_the_reason(admin_client, customer_user, admin_user):
 
     assert response.status_code == 200
     assert response.data["data"]["is_active"] is True
-    # D-024: the reason goes back to NULL when the account is unlocked.
     assert response.data["data"]["deactivation_reason"] is None
     customer_user.refresh_from_db()
     assert customer_user.is_active is True
@@ -352,7 +345,6 @@ def test_an_unknown_customer_is_a_404(admin_client):
 
 @pytest.mark.django_db
 def test_a_farmer_id_is_not_a_customer_id(admin_client, approved_farmer):
-    # The two profiles share the users table, so the route must not accept a farmer here.
     assert admin_client.get(reverse(DETAIL_URL, args=[approved_farmer.user_id])).status_code == 404
 
 
@@ -369,7 +361,6 @@ def test_customer_cannot_reach_the_customer_admin(customer_client, customer_user
 
 @pytest.mark.django_db
 def test_locking_clears_any_pending_change_request(admin_client, customer_user, make_order):
-    # §5.4 step 4: the request dies with the order it belonged to.
     order = make_order(status=OrderStatus.ACCEPTED)
     Order.objects.filter(pk=order.pk).update(pending_change={"items": []})
 
@@ -400,8 +391,6 @@ def test_customers_sort_by_name_and_reject_unknown_columns(admin_client, custome
 
 @pytest.mark.django_db
 def test_the_default_still_floats_at_risk_customers_to_the_top(admin_client, customer_user):
-    # D-028 wanted this before sorting existed, so it stays the default rather than becoming
-    # just another sort key.
     response = admin_client.get(reverse(LIST_URL))
 
     assert response.status_code == 200
@@ -441,8 +430,6 @@ def test_a_shoppers_phone_may_match_a_stall(admin_client, customer_user, farmer_
         format="json",
     )
 
-    # customer_profiles and farmer_profiles carry their own UNIQUE index, and registration
-    # checks only within a role; the admin edit follows the same rule.
     assert response.status_code == 200
 
 
@@ -457,5 +444,4 @@ def test_the_edit_cannot_reach_the_lock_reason(admin_client, customer_user):
     )
 
     profile.refresh_from_db()
-    # The lock reason is written by AD-12 and cleared by AD-13; an edit form must not forge it.
     assert profile.deactivation_reason is None

@@ -8,10 +8,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-# Fail closed: a deployment that forgets DEBUG runs as production, never as a debug server.
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
 
-# The fallback key is only for local development; production must provide its own.
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 if not SECRET_KEY:
     if not DEBUG:
@@ -22,9 +20,6 @@ ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()
 ]
 
-# Number of reverse proxies in front of the app (Render: 1). Only the X-Forwarded-For entry
-# appended by those proxies is trusted, so a client cannot pick its own IP for throttling or
-# the audit log. 0 = no proxy: REMOTE_ADDR is the client.
 NUM_PROXIES = int(os.environ.get("NUM_PROXIES", "0"))
 
 INSTALLED_APPS = [
@@ -152,12 +147,10 @@ REST_FRAMEWORK = {
         "user": "300/min",
         "login": "5/min",
         "admin_login": "5/min",
-        # Failed sign-ins per email, across every IP and both portals (brute force from many IPs).
         "login_email": "20/hour",
         "register": "10/hour",
         "orders": "10/hour",
         "chat": "20/min",
-        # Address lookups on the sign-up map and the admin market form (Nominatim, D-032).
         "geocode": "10/min",
     },
 }
@@ -166,7 +159,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
-    # Refresh tokens are blacklisted in Redis by the auth views (P2), not by a MySQL table.
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
@@ -201,10 +193,8 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 if not DEBUG:
-    # HTTPS is terminated by the proxy (Render), which reports the original scheme in this header.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True").lower() in ("true", "1", "t")
-    # Uptime probes may call the health check over plain HTTP.
     SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
     SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "3600"))
     SESSION_COOKIE_SECURE = True
@@ -213,7 +203,6 @@ if not DEBUG:
 REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")
 USE_REDIS = os.environ.get("USE_REDIS", "False").lower() in ("true", "1", "t")
 
-# Bounded socket waits: a hung Redis must fail fast instead of blocking every authenticated request.
 _REDIS_CACHE_OPTIONS = {
     "CLIENT_CLASS": "django_redis.client.DefaultClient",
     "SOCKET_CONNECT_TIMEOUT": 2,
@@ -243,9 +232,6 @@ if USE_REDIS:
                     {
                         "address": REDIS_URL,
                         "socket_connect_timeout": 5,
-                        # redis-py 8 defaults socket_timeout to 5 s, the same as channels_redis's
-                        # blocking BZPOPMIN (brpop_timeout = 5), so every idle receive timed out and
-                        # closed the socket with 1011. The read timeout must stay above that wait.
                         "socket_timeout": 10,
                         "socket_keepalive": True,
                         "health_check_interval": 30,
@@ -258,7 +244,6 @@ if USE_REDIS:
         },
     }
 else:
-    # Not shared between processes: only for single-process local development.
     CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
         "blacklist": {
@@ -272,8 +257,6 @@ else:
 
 WS_TICKET_TTL = int(os.environ.get("WS_TICKET_TTL", "30"))
 
-# D-032: farmer coordinates from the address via OpenStreetMap Nominatim (usage policy:
-# max 1 request/second and a User-Agent that identifies the app with a contact email).
 NOMINATIM_URL = os.environ.get("NOMINATIM_URL") or "https://nominatim.openstreetmap.org/search"
 NOMINATIM_USER_AGENT = os.environ.get("NOMINATIM_USER_AGENT") or "MarketLink/1.0 (TechWiz 7 student project)"
 GEOCODING_ENABLED = os.environ.get("GEOCODING_ENABLED", "True").lower() in ("true", "1", "t")
@@ -324,16 +307,9 @@ AI_CHAT_ENABLED = os.environ.get("AI_CHAT_ENABLED", "True").lower() in (
     "t",
 )
 
-# --- AI-assisted listing review (advice for admins; never decides on its own) ---
 AI_MODERATION_ENABLED = os.environ.get("AI_MODERATION_ENABLED", "True").lower() in ("true", "1", "t")
-# #6: a listing the AI passes goes on sale without waiting for an admin (who can still undo it).
 AI_AUTO_APPROVE = os.environ.get("AI_AUTO_APPROVE", "True").lower() in ("true", "1", "t")
-# Configurable because the Flash model names change; the call fails soft (UNAVAILABLE) if wrong.
-# Explicit versions, not "-latest" aliases: an alias can move to a pricier model on its own.
-# 3.1 Flash-Lite is the cheapest model this key can use (2.5 Flash-Lite is closed to new users).
 GEMINI_MODERATION_MODEL = os.environ.get("GEMINI_MODERATION_MODEL", "gemini-3.1-flash-lite")
-# Tried in order when the model above is out of quota for the day or not available to the key.
-# The free tier counts requests per model, so each fallback adds its own daily allowance.
 GEMINI_MODERATION_FALLBACK_MODELS = [
     name.strip()
     for name in os.environ.get(
@@ -342,11 +318,7 @@ GEMINI_MODERATION_FALLBACK_MODELS = [
     if name.strip()
 ]
 AI_MODERATION_TIMEOUT_MS = int(os.environ.get("AI_MODERATION_TIMEOUT_MS", "20000"))
-# Pause between model calls in the batch commands, to stay under the key's per-minute quota.
 AI_MODERATION_BATCH_PAUSE_MS = int(os.environ.get("AI_MODERATION_BATCH_PAUSE_MS", "4000"))
-# --- AI assistant (chat widget, every role; read-only tools) ---
-# A different primary model from the listing review, so the two do not use up each other's
-# free-tier allowance (the free tier counts requests per model).
 GEMINI_CHAT_MODEL = os.environ.get("GEMINI_CHAT_MODEL", "gemini-3.1-flash-lite")
 GEMINI_CHAT_FALLBACK_MODELS = [
     name.strip()
@@ -354,23 +326,16 @@ GEMINI_CHAT_FALLBACK_MODELS = [
     if name.strip()
 ]
 AI_CHAT_TIMEOUT_MS = int(os.environ.get("AI_CHAT_TIMEOUT_MS", "12000"))
-# The whole answer, tool calls included (CH-01: 15 s).
 AI_CHAT_DEADLINE_S = float(os.environ.get("AI_CHAT_DEADLINE_S", "15"))
-# Assistant answers per day (resets at local midnight). Visitors are counted per IP, signed-in
-# users per account; 0 turns the cap off. Never shown to users: a capped request gets the same
-# neutral "busy" reply as an outage.
 AI_CHAT_DAILY_LIMIT_GUEST = int(os.environ.get("AI_CHAT_DAILY_LIMIT_GUEST", "30"))
 AI_CHAT_DAILY_LIMIT_USER = int(os.environ.get("AI_CHAT_DAILY_LIMIT_USER", "100"))
-# Tests run the review inline instead of on the background pool.
 AI_MODERATION_RUN_INLINE = os.environ.get("AI_MODERATION_RUN_INLINE", "False").lower() in ("true", "1", "t")
 
-# TEXT, not VARCHAR(100): farmer suspension reasons can be up to 500 characters.
 SIMPLE_HISTORY_HISTORY_CHANGE_REASON_USE_TEXT_FIELD = True
 
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
 EMAIL_ASYNC = os.environ.get("EMAIL_ASYNC", "True").lower() in ("true", "1", "t")
 
-# D-005 / D-028: order and account abuse thresholds.
 MAX_PLACED_ORDERS_PER_CUSTOMER = int(os.environ.get("MAX_PLACED_ORDERS_PER_CUSTOMER", "10"))
 AT_RISK_THRESHOLD = int(os.environ.get("AT_RISK_THRESHOLD", "3"))
 AT_RISK_WINDOW_DAYS = int(os.environ.get("AT_RISK_WINDOW_DAYS", "30"))

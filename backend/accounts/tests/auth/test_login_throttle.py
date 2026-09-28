@@ -26,8 +26,6 @@ def _rates(**overrides):
 @pytest.mark.django_db
 class TestForwardedForCannotResetTheIpLimit:
     def test_the_configured_settings_never_trust_the_raw_header(self, api, customer):
-        # No mock: with NUM_PROXIES unset (None) DRF keyed anonymous throttles on the raw
-        # X-Forwarded-For header, so a new fake IP per request reset the limit.
         assert api_settings.NUM_PROXIES is not None
         for attempt in range(5):
             _login(api, "alice@example.com", WRONG, HTTP_X_FORWARDED_FOR=f"198.51.100.{attempt}")
@@ -46,7 +44,6 @@ class TestForwardedForCannotResetTheIpLimit:
         assert (response.status_code, response.json()["code"]) == (429, "THROTTLED")
 
     def test_behind_one_proxy_only_the_proxy_entry_counts(self, api, customer):
-        # The client controls everything before the last entry; the proxy appends the real IP.
         with mock.patch.object(api_settings, "NUM_PROXIES", 1):
             for attempt in range(5):
                 _login(

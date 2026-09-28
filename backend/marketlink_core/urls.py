@@ -9,7 +9,6 @@ from marketlink_core.views import HealthCheckView, WebSocketTicketView
 from markets.farmer import urls_farmer as farmer_market_urls
 from orders.farmer import urls_farmer as farmer_order_urls
 
-# Django Admin lives at /django-admin/ so it never collides with the /api/admin/ branch.
 urlpatterns = [
     path("django-admin/", admin.site.urls),
     path("api/health/", HealthCheckView.as_view(), name="health"),
@@ -19,17 +18,14 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="api-schema", permission_classes=[AllowAny]),
         name="api-docs",
     ),
-    # Shared: authentication (P2) and the WebSocket ticket (AU-08).
     path("api/auth/ws-ticket/", WebSocketTicketView.as_view(), name="ws-ticket"),
     path("api/auth/", include("accounts.auth.urls")),
     path("api/auth/", include("accounts.auth.urls_auth")),
-    # Customer branch.
     path("api/customer/", include("accounts.customer.urls_customer")),
     path("api/customer/", include("orders.customer.urls_customer")),
     path("api/customer/", include("reviews.customer.urls_customer")),
     path("api/customer/", include("favorites.customer.urls_customer")),
     path("api/public/", include("orders.public.urls_public")),
-    # Farmer branch.
     path("api/farmer/profile/", include("accounts.farmer.urls_farmer")),
     path("api/farmer/markets/", include(farmer_market_urls.market_urlpatterns)),
     path("api/farmer/pickup-slots/", include(farmer_market_urls.pickup_slot_urlpatterns)),
@@ -39,9 +35,7 @@ urlpatterns = [
     path("api/farmer/products/", include("catalog.farmer.urls_farmer")),
     path("api/farmer/", include("reviews.farmer.urls_farmer")),
     path("api/notifications/", include("notifications.urls")),
-    # CH-01: the assistant (D-011); read-only tools per role.
     path("api/chat/", include("chat_bot.urls")),
-    # Admin and Guest branch: each module already carries its admin/ or public/ prefix.
     path("api/", include("accounts.admin_urls")),
     path("api/", include("accounts.public_urls")),
     path("api/", include("catalog.urls")),

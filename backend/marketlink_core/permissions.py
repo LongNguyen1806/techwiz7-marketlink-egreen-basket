@@ -27,11 +27,9 @@ class IsAdmin(_RolePermission):
     roles = (RoleCode.ADMIN,)
 
 
-# AU-08 / N-01: only customers and farmers receive notifications.
 class IsCustomerOrFarmer(_RolePermission):
     roles = (RoleCode.CUSTOMER, RoleCode.FARMER)
 
 
-# #7: admins are told about AI decisions, so the notification endpoints serve every role.
 class IsAnyRole(_RolePermission):
     roles = (RoleCode.CUSTOMER, RoleCode.FARMER, RoleCode.ADMIN)

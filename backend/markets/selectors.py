@@ -59,7 +59,6 @@ def _prefetches() -> list[Prefetch]:
     ]
 
 
-# AD-14.
 ADMIN_MARKET_ORDERING = both_directions(
     {
         "name": ("name",),
@@ -127,7 +126,6 @@ def list_closures(*, market_id: int, include_past: bool = False) -> QuerySet[Mar
 
 
 def public_markets(*, q=None, day=None, coordinates=None) -> QuerySet[Market]:
-    # §6.2: only active markets are publicly visible.
     queryset = _market_annotations(Market.objects.filter(is_active=True)).prefetch_related(
         *_prefetches()
     )
@@ -165,8 +163,6 @@ def closure_map(*, market_ids) -> dict[int, list[MarketClosure]]:
         grouped.setdefault(closure.market_id, []).append(closure)
     return grouped
 
-# The Farmer branch's selectors live in markets/farmer_selectors.py; re-exported so
-# `from markets.selectors import ...` keeps working for both branches.
 from markets.farmer_selectors import (  # noqa: E402,F401
     build_market_summaries,
     coordinate,

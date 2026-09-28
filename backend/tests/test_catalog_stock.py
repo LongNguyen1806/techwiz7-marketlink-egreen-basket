@@ -111,38 +111,30 @@ class CatalogStockTestCase(TestCase):
         return order
 
     def test_held_quantities_only_counts_active_placed_orders(self):
-        # 1. Active PLACED order (future pickup) -> counted as held
         self._create_order_with_status(OrderStatus.PLACED, qty=5, start_offset_hours=24)
 
-        # 2. Expired PLACED order (pickup start in the past) -> not counted
         self._create_order_with_status(OrderStatus.PLACED, qty=10, start_offset_hours=-2)
 
-        # 3. ACCEPTED order -> not counted in held (already deducted from physical stock)
         self._create_order_with_status(OrderStatus.ACCEPTED, qty=7, start_offset_hours=24)
 
-        # 4. CANCELLED order -> not counted
         self._create_order_with_status(OrderStatus.CANCELLED, qty=3, start_offset_hours=24)
 
         held_map = get_held_quantities(product_ids=[self.product.id])
         self.assertEqual(held_map.get(self.product.id, 0), 5)
 
     def test_available_stock_calculation(self):
-        # Active PLACED order holds 8 units
         self._create_order_with_status(OrderStatus.PLACED, qty=8, start_offset_hours=24)
 
         available = get_available_stock(product=self.product)
-        # 50 physical - 8 held = 42 available
         self.assertEqual(available, 42)
 
     def test_apply_stock_delta(self):
         products = lock_products(product_ids=[self.product.id])
-        # Deduct 15 units
         apply_stock_delta(products=products, deltas={self.product.id: -15})
 
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 35)
 
-        # Restore 5 units
         apply_stock_delta(products=products, deltas={self.product.id: 5})
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 40)

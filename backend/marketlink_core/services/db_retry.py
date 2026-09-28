@@ -9,9 +9,6 @@ MYSQL_DEADLOCK = 1213
 T = TypeVar("T")
 
 
-# The retry sits outside fn's atomic block because InnoDB rolls back the whole deadlocked transaction.
-# Other errors propagate unchanged: a lock wait timeout (1205) already waited innodb_lock_wait_timeout,
-# and marketlink_core.responses turns it into 409 CONFLICT_RETRY.
 def run_with_deadlock_retry(fn: Callable[..., T], *args: Any, **kwargs: Any) -> T:
     for attempt in range(2):
         try:

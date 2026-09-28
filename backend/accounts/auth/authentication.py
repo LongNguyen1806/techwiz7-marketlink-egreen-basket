@@ -15,7 +15,6 @@ class SessionJWTAuthentication(JWTAuthentication):
 
     def get_user(self, validated_token):
         user = super().get_user(validated_token)
-        # The user row is loaded on every request anyway, so this durable check costs no extra query.
         if validated_token.get(PASSWORD_VERSION_CLAIM) != password_version(user):
             raise AuthenticationFailed("Password has changed", code="password_changed")
         return user

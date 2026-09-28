@@ -49,7 +49,7 @@ def _contents(messages: list[dict]):
 def _text(response) -> str:
     try:
         return (response.text or "").strip()
-    except (ValueError, AttributeError):  # no text part (e.g. only function calls)
+    except (ValueError, AttributeError):
         return ""
 
 
@@ -65,11 +65,9 @@ def answer(messages: list[dict], asker: Asker) -> ChatReply:
     base = {
         "system_instruction": system_instruction(asker.role, messages[-1]["content"]),
         "temperature": 0.3,
-        # The tool loop below is ours (role checks, round limit), never the SDK's.
         "automatic_function_calling": types.AutomaticFunctionCallingConfig(disable=True),
     }
     with_tools = types.GenerateContentConfig(**base, tools=tools_for(asker))
-    # After the last tool round the model must answer with what it has.
     no_tools = types.GenerateContentConfig(**base)
 
     tools_used: list[str] = []
@@ -86,7 +84,6 @@ def answer(messages: list[dict], asker: Asker) -> ChatReply:
                 raise AIUnavailable("The model returned an empty answer.")
             return ChatReply(reply=reply[:MAX_REPLY_CHARS], tools_used=tools_used, model=model)
 
-        # Keep the model's own turn (its function calls), then answer each call.
         contents.append(response.candidates[0].content)
         results = []
         for call in calls[:MAX_CALLS_PER_ROUND]:

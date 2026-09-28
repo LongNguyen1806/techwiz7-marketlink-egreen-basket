@@ -108,7 +108,6 @@ class TestCheckoutApi:
 
         shop.eggs.refresh_from_db()
         assert (first.status_code, second.status_code) == (201, 400)
-        # v1.7 D-029: the first order only holds the unit; stock is taken when the farmer accepts.
         assert shop.eggs.stock_quantity == 1
 
     def test_overdue_orders_of_the_cart_farmers_are_expired_first(self, shop):
@@ -141,7 +140,6 @@ class TestCheckoutApi:
         response = _post(shop.customer, body)
 
         assert (response.status_code, response.json()["code"]) == (400, "VALIDATION_ERROR")
-        # List-level errors are nested by DRF, e.g. an empty list flattens to "groups.non_field_errors".
         assert any(key.startswith(error_key) for key in response.json()["errors"])
 
     def test_farmer_cannot_place_orders(self, shop):

@@ -74,7 +74,6 @@ def weekday(raw: str | None) -> int | None:
 
 
 def in_stock_flag(raw: str | None) -> bool:
-    # Defaults to true; only an explicit false opens the list to sold-out rows.
     return raw is None or raw.strip().lower() not in ("false", "0")
 
 
@@ -97,7 +96,6 @@ class PublicCategoryListView(ListAPIView):
 
     @extend_schema(responses={200: CategoryPublicSerializer(many=True)})
     def get(self, request, *args, **kwargs):
-        # PU-02 has no [P] marker, so data is a plain list.
         serializer = self.get_serializer(list_active_categories(), many=True)
         return api_response(message="OK", request=request, data=serializer.data)
 

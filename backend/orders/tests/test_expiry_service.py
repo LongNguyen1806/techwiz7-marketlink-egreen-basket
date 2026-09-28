@@ -31,7 +31,6 @@ class TestExpireOverdueOrders:
         product.refresh_from_db()
         assert count == 1
         assert (order.status, order.version) == ("EXPIRED", 2)
-        # v1.7 D-029: a PLACED order never took stock, so expiring it (T8) leaves stock unchanged.
         assert product.stock_quantity == 5
         history = order.status_history.get()
         assert (history.from_status, history.to_status, history.transition) == ("PLACED", "EXPIRED", "T8")

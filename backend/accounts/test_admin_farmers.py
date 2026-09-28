@@ -115,7 +115,6 @@ def test_the_list_is_paginated_and_carries_the_counts(admin_client, approved_far
 def test_filters_by_status_search_and_market(admin_client, approved_farmer):
     assert admin_client.get(reverse(LIST_URL), {"status": "APPROVED"}).data["data"]["count"] == 1
     assert admin_client.get(reverse(LIST_URL), {"status": "PENDING"}).data["data"]["count"] == 0
-    # An unusable status is ignored rather than rejected.
     assert admin_client.get(reverse(LIST_URL), {"status": "NONSENSE"}).data["data"]["count"] == 1
     assert admin_client.get(reverse(LIST_URL), {"q": "test stall"}).data["data"]["count"] == 1
     assert admin_client.get(reverse(LIST_URL), {"q": "0907654321"}).data["data"]["count"] == 1
@@ -212,8 +211,6 @@ def test_suspension_impact_counts_open_orders_per_status(
 def test_suspend_declines_every_open_order_and_restores_stock(
     admin_client, approved_farmer, product, make_order, farmer_user, customer_user, admin_user
 ):
-    # D-015 / §5.4: T3, T4 and T12 all land on DECLINED, but only the orders that actually
-    # took stock give it back - D-029 means a PLACED order never deducted any.
     placed = make_order(status=OrderStatus.PLACED, quantity=2)
     accepted = make_order(status=OrderStatus.ACCEPTED, quantity=3)
     ready = make_order(status=OrderStatus.READY_FOR_PICKUP, quantity=1)
@@ -235,7 +232,6 @@ def test_suspend_declines_every_open_order_and_restores_stock(
     assert finished.status == OrderStatus.COMPLETED
 
     product.refresh_from_db()
-    # Only the ACCEPTED (3) and READY_FOR_PICKUP (1) orders held stock; the PLACED one did not.
     assert product.stock_quantity == stock_before + 3 + 1
 
 
@@ -251,7 +247,6 @@ def test_suspend_writes_the_status_history_with_the_admin_reason_code(
 
     row = OrderStatusHistory.objects.get(order=ready)
     assert row.to_status == OrderStatus.DECLINED
-    # READY_FOR_PICKUP -> DECLINED is T12, reserved for an admin.
     assert row.transition == Transition.T12
     assert row.actor_role == "ADMIN"
     assert row.actor == admin_user
@@ -358,7 +353,6 @@ def test_the_detail_carries_products_stats_and_the_trail(
     assert data["email"] == "farmer@marketlink.test"
     assert data["status"] == FarmerStatus.APPROVED
     assert data["status_reason"] is None
-    # The admin sees where the farmer says they grow, which the public page leaves out.
     assert data["address"] == approved_farmer.address
     assert "latitude" in data and "longitude" in data
     assert [row["name"] for row in data["products"]] == ["Tomato"]
@@ -414,7 +408,6 @@ def test_customer_cannot_reach_the_farmer_admin(customer_client, approved_farmer
 
 @pytest.mark.django_db
 def test_suspend_clears_any_pending_change_request(admin_client, approved_farmer, make_order):
-    # §5.4 step 4: the request dies with the order it belonged to.
     order = make_order(status=OrderStatus.ACCEPTED)
     Order.objects.filter(pk=order.pk).update(pending_change={"items": []})
 
@@ -427,9 +420,6 @@ def test_suspend_clears_any_pending_change_request(admin_client, approved_farmer
     assert order.status == OrderStatus.DECLINED
 
 
-# ---------------------------------------------------------------------------
-# ?ordering= (v1.8). The tables page server-side, so sorting has to be the database's job.
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -447,8 +437,6 @@ def test_stalls_sort_by_name_in_both_directions(admin_client, farmer, make_farme
 
 @pytest.mark.django_db
 def test_sorting_orders_the_whole_table_not_just_one_page(admin_client, farmer, make_farmer):
-    # The point of sorting server-side: the smallest name must reach page 1 even though it
-    # was created last and would sit on the final page under the default order.
     for index in range(5):
         make_farmer(email=f"f{index}@marketlink.test", stall_name=f"Stall {9 - index}")
 
@@ -477,9 +465,6 @@ def test_no_ordering_keeps_the_newest_first_default(admin_client, farmer, make_f
     assert response.data["data"]["results"][0]["id"] == newest.user_id
 
 
-# ---------------------------------------------------------------------------
-# AD-03 PATCH: the admin corrects a stall's contact details.
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -509,7 +494,6 @@ def test_a_patch_that_changes_nothing_writes_no_audit_row(admin_client, farmer):
     )
 
     assert response.status_code == 200
-    # Otherwise every stray save would add a line to a log the admin has to read.
     assert not AuditLog.objects.filter(action=AuditAction.FARMER_UPDATED).exists()
 
 
@@ -520,7 +504,6 @@ def test_the_phone_is_stored_in_its_canonical_form(admin_client, farmer):
     )
 
     farmer.refresh_from_db()
-    # D-028 keys accounts by one canonical spelling, so "+84 90 765 4321" must land as 0907654321.
     assert farmer.phone == "0907654321"
 
 
@@ -532,8 +515,6 @@ def test_a_phone_belonging_to_another_stall_is_a_field_error(admin_client, farme
         reverse(DETAIL_URL, args=[farmer.user_id]), {"phone": other.phone}, format="json"
     )
 
-    # The UNIQUE index would raise an IntegrityError and surface as a 500; this wants a 400
-    # the form can show under the phone field.
     assert response.status_code == 400
     assert "phone" in response.data["errors"]
 
@@ -546,8 +527,6 @@ def test_a_phone_used_by_a_shopper_is_allowed_on_a_stall(admin_client, farmer, c
         reverse(DETAIL_URL, args=[farmer.user_id]), {"phone": shopper_phone}, format="json"
     )
 
-    # The UNIQUE indexes are per table, and registration only checks within a role, so the
-    # admin edit must not be stricter than the form that created the account.
     assert response.status_code == 200
     farmer.refresh_from_db()
     assert farmer.phone == shopper_phone
@@ -564,8 +543,6 @@ def test_the_edit_cannot_reach_status_or_operating_days(admin_client, farmer):
     )
 
     farmer.refresh_from_db()
-    # Status moves only through approve / suspend (AD-05 to AD-08); operating days and
-    # coordinates carry D-031 / D-032 rules that belong to the stall's own profile screen.
     assert farmer.status == before_status
     assert farmer.operating_days == before_days
 
@@ -578,8 +555,6 @@ def test_the_edit_is_recorded_in_the_audit_trail_as_the_admin(admin_client, farm
         reverse(DETAIL_URL, args=[farmer.user_id]), {"contact_person": "Nam Le"}, format="json"
     )
 
-    # history_id as well as history_date: two rows written in the same microsecond would
-    # otherwise come back in an arbitrary order and this could read the creation row.
     latest = (
         FarmerProfile.history.filter(user_id=farmer.user_id)
         .order_by("history_date", "history_id")
@@ -594,17 +569,10 @@ def test_editing_an_unknown_stall_is_a_404(admin_client):
     assert admin_client.patch(reverse(DETAIL_URL, args=[9999]), {}, format="json").status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# Paging a sorted list. Every allow-list entry carries a tiebreak for this reason: without
-# one, rows sharing a sort value come back in whatever order the database felt like, and a
-# row can appear on two pages or on none.
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 def test_paging_a_sorted_list_shows_every_row_exactly_once(admin_client, farmer, make_farmer):
-    # All the same status on purpose: sorting by it leaves the database free to order the
-    # ties however it likes, so only the tiebreak keeps the pages stable.
     for index in range(7):
         make_farmer(email=f"tie{index}@marketlink.test", stall_name=f"Stall {index}")
 
@@ -633,7 +601,6 @@ def test_descending_reverses_the_whole_sort(admin_client, farmer, make_farmer):
             .data["data"]["results"]
         ]
 
-    # Not just the first column flipped: the two orders must be exact mirrors.
     assert ids("-stall_name") == list(reversed(ids("stall_name")))
 
 
@@ -646,7 +613,6 @@ def test_the_stall_list_downloads_as_csv(admin_client, farmer, admin_user):
     assert "attachment" in response["Content-Disposition"]
 
     body = b"".join(response.streaming_content).decode("utf-8")
-    # The byte-order mark keeps Excel from opening Vietnamese names as mojibake.
     assert body.startswith("﻿")
     assert "stall_name" in body
     assert farmer.stall_name in body
@@ -662,6 +628,5 @@ def test_the_export_obeys_the_same_filters_as_the_list(admin_client, farmer, mak
     response = admin_client.get(reverse("admin-farmer-export"), {"q": "Other"})
     body = b"".join(response.streaming_content).decode("utf-8")
 
-    # What downloads has to be what is on screen, or the file quietly says something else.
     assert "Other Stall" in body
     assert farmer.stall_name not in body

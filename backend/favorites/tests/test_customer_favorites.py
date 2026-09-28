@@ -27,7 +27,6 @@ def api(customer):
     return _client(customer)
 
 
-# (kind, id field, model, factory of a target that can be favorited)
 KINDS = [
     ("farmers", "farmer_id", FavoriteFarmer, lambda: make_farmer()),
     ("products", "product_id", FavoriteProduct, lambda: make_product(farmer=make_farmer())),

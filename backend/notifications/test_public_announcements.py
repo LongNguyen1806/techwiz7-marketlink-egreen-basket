@@ -43,7 +43,6 @@ def test_a_guest_sees_only_the_notices_for_everyone(api_client, make_announcemen
 
     assert response.status_code == 200
     rows = response.data["data"]
-    # PU-13 has no [P] marker.
     assert isinstance(rows, list)
     assert [row["title"] for row in rows] == ["For everyone"]
     assert set(rows[0]) == {"id", "title", "content", "audience", "starts_at", "ends_at"}
@@ -110,7 +109,6 @@ def test_the_public_config_reports_the_client_limits(api_client):
     assert data["ai_chat_enabled"] == settings.AI_CHAT_ENABLED
     assert data["booking_horizon_days"] == BOOKING_HORIZON_DAYS == 7
     assert data["max_upload_mb"] == MAX_UPLOAD_MB == 2
-    # D-005: one cap on unapproved PLACED orders, no per-farmer limit.
     assert data["max_placed_orders_per_customer"] == getattr(
         settings, "MAX_PLACED_ORDERS_PER_CUSTOMER", MAX_PLACED_ORDERS_PER_CUSTOMER
     ) == 10

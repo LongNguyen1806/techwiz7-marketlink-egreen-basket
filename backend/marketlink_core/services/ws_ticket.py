@@ -73,15 +73,12 @@ def verify_and_consume_ws_ticket(*, ticket: Any) -> dict[str, Any] | None:
 
     if _use_redis():
         try:
-            # One atomic command (Redis >= 6.2): read and delete together, so a ticket
-            # can never be used by two connections.
             raw = _redis().getdel(key)
         except RedisError:
             logger.exception("WebSocket ticket lookup failed")
-            return None  # fail closed: the consumer closes with 4401
+            return None
         return _decode(raw)
 
-    # LocMem fallback (dev in one process, tests): accept only if this call removed the key.
     raw = cache.get(key)
     if raw is None or not cache.delete(key):
         return None

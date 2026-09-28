@@ -27,7 +27,6 @@ class CustomUserChangeForm(UserChangeForm):
         fields = ("email", "role", "is_active", "is_staff", "is_superuser")
 
 
-# UserAdmin, not ModelAdmin: a plain ModelAdmin would store the password unhashed.
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     form = CustomUserChangeForm

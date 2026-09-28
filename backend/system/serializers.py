@@ -128,8 +128,6 @@ class ChangeLogEntrySerializer(serializers.Serializer):
     """
 
     history_id = serializers.IntegerField()
-    # Exposed as change_type, not type: a bare "type" collides with the other choice fields
-    # of that name when the schema names its enums, and it reads better here anyway.
     change_type = serializers.ChoiceField(source="type", choices=CHANGE_LOG_TYPES)
     date = serializers.CharField()
     user = AuditLogActorSerializer(allow_null=True)
@@ -141,8 +139,6 @@ class ChangeLogEntrySerializer(serializers.Serializer):
 class ModerationFlagReadSerializer(serializers.ModelSerializer):
     raised_by = AuditLogActorSerializer(read_only=True)
     resolved_by = AuditLogActorSerializer(read_only=True)
-    # Where to go and look, and a line of what is there. A queue that only gives a number
-    # makes the admin hunt for the thing before every decision.
     target_url = serializers.SerializerMethodField()
     target_preview = serializers.SerializerMethodField()
 
@@ -158,7 +154,6 @@ class ModerationFlagReadSerializer(serializers.ModelSerializer):
         return target_url(flag)
 
     def get_target_preview(self, flag) -> str | None:
-        # Missing when the flagged row has since been deleted, which the screen says out loud.
         return self.context.get("target_previews", {}).get((flag.target_type, flag.target_id))
 
 

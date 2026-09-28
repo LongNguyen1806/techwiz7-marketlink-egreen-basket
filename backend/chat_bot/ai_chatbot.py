@@ -46,7 +46,7 @@ class Asker:
     """Who is chatting; decides which tools exist for this conversation."""
 
     user: object | None
-    role: str  # "GUEST", or a RoleCode
+    role: str
 
     @classmethod
     def from_request(cls, request) -> "Asker":
@@ -55,7 +55,6 @@ class Asker:
         return cls(user=user, role=role or "GUEST")
 
 
-# ---------------------------------------------------------------------------- helpers
 
 
 def _local(dt) -> str:
@@ -109,7 +108,6 @@ def _first_match(names: list[str], lookup) -> object | None:
     return None
 
 
-# ---------------------------------------------------------------------------- public tools
 
 
 def search_products(asker: Asker, args: dict) -> dict:
@@ -211,7 +209,6 @@ def get_farmer_availability(asker: Asker, args: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------- customer
 
 
 def get_my_orders(asker: Asker, args: dict) -> dict:
@@ -236,7 +233,6 @@ def get_my_orders(asker: Asker, args: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------- farmer
 
 
 def _farmer(asker: Asker):
@@ -306,7 +302,6 @@ def get_my_products(asker: Asker, args: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------- admin
 
 
 def get_admin_overview(asker: Asker, args: dict) -> dict:
@@ -332,7 +327,6 @@ def get_admin_overview(asker: Asker, args: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------- registry
 
 
 def _s(**props):
@@ -403,8 +397,6 @@ TOOL_FUNCTIONS = {
 
 PUBLIC_TOOLS = ("search_products", "get_market_info", "get_farmer_availability")
 TOOLS_BY_ROLE = {
-    # A guest still gets get_my_orders, so the assistant can answer "where is my order" with
-    # "please sign in" from the tool rather than guessing.
     "GUEST": (*PUBLIC_TOOLS, "get_my_orders"),
     RoleCode.CUSTOMER: (*PUBLIC_TOOLS, "get_my_orders"),
     RoleCode.FARMER: (*PUBLIC_TOOLS, "get_my_stall_overview", "get_my_products"),
@@ -427,6 +419,6 @@ def run_tool(asker: Asker, name: str, args: dict | None) -> dict:
         return {"error": "not_available_for_this_account"}
     try:
         return TOOL_FUNCTIONS[name](asker, dict(args or {}))
-    except Exception:  # a lookup failure must not break the conversation
+    except Exception:
         logger.exception("Assistant tool %s failed", name)
         return {"error": "lookup_failed"}

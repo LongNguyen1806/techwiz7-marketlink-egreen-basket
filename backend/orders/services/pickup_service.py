@@ -9,9 +9,6 @@ from markets.services.validation import validate_pickup_date
 from orders.constants import BOOKING_HORIZON_DAYS
 from orders.exceptions import CutoffPassedError, SlotNotAvailableError
 
-# A-019 / D-031: a pickup date is valid only if it is a market day and one of the farmer's operating days,
-# neither the market nor the farmer is on a closure, the slot and market are active, it is inside the
-# booking horizon and before cutoff.
 
 
 @dataclass(frozen=True)
@@ -74,7 +71,6 @@ def _covered(ranges, day: date) -> bool:
 
 
 def _farmer_operates_on(farmer, day: date) -> bool:
-    # D-031 (v1.7): the date must also be one of the farmer's operating days (JSON list of ISO weekdays 1-7).
     return day.isoweekday() in (farmer.operating_days or [])
 
 
@@ -146,7 +142,6 @@ def list_pickup_options(
             if not _is_open_on(slot, day, market_ranges, farmer_ranges, farmer):
                 continue
             window = pickup_window(slot, farmer, day)
-            # PU-08 v1.1 / A-003: slots whose cutoff has passed are not offered at all.
             if now >= window.cutoff_at:
                 continue
             market = slot.farmer_market.market

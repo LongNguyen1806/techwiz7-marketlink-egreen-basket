@@ -131,7 +131,6 @@ class OrderFSMTestCase(TestCase):
         order = self._create_order(start_in_hours=24, cutoff_in_hours=-1, qty=2)
         initial_stock = Product.objects.get(id=self.product.id).stock_quantity
 
-        # Farmer accepts order; stock is deducted here
         order = transition_order(
             order_id=order.id,
             to_status=OrderStatus.ACCEPTED,
@@ -189,7 +188,6 @@ class OrderFSMTestCase(TestCase):
             expected_version=order.version,
         )
         self.assertEqual(order.status, OrderStatus.CANCELLED)
-        # PLACED cancellations do not restore stock because physical stock was not deducted at order placement
         self.assertEqual(Product.objects.get(id=self.product.id).stock_quantity, initial_stock)
 
     def test_customer_cancel_accepted_order_restores_stock(self):
@@ -318,7 +316,6 @@ class OrderFSMTestCase(TestCase):
             expected_version=order.version,
         )
 
-        # T14 before pickup_end_at fails
         with self.assertRaises(UnprocessableEntityError) as ctx:
             transition_order(
                 order_id=order.id,
@@ -337,7 +334,6 @@ class OrderFSMTestCase(TestCase):
             expected_version=order.version,
         )
 
-        # T11 before pickup_end_at fails
         with self.assertRaises(UnprocessableEntityError) as ctx:
             transition_order(
                 order_id=order.id,
@@ -369,13 +365,11 @@ class OrderFSMTestCase(TestCase):
             expected_version=order.version,
         )
 
-        # Simulate pickup window ending
         order.pickup_start_at = timezone.now() - timedelta(hours=3)
         order.cutoff_at = timezone.now() - timedelta(hours=15)
         order.pickup_end_at = timezone.now() - timedelta(hours=1)
         order.save(update_fields=["pickup_start_at", "cutoff_at", "pickup_end_at"])
 
-        # T11: READY_FOR_PICKUP -> NO_SHOW restores stock
         order = transition_order(
             order_id=order.id,
             to_status=OrderStatus.NO_SHOW,
@@ -399,13 +393,11 @@ class OrderFSMTestCase(TestCase):
         )
         self.assertEqual(Product.objects.get(id=self.product.id).stock_quantity, initial_stock - 4)
 
-        # Simulate pickup window ending before farmer marked ready
         order.pickup_start_at = timezone.now() - timedelta(hours=3)
         order.cutoff_at = timezone.now() - timedelta(hours=15)
         order.pickup_end_at = timezone.now() - timedelta(hours=1)
         order.save(update_fields=["pickup_start_at", "cutoff_at", "pickup_end_at"])
 
-        # T14: ACCEPTED -> NO_SHOW restores stock
         order = transition_order(
             order_id=order.id,
             to_status=OrderStatus.NO_SHOW,
@@ -419,7 +411,6 @@ class OrderFSMTestCase(TestCase):
     def test_actor_role_enforcement(self):
         order = self._create_order(start_in_hours=24, cutoff_in_hours=12, qty=2)
 
-        # Customer cannot approve an order
         with self.assertRaises(ForbiddenActionError):
             transition_order(
                 order_id=order.id,
@@ -445,7 +436,6 @@ class OrderFSMTestCase(TestCase):
     def test_admin_suspend_farmer_uses_system_reason_constant(self):
         order = self._create_order(start_in_hours=24, cutoff_in_hours=12, qty=2)
 
-        # Admin reason must enforce the system constant instead of freeform admin notes
         order = transition_order(
             order_id=order.id,
             to_status=OrderStatus.DECLINED,
@@ -458,7 +448,6 @@ class OrderFSMTestCase(TestCase):
         history = order.status_history.last()
         self.assertEqual(history.change_reason, ChangeReason.FARMER_SUSPENDED_BY_ADMIN)
 
-    # --- 7.4: ORDER_CANCELLED_CUSTOMER_LOCKED must match what happened to stock ---
 
     def _locked_notification(self, order: Order) -> Notification:
         return Notification.objects.get(

@@ -6,7 +6,6 @@ from rest_framework.settings import api_settings
 from marketlink_core.exceptions import BusinessValidationError, ErrorCode, PreconditionRequiredError
 
 
-# request_id columns are CHAR(36), so anything that is not a UUID must be dropped.
 def normalize_request_id(raw: str | None) -> str | None:
     if not raw:
         return None

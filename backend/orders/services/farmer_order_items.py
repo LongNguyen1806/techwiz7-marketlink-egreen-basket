@@ -92,7 +92,7 @@ def mark_order_item_sold_out(
 
             removed_name = target.product_name
             remaining = [item for item in items if item.pk != target.pk]
-            delete_with_history(target, reason=history_reason)  # keeps quantity and price in the trail
+            delete_with_history(target, reason=history_reason)
             order.total_amount = sum((item.line_total for item in remaining), Decimal("0.00"))
             order.version += 1
             save_with_history(

@@ -28,7 +28,6 @@ def _checks(findings) -> set[str]:
     return {finding.check for finding in findings}
 
 
-# ---------------------------------------------------------------- words
 
 
 @pytest.mark.parametrize(
@@ -62,7 +61,6 @@ def test_prices_and_weights_are_not_mistaken_for_a_phone_number():
     assert wordlists.find_contact("12.50 per 1000g, 5 kg bags") == []
 
 
-# ---------------------------------------------------------------- numbers
 
 
 @pytest.fixture

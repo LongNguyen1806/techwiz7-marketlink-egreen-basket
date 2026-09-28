@@ -38,7 +38,7 @@ def _next_date_with_weekday(weekday: int, *, min_days_ahead: int = 1):
     return day
 
 
-@override_settings(GEOCODING_ENABLED=False)  # never call Nominatim from tests
+@override_settings(GEOCODING_ENABLED=False)
 class FarmerProfileAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -119,7 +119,6 @@ class FarmerProfileAPITestCase(TestCase):
     def _patch(self, body, **kwargs):
         return self.client.patch(URL, body, format=kwargs.pop("format", "json"), **kwargs)
 
-    # --- FA-02 ---
 
     def test_get_returns_farmer_public_and_owner_fields(self):
         res = self.client.get(URL)
@@ -138,7 +137,6 @@ class FarmerProfileAPITestCase(TestCase):
         self.assertFalse(data["location_found"])
         self.assertIsNone(data["distance_km"])
         self.assertEqual(data["markets"], [{"market_id": self.market.pk, "market_name": "Profile Market", "stall_label": "Row B"}])
-        # The owner also sees the slot switched off (e.g. by a market schedule change).
         slots = data["pickup_windows"][0]["slots"]
         self.assertEqual([slot["day_of_week"] for slot in slots], [2, 4, 6])
         self.assertEqual(slots[0]["start_time"], "07:00")
@@ -164,7 +162,6 @@ class FarmerProfileAPITestCase(TestCase):
         self.client.force_authenticate(user=self.customer_user)
         self.assertEqual(self.client.get(URL).status_code, 403)
 
-    # --- FA-03: simple fields ---
 
     def test_patch_simple_fields(self):
         res = self._patch(
@@ -195,7 +192,6 @@ class FarmerProfileAPITestCase(TestCase):
         FarmerProfile.objects.filter(pk=self.farmer.pk).update(status=FarmerStatus.SUSPENDED)
         self.assertEqual(self._patch({"stall_name": "Still Mine"}).status_code, 200)
 
-    # --- phone (D-028) ---
 
     def test_phone_is_normalized(self):
         self.assertEqual(self._patch({"phone": "+84 912.345.678"}).status_code, 200)
@@ -206,11 +202,10 @@ class FarmerProfileAPITestCase(TestCase):
         res = self._patch({"phone": "0123"})
         self.assertEqual(res.status_code, 400)
         self.assertIn("phone", res.data["errors"])
-        res = self._patch({"phone": "098.800.0222"})  # other farmer's number, different format
+        res = self._patch({"phone": "098.800.0222"})
         self.assertEqual(res.status_code, 400)
         self.assertIn("phone", res.data["errors"])
 
-    # --- coordinates (D-032) ---
 
     def test_coordinates_must_be_sent_together(self):
         res = self._patch({"latitude": 10.5})
@@ -247,7 +242,6 @@ class FarmerProfileAPITestCase(TestCase):
             self._patch({"address": "12 Farm Road, District 1"})
         geocode.assert_not_called()
 
-    # --- operating days (D-031) ---
 
     def test_operating_days_empty_or_invalid(self):
         for bad in ([], [0], [2, 2], ["x"]):
@@ -293,13 +287,11 @@ class FarmerProfileAPITestCase(TestCase):
         self.assertFalse(self.slot_sat_off.is_active)
 
     def test_operating_days_via_multipart(self):
-        # Multipart sends the list as repeated keys: operating_days=2&operating_days=4.
         res = self.client.patch(URL, {"operating_days": ["2", "4"]}, format="multipart")
         self.assertEqual(res.status_code, 200, res.data)
         self.farmer.refresh_from_db()
         self.assertEqual(self.farmer.operating_days, [2, 4])
 
-    # --- image ---
 
     def test_invalid_image_rejected(self):
         upload = SimpleUploadedFile("stall.jpg", b"not an image", content_type="image/jpeg")
@@ -353,7 +345,6 @@ class GeocodingTestCase(SimpleTestCase):
         with mock.patch.object(geocoding, "urlopen", return_value=self._response([])):
             self.assertIsNone(geocoding.geocode_address("nowhere"))
         cache.clear()
-        # The failure is logged (captured here instead of printing a traceback).
         with mock.patch.object(geocoding, "urlopen", side_effect=OSError("timeout")), self.assertLogs(
             "marketlink", "WARNING"
         ) as logs:

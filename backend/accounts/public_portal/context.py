@@ -10,6 +10,5 @@ def farmer_context(request, farmers, *, market_id: int | None = None) -> dict:
         "favorite_farmer_ids": favorite_ids(
             user=getattr(request, "user", None), kind="farmer", object_ids=ids
         ),
-        # PU-05 shows only the stall label of the market being browsed.
         "only_market_id": market_id,
     }

@@ -17,7 +17,6 @@ def update_customer_profile(*, user, data: dict) -> CustomerProfile:
         with transaction.atomic():
             profile.save(update_fields=[*data, "updated_at"])
     except IntegrityError as exc:
-        # Another customer took the number between the check and the save (D-028 UNIQUE index).
         if phone and phone_taken(phone, exclude_user_id=user.pk):
             raise phone_taken_error() from exc
         raise

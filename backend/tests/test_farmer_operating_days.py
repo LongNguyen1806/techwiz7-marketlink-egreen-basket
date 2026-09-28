@@ -38,7 +38,6 @@ class FarmerOperatingDaysTestCase(TestCase):
         self.assertEqual(profile.operating_days, [2, 4, 6])
 
     def test_clean_reports_form_error(self):
-        # Admin forms run full_clean() before save(), so the error is shown on the field.
         with self.assertRaises(ValidationError) as ctx:
             self._profile([]).full_clean()
         self.assertIn("operating_days", ctx.exception.message_dict)
@@ -46,7 +45,6 @@ class FarmerOperatingDaysTestCase(TestCase):
     def test_partial_save_without_operating_days_is_not_blocked(self):
         profile = self._profile([1])
         profile.save()
-        # Legacy row from before D-031 (written around save()).
         FarmerProfile.objects.filter(pk=profile.pk).update(operating_days=[])
         profile.refresh_from_db()
 
@@ -55,7 +53,6 @@ class FarmerOperatingDaysTestCase(TestCase):
         profile.refresh_from_db()
         self.assertEqual(profile.status, FarmerStatus.APPROVED)
 
-        # A full save (or one that includes the column) still enforces the rule.
         with self.assertRaises(ValidationError):
             profile.save()
         with self.assertRaises(ValidationError):

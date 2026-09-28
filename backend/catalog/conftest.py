@@ -34,9 +34,6 @@ def approved_farmer(farmer_user):
 
 @pytest.fixture
 def product(category, approved_farmer):
-    # An established listing: written, reviewed, and on sale. A fresh Product() defaults to
-    # PENDING, which is right for the model and wrong for a fixture the rest of the suite
-    # treats as something a shopper can already see.
     created = Product.objects.create(
         farmer=approved_farmer,
         category=category,
@@ -80,8 +77,6 @@ def seller_market(db, approved_farmer):
 
 @pytest.fixture
 def make_order_with_item(approved_farmer, customer_user, seller_market):
-    # Pickup is tomorrow by default: a window at 08:00 today would already be in the past for
-    # most of the working day, which silently changes what counts as an active order.
     def _make(*, product, quantity=2, status=OrderStatus.PLACED, days_ahead=1) -> Order:
         pickup_date = timezone.localdate() + timedelta(days=days_ahead)
         start = timezone.make_aware(datetime.combine(pickup_date, time(8, 0)))

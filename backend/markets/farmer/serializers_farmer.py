@@ -2,11 +2,10 @@ from typing import Any
 
 from rest_framework import serializers
 
-TIME_FORMATS = ["%H:%M"]  # §1.5: HH:mm
+TIME_FORMATS = ["%H:%M"]
 
 
 class _StallLabelMixin(serializers.Serializer):
-    # D-026: "Stall location in market", required, <= 100 characters.
     stall_label = serializers.CharField(min_length=1, max_length=100)
 
 

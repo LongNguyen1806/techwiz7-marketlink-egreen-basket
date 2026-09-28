@@ -114,14 +114,11 @@ class CustomerProfile(BaseModel):
     full_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15, unique=True)
     address = models.CharField(max_length=255)
-    # Plural folder name to match farmers/ , markets/ and products/ already in use.
     image = models.ImageField(
         upload_to=UUIDUploadTo("customers"), max_length=255, null=True, blank=True
     )
     deactivation_reason = models.CharField(max_length=500, null=True, blank=True)
 
-    # An admin can now correct these details (AD-10 PATCH), so the record needs the same
-    # before/after trail the stall profile has.
     history = HistoricalRecords(
         table_name="customer_profile_histories",
         bases=[HistoryRequestMeta],
@@ -204,14 +201,11 @@ class FarmerProfile(BaseModel):
 
     def clean(self):
         super().clean()
-        # Admin forms call clean() first, so bad input shows as a form error instead of a 500.
         self.operating_days = normalize_operating_days(self.operating_days)
 
     def save(self, *args, **kwargs):
         self.phone = normalize_phone(self.phone)
         update_fields = kwargs.get("update_fields")
-        # D-031: validate on every write of operating_days (seed, admin, API). A partial save that
-        # does not touch the column (e.g. update_fields=["status"]) is not blocked by old data.
         if update_fields is None or "operating_days" in update_fields:
             self.operating_days = normalize_operating_days(self.operating_days)
         super().save(*args, **kwargs)

@@ -16,7 +16,6 @@ logger = logging.getLogger("marketlink")
 T = TypeVar("T")
 
 RETRY_DELAYS_S = (2.0, 6.0)
-# Per-minute rate limits: wait as long as Gemini asks, but never stall a request longer.
 MAX_RATE_LIMIT_WAIT_S = 30.0
 
 
@@ -95,7 +94,7 @@ def call_with_fallback(models: list[str], attempt: Callable[[str], T], *, deadli
                 raise
             except errors.APIError as exc:
                 action, wait, why = classify_error(exc.code, getattr(exc, "details", None))
-            except Exception as exc:  # timeouts, network
+            except Exception as exc:
                 action, wait, why = "retry", None, type(exc).__name__
 
             logger.warning("Gemini: %s on %s (attempt %s, %s)", why, model, tries + 1, action)

@@ -8,6 +8,7 @@ import { RatingStars } from './RatingStars';
 import { StockBadge } from '../badges/StockBadge';
 import { Button } from '../../ui/Button';
 import { cn } from '../../../lib/cn';
+import { unitLabel } from '../../../utils/labels';
 import './ProductCard.css';
 
 
@@ -49,7 +50,7 @@ export function ProductCard({ product, onAddToCart, onRequireSignIn, className }
           {product.farmer.stall_name}
         </Link>
         <div className="product-card__meta-row">
-          <PriceTag amount={product.price} unit={product.unit} />
+          <PriceTag amount={product.price} unit={unitLabel(product.unit)} />
           <RatingStars value={product.rating_avg} count={product.rating_count} />
         </div>
       </div>

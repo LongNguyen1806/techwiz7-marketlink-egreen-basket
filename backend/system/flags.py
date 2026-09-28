@@ -31,19 +31,14 @@ def list_flags(
         queryset = queryset.filter(target_type=target_type)
     if q:
         term = q.strip()
-        # A bare number is how an admin refers to a flagged thing ("#321"), so it also
-        # matches the id of the target rather than only appearing inside the note.
         matches = Q(note__icontains=term) | Q(resolution__icontains=term)
         digits = term.lstrip("#")
         if digits.isdigit():
             matches |= Q(target_id=int(digits))
         queryset = queryset.filter(matches)
-    # Oldest first: a queue is worked from the front, unlike a log.
     return queryset.order_by("resolved_at", "created_at", "id")
 
 
-# Where an admin goes to look at the thing that was flagged, and what to call it there.
-# Without this the queue names a row by number and leaves the admin to go and find it.
 _TARGET_ROUTES = {
     FlagTarget.FARMER: "/admin/farmers/{id}",
     FlagTarget.CUSTOMER: "/admin/customers/{id}",
@@ -112,8 +107,6 @@ def target_url(flag) -> str | None:
 
 @transaction.atomic
 def raise_flag(*, target_type: str, target_id: int, note: str, actor) -> ModerationFlag:
-    # Checked here rather than by a database constraint: the rule is "one *open* flag per
-    # thing", and MySQL has no partial unique index to express that.
     already_queued = ModerationFlag.objects.filter(
         target_type=target_type, target_id=target_id, resolved_at__isnull=True
     ).exists()

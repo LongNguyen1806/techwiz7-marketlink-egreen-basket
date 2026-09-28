@@ -13,12 +13,10 @@ def _email_exists_error() -> EmailExistsError:
 
 
 def phone_taken_error() -> serializers.ValidationError:
-    # Pass 4B v1.6 §4.1 / D-028: 400 VALIDATION_ERROR under the phone field (not a separate error code).
     return serializers.ValidationError({"phone": [PHONE_TAKEN_MESSAGE]})
 
 
 def phone_taken(phone: str, *, exclude_user_id=None) -> bool:
-    # Locked accounts keep their profile (D-017), so their number stays blocked too (D-028).
     return CustomerProfile.objects.filter(phone=phone).exclude(user_id=exclude_user_id).exists()
 
 
@@ -35,7 +33,6 @@ def register_customer(*, email: str, password: str, full_name: str, phone: str, 
             user = CustomUser.objects.create_user(email=email, password=password, role=role)
             CustomerProfile.objects.create(user=user, full_name=full_name, phone=phone, address=address)
     except IntegrityError as exc:
-        # A concurrent sign-up won the race; the UNIQUE index tells us which value collided.
         if CustomUser.objects.filter(email=email).exists():
             raise _email_exists_error() from exc
         if phone_taken(phone):

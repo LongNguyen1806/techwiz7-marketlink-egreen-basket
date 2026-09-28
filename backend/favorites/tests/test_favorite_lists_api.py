@@ -94,7 +94,6 @@ class TestFavoriteProductList:
         )
 
     def test_a_sold_out_product_stays_listed_for_the_restock_label(self, api, customer):
-        # C-08 shows "Notify when back in stock" on these rows, so they must not be filtered out.
         product = make_product(farmer=make_farmer(), stock=0)
         FavoriteProduct.objects.create(customer=customer, product=product)
 

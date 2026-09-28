@@ -60,9 +60,6 @@ def modify_order(
             )
 
         now = timezone.now()
-        # The market changed its schedule under this order. The old cutoff no longer means
-        # anything, so it does not lock the shopper out; the new time still has to pass every
-        # rule (market day and hours, closures, the stall's own cutoff) in validate_pickup_date.
         rescheduling = order.reschedule_requested_at is not None
         if rescheduling:
             if pickup_date is None or pickup_slot_id is None:
@@ -159,15 +156,11 @@ def modify_order(
                         code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                     )
                 old_qty = old_items[pid].quantity if pid in old_items else 0
-                # Keeping or lowering a line is always allowed, so an order whose product went back
-                # into review (or had its cap lowered) can still be edited down.
                 if new_qty > old_qty and not prod.is_on_sale:
                     raise UnprocessableEntityError(
                         f"Product {prod.name} is not available.",
                         code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                     )
-                # A line the customer adds or changes must sit in the stall's per-order window;
-                # an untouched line keeps its old quantity even if the window moved since.
                 if new_qty != old_qty and new_qty < prod.min_per_order:
                     raise BusinessValidationError(
                         minimum_message(prod),
@@ -200,7 +193,6 @@ def modify_order(
                         code=ErrorCode.PRODUCT_NOT_AVAILABLE,
                     )
 
-            # Check stock availability for increases without physical deduction
             shortages: dict[str, list[str]] = {}
             for pid in all_product_ids:
                 old_qty = old_items[pid].quantity if pid in old_items else 0
@@ -229,7 +221,6 @@ def modify_order(
                         )
                         available = max(prod.stock_quantity - held_by_others, 0)
                         if order.status == OrderStatus.ACCEPTED:
-                            # ACCEPTED orders already had old_qty deducted from physical stock
                             if diff > available:
                                 shortages[str(pid)] = [
                                     f"Only {available} {prod.unit.lower()} available."
@@ -255,10 +246,7 @@ def modify_order(
 
         order.version += 1
 
-        # An accepted order moved by the market's schedule change goes the usual way too: the new
-        # time is a request the stall approves. The order stays marked until it does.
         if order.status == OrderStatus.ACCEPTED:
-            # ACCEPTED orders preserve current state and store pending_change for farmer review (D-030)
             pending_items = None
             if new_items_dict is not None:
                 pending_items = [
@@ -293,7 +281,6 @@ def modify_order(
                 request_id=get_request_id(),
             )
         else:
-            # PLACED orders (and rescheduled ones) apply changes directly to database
             from_status = order.status
             if clean_note is not None:
                 order.note = clean_note

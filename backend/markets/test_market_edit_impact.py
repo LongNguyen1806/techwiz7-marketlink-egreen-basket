@@ -109,7 +109,6 @@ class TestScheduleChange:
     def test_an_accepted_order_is_marked_too(self, admin_client, market, make_order):
         order = make_order(pickup_date=_next(MONDAY), status=OrderStatus.ACCEPTED)
 
-        # make_order books 08:00-10:00.
         _patch(admin_client, market,
                {"open_time": "09:00", "close_time": "12:00", "confirm_affected_orders": "true"})
 

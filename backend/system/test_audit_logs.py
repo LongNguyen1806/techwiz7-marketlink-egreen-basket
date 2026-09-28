@@ -93,7 +93,6 @@ def test_page_size_accepts_only_the_allowed_values(admin_client, admin_user):
         _write(user=admin_user)
 
     assert admin_client.get(reverse(LIST_URL_NAME), {"page_size": 5}).data["data"]["page_size"] == 5
-    # 7 is not in ALLOWED_PAGE_SIZES, so it falls back to the default of 20.
     assert admin_client.get(reverse(LIST_URL_NAME), {"page_size": 7}).data["data"]["page_size"] == 20
 
 
@@ -132,8 +131,6 @@ def test_audit_logs_sort_by_action_and_reject_unknown_columns(admin_client, admi
 
 @pytest.mark.django_db
 def test_sorting_by_actor_tolerates_events_with_no_user(admin_client, admin_user):
-    # LOGIN_FAILED and ACCESS_DENIED are recorded with no user at all, so the actor column
-    # has NULLs in it and must not break the sort.
     AuditLog.objects.create(user=None, action=AuditAction.LOGIN_FAILED, status_code=401)
     AuditLog.objects.create(user=admin_user, action=AuditAction.LOGIN, status_code=200)
 

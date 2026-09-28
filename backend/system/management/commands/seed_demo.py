@@ -64,14 +64,8 @@ from system.models import AuditAction, AuditLog, FlagTarget, ModerationFlag
 DEMO_DOMAIN = "demo.marketlink.local"
 DEV_DEMO_PASSWORD = "Demo@12345"
 
-# Stalls that actually carry products, and therefore orders. Spreading a hundred products over
-# every approved stall would leave each with two, and a three-line order needs three.
 PRODUCING_FARMERS = 25
 
-# ---------------------------------------------------------------------------
-# Vocabulary. Kept as plain lists so the output reads like a Ho Chi Minh City
-# marketplace rather than "Farmer 47".
-# ---------------------------------------------------------------------------
 
 FAMILY_NAMES = [
     "Nguyen", "Tran", "Le", "Pham", "Hoang", "Huynh", "Phan", "Vu", "Vo", "Dang",
@@ -106,9 +100,6 @@ STREETS = [
     "Quang Trung", "Phan Van Tri", "Xo Viet Nghe Tinh", "Nguyen Van Troi", "Hoang Van Thu",
 ]
 
-# Seventeen categories, all of them things a farm produces. The six generic ones seeded by
-# seed_minimal (Vegetables, Fruits, Dairy & Eggs, Bakery, Spices, Others) are deliberately not
-# repeated here, and their icons are steered around: an icon belongs to one category only.
 CATEGORY_SPECS = [
     ("Leafy greens", "leafy-green"), ("Root vegetables", "salad"),
     ("Gourds & squash", "vegan"), ("Fresh herbs", "leaf"),
@@ -120,15 +111,10 @@ CATEGORY_SPECS = [
     ("Pickles & ferments", "soup"), ("Fresh fish", "fish"),
     ("Poultry & eggs", "drumstick"),
 ]
-# The last two arrive switched off, so the "Active / Inactive" filter is not showing one state.
 INACTIVE_CATEGORIES = {"Pickles & ferments", "Dried goods"}
 
-# Names this command used to create. "Seedlings & plants" is not produce; "Eggs", "Dairy",
-# "Bakery" and "Spices" repeated the generic categories seed_minimal already makes.
 RETIRED_CATEGORIES = ("Eggs", "Dairy", "Bakery", "Spices", "Seedlings & plants")
 
-# 12 real markets. The last two are closed, so the market filter and the reopen path both have
-# a subject.
 MARKET_SPECS = [
     ("Cho Ben Thanh", "Le Loi, Ben Thanh Ward, District 1", "10.772500", "106.698000", time(6, 0), time(18, 0)),
     ("Cho Ba Chieu", "Le Quang Dinh, Ward 14, Binh Thanh District", "10.803000", "106.701000", time(5, 30), time(12, 0)),
@@ -145,7 +131,6 @@ MARKET_SPECS = [
 ]
 CLOSED_MARKETS = {"Cho Xom Chieu", "Cho Nga Tu Ga"}
 
-# Product names per category key, so a "Leafy greens" row is not called "Honey".
 PRODUCE = {
     "Leafy greens": ["Water spinach", "Bok choy", "Malabar spinach", "Mustard greens", "Amaranth"],
     "Root vegetables": ["Carrot", "White radish", "Sweet potato", "Taro", "Lotus root"],
@@ -190,8 +175,6 @@ FARMER_REVIEW_TEXT = [
     "Excellent, would recommend to anyone.",
     "Answered my message the same day.",
 ]
-# Text that is meant to be hidden, so the moderation screen has genuine work and Restore has
-# something to act on.
 SPAM_REVIEW_TEXT = [
     "BUY CHEAP PHONES 0900xxxxxx BEST PRICE",
     "Visit my shop at another site, much cheaper!!!",
@@ -211,9 +194,6 @@ ANNOUNCEMENT_TOPICS = [
     "Public holiday closures",
 ]
 
-# One set of notes per kind of flagged thing. Drawing from a single pool put "Shopper
-# reported the item was never handed over" on a stall and "Review reads like it was written
-# by the stall" on a product, which makes the demo queue read as nonsense.
 FLAG_NOTES_BY_TARGET = {
     "PRODUCT": [
         "Photo looks taken from another shop's listing.",
@@ -242,9 +222,7 @@ FLAG_NOTES_BY_TARGET = {
         "Looks like a duplicate of an existing account.",
     ],
 }
-# Flattened for the purge, which finds this command's own rows by their text.
 FLAG_NOTES = [note for notes in FLAG_NOTES_BY_TARGET.values() for note in notes]
-# Written the way a refusal has to be written: a stall can only fix what it is told about.
 REJECTION_REASONS = [
     "The photo shows a different product from the one described.",
     "The description carries a phone number. Contact details belong on the stall profile.",
@@ -268,8 +246,6 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_3) Safari/18.0",
 ]
 
-# The statuses a hundred-and-something order table should contain, and roughly how much of it
-# each should be. COMPLETED dominates because the two review tables feed off it.
 STATUS_WEIGHTS = [
     (OrderStatus.COMPLETED, 50),
     (OrderStatus.PLACED, 10),
@@ -282,8 +258,6 @@ STATUS_WEIGHTS = [
 ]
 OPEN_FOR_SEED = {OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.READY_FOR_PICKUP}
 
-# from_status / transition / actor role for each terminal status, so the order timeline on the
-# admin lookup screen is a real path and not a single row.
 STATUS_PATHS = {
     OrderStatus.PLACED: [],
     OrderStatus.ACCEPTED: [(OrderStatus.PLACED, OrderStatus.ACCEPTED, Transition.T2, ActorRole.FARMER)],
@@ -313,7 +287,6 @@ def weighted_statuses(total: int) -> list[str]:
     out: list[str] = []
     for status, weight in STATUS_WEIGHTS:
         out.extend([status] * (total * weight // share))
-    # Rounding leaves a few short; completed orders are the ones worth having more of.
     while len(out) < total:
         out.append(OrderStatus.COMPLETED)
     return out[:total]
@@ -343,7 +316,6 @@ class Command(BaseCommand):
             help="Fixed so two runs produce the same data. Change it for a different shuffle.",
         )
 
-    # ------------------------------------------------------------------ entry
 
     def handle(self, *args, **options):
         count = options["count"]
@@ -363,13 +335,9 @@ class Command(BaseCommand):
         self.count = count
         self.today = timezone.localdate()
         self.now = timezone.now()
-        # Hashed once. Two hundred calls to set_password would spend a minute in PBKDF2 for no
-        # benefit, since every demo account shares the same password anyway.
         self.password_hash = make_password(password)
 
         with transaction.atomic():
-            # Always, so the command is safe to re-run: a second pass without this appended a
-            # fresh set of stalls, slots and favourites on top of the first.
             self._purge()
             admin = self._admin_user()
             categories = self._seed_categories(options["categories"])
@@ -392,7 +360,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Customers: shopper1@{DEMO_DOMAIN} ... shopper{count}@{DEMO_DOMAIN}")
         self.stdout.write(f"  Farmers  : stall1@{DEMO_DOMAIN} ... stall{count}@{DEMO_DOMAIN}")
 
-    # ------------------------------------------------------------------ purge
 
     def _purge(self) -> None:
         """Remove what a previous run wrote, children first because the FKs are RESTRICT.
@@ -423,8 +390,6 @@ class Command(BaseCommand):
         FavoriteProduct.objects.filter(customer_id__in=user_ids).delete()
         FavoriteFarmer.objects.filter(customer_id__in=user_ids).delete()
         FavoriteMarket.objects.filter(customer_id__in=user_ids).delete()
-        # A favourite pointing at a demo stall or market from a non-demo shopper would block the
-        # RESTRICT delete below.
         FavoriteFarmer.objects.filter(farmer_id__in=farmer_ids).delete()
         FavoriteMarket.objects.filter(market_id__in=market_ids).delete()
         FavoriteProduct.objects.filter(product__farmer_id__in=farmer_ids).delete()
@@ -442,21 +407,15 @@ class Command(BaseCommand):
         users.delete()
 
         MarketClosure.objects.filter(market_id__in=market_ids).delete()
-        # Markets and categories only go if nothing outside the demo still points at them.
         for market in Market.objects.filter(id__in=market_ids):
             if market.orders.exists() or market.farmer_markets.exists():
                 continue
             MarketOperatingDay.objects.filter(market=market).delete()
             market.delete()
-        # Retired names included: an earlier version of this command created categories that
-        # are no longer produce, or that duplicated the generic ones from seed_minimal. Left
-        # out of the purge they would sit in the list for ever, because nothing else knows
-        # this command put them there.
         Category.objects.filter(
             name__in=[spec[0] for spec in CATEGORY_SPECS] + list(RETIRED_CATEGORIES),
             products__isnull=True,
         ).delete()
-        # Last, because it is decided by what the deletions above left behind.
         self._purge_orphan_flags()
         self.stdout.write("  Previous demo data removed.")
 
@@ -497,7 +456,6 @@ class Command(BaseCommand):
         if orphans:
             ModerationFlag.objects.filter(id__in=orphans).delete()
 
-    # ------------------------------------------------------------- foundations
 
     def _admin_user(self) -> CustomUser:
         admin = CustomUser.objects.filter(role__code=RoleCode.ADMIN).order_by("id").first()
@@ -508,9 +466,6 @@ class Command(BaseCommand):
     def _seed_categories(self, wanted: int) -> list[Category]:
         result = []
         for order, (name, icon) in enumerate(CATEGORY_SPECS[:wanted], start=1):
-            # Freed first, not afterwards: a category from an earlier seed may be holding
-            # this picture, and the icon column is unique, so creating the row would fail
-            # before there were any rows to reconcile.
             self._claim_icon(icon, for_name=name)
             category, created = Category.objects.get_or_create(
                 name=name,
@@ -560,8 +515,6 @@ class Command(BaseCommand):
                 },
             )
             if created:
-                # Every market opens at the weekend; the rest of the week varies, so the
-                # operating-day filter separates them.
                 days = {DayOfWeek.SATURDAY, DayOfWeek.SUNDAY}
                 days.update(self.rng.sample(list(DayOfWeek.values)[:5], self.rng.randint(2, 5)))
                 for day in sorted(days):
@@ -570,7 +523,6 @@ class Command(BaseCommand):
         self.counts["Markets"] = len(result)
         return result
 
-    # ------------------------------------------------------------------ people
 
     def _person_name(self) -> str:
         return " ".join(
@@ -599,7 +551,6 @@ class Command(BaseCommand):
                 role=role,
                 password=self.password_hash,
                 is_active=True,
-                # A spread of join dates, so "newest first" and any date filter mean something.
                 last_login=self.now - timedelta(days=self.rng.randint(0, 120)),
             )
             for email in emails
@@ -619,7 +570,6 @@ class Command(BaseCommand):
         for index, user in enumerate(users, start=1):
             if user.id in have:
                 continue
-            # Every tenth shopper is locked, with the reason the admin screen expects to show.
             is_locked = index % 10 == 0
             profiles.append(
                 CustomerProfile(
@@ -644,8 +594,6 @@ class Command(BaseCommand):
         have = set(
             FarmerProfile.objects.filter(user__in=users).values_list("user_id", flat=True)
         )
-        # Every status is present and none of them is a rounding error: the queue screens need
-        # pending stalls, the moderation screens need suspended ones.
         statuses = (
             [FarmerStatus.APPROVED] * 60
             + [FarmerStatus.PENDING] * 20
@@ -663,8 +611,6 @@ class Command(BaseCommand):
             if user.id in have:
                 continue
             status = statuses[(index - 1) % len(statuses)]
-            # Coordinates on most but not all, because the CHECK constraint allows both-or-none
-            # and the map on the shopper side has to cope with a stall that has neither.
             with_coords = index % 7 != 0
             profiles.append(
                 FarmerProfile(
@@ -696,8 +642,6 @@ class Command(BaseCommand):
             FarmerProfile.objects.filter(user__in=users).select_related("user").order_by("user_id")
         )
 
-        # Stalls that trade need a pitch and collection windows. Pending and rejected ones do
-        # not: an admin reviewing them should see exactly that.
         tradeable = [f for f in farmers if f.status in (FarmerStatus.APPROVED, FarmerStatus.SUSPENDED)]
         existing_pairs = set(
             FarmerMarket.objects.filter(farmer__in=tradeable).values_list("farmer_id", "market_id")
@@ -735,7 +679,6 @@ class Command(BaseCommand):
                         day_of_week=day,
                         start_time=start,
                         end_time=time(start.hour + 2, start.minute),
-                        # A few switched off, so the slot list is not uniformly green.
                         is_active=self.rng.random() > 0.15,
                     )
                 )
@@ -750,7 +693,6 @@ class Command(BaseCommand):
         ).count()
         return farmers
 
-    # --------------------------------------------------------------- catalogue
 
     def _seed_products(
         self, total: int, farmers: list[FarmerProfile], categories: list[Category], admin: CustomUser
@@ -769,12 +711,7 @@ class Command(BaseCommand):
             names = PRODUCE.get(category.name) or [category.name]
             hidden = index % 12 == 0
             archived = index % 25 == 0
-            # A tenth are out of stock, which is what makes the stock filter and the
-            # "sold out" path on the shopper side testable.
             out_of_stock = index % 10 == 0
-            # Roughly a third of the catalogue is waiting and a tenth was refused, so the
-            # approval queue is worth opening the moment the seed finishes and the "Refused"
-            # filter has more than a token row behind it.
             if index % 3 == 0:
                 review_status = ReviewStatus.PENDING
                 review_note = None
@@ -828,7 +765,6 @@ class Command(BaseCommand):
         self.counts["Products"] = len(products)
         return products
 
-    # ------------------------------------------------------------------ orders
 
     def _seed_orders(
         self, total: int, farmers: list[FarmerProfile], products: list[Product]
@@ -891,9 +827,6 @@ class Command(BaseCommand):
                 ),
                 total_amount=total_amount,
             )
-            # Saved one at a time, not in bulk: the lines and the status timeline below need the
-            # id, and MySQL cannot report the ids a bulk insert assigned. It also gives each
-            # order its simple-history row, which the admin change log reads.
             order.save()
             orders.append(order)
             plans.append((order, lines))
@@ -913,7 +846,6 @@ class Command(BaseCommand):
                         line_total=product.price * quantity,
                     )
                 )
-            # Every order starts with its own creation row, then walks the path its status implies.
             history.append(
                 OrderStatusHistory(
                     order=order,
@@ -943,7 +875,6 @@ class Command(BaseCommand):
         OrderItem.objects.bulk_create(items, batch_size=400)
         OrderStatusHistory.objects.bulk_create(history, batch_size=400)
 
-        # Placed before the collection day, which is what any date filter on the list assumes.
         for order in orders:
             order.created_at = timezone.make_aware(
                 datetime.combine(
@@ -966,7 +897,6 @@ class Command(BaseCommand):
         base = self.today - timedelta(days=self.rng.randint(2, 150))
         return base - timedelta(days=(base.isoweekday() - day_of_week) % 7)
 
-    # ----------------------------------------------------------------- reviews
 
     def _seed_reviews(self, total: int, orders: list[Order], admin: CustomUser) -> None:
         completed = [o for o in orders if o.status == OrderStatus.COMPLETED]
@@ -975,8 +905,6 @@ class Command(BaseCommand):
         if FarmerReview.objects.filter(order__in=completed).exists():
             return
 
-        # Stall reviews: one per completed order, and deliberately not on all of them, because
-        # an unreviewed completed order is the normal case.
         stall_rows = []
         for index, order in enumerate(completed[:total]):
             spam = index % 15 == 0
@@ -1002,8 +930,6 @@ class Command(BaseCommand):
             )
         FarmerReview.objects.bulk_create(stall_rows, batch_size=200)
 
-        # Product reviews hang off a line, not an order, so a completed three-line order can
-        # carry up to three.
         items = list(
             OrderItem.objects.filter(order__in=completed)
             .exclude(product_review__isnull=False)
@@ -1042,7 +968,6 @@ class Command(BaseCommand):
         """Mostly 4 and 5, the way a real marketplace looks, with enough 1s and 2s to sort by."""
         return self.rng.choices([1, 2, 3, 4, 5], weights=[6, 8, 14, 32, 40])[0]
 
-    # --------------------------------------------------------------- favorites
 
     def _seed_favorites(self, total, customers, farmers, products, markets) -> None:
         tradeable = [f for f in farmers if f.status == FarmerStatus.APPROVED]
@@ -1068,7 +993,6 @@ class Command(BaseCommand):
             made[label] = len(rows)
         self.counts.update(made)
 
-    # ----------------------------------------------------------- notifications
 
     def _seed_notifications(self, total, customers, farmers) -> None:
         farmer_users = [f.user for f in farmers]
@@ -1108,8 +1032,6 @@ class Command(BaseCommand):
         rows = []
         for index in range(total):
             topic = ANNOUNCEMENT_TOPICS[index % len(ANNOUNCEMENT_TOPICS)]
-            # A third in the past, a third running now, a third scheduled — the three cases the
-            # announcements screen has to tell apart.
             bucket = index % 3
             if bucket == 0:
                 starts = self.now - timedelta(days=self.rng.randint(30, 120))
@@ -1137,7 +1059,6 @@ class Command(BaseCommand):
         Announcement.objects.bulk_create(rows, batch_size=200)
         self.counts["Announcements"] = len(rows)
 
-    # ---------------------------------------------------------------- closures
 
     def _seed_closures(self, total, markets, farmers) -> None:
         tradeable = [f for f in farmers if f.status == FarmerStatus.APPROVED]
@@ -1182,7 +1103,6 @@ class Command(BaseCommand):
             start = self.today + timedelta(days=self.rng.randint(1, 60))
         return start, start + timedelta(days=span)
 
-    # --------------------------------------------------------------- audit log
 
     def _seed_audit_logs(self, total, admin, customers, farmers) -> None:
         actors = [admin, *customers[:20], *[f.user for f in farmers[:20]]]
@@ -1193,7 +1113,6 @@ class Command(BaseCommand):
             failed = action in (AuditAction.LOGIN_FAILED, AuditAction.ACCESS_DENIED)
             rows.append(
                 AuditLog(
-                    # A failed sign-in has no signed-in user, which the screen must render.
                     user=None if action == AuditAction.LOGIN_FAILED else actors[index % len(actors)],
                     action=action,
                     endpoint=f"/api/v1/admin/{action.lower()}/",
@@ -1209,7 +1128,6 @@ class Command(BaseCommand):
         self._spread_created_at(AuditLog, len(rows), 90)
         self.counts["Audit log"] = len(rows)
 
-    # -------------------------------------------------------------------- queue
 
     def _seed_flags(self, total, admin, products) -> None:
         if ModerationFlag.objects.filter(note__in=FLAG_NOTES).count() >= total:
@@ -1237,8 +1155,6 @@ class Command(BaseCommand):
             return
 
         rows = []
-        # One open flag per thing is a service rule, so the seed honours it rather than
-        # producing a queue the app itself would refuse to create.
         used: set[tuple[str, int]] = set(
             ModerationFlag.objects.filter(resolved_at__isnull=True).values_list(
                 "target_type", "target_id"
@@ -1250,8 +1166,6 @@ class Command(BaseCommand):
             index += 1
             pool = pools[kind]
             target_id = pool[self.rng.randrange(len(pool))]
-            # Two in five arrive already dealt with, which is the only way the "Already dealt
-            # with" filter has anything to show.
             resolved = len(rows) % 5 >= 3
             if not resolved:
                 if (kind, target_id) in used:
@@ -1276,7 +1190,6 @@ class Command(BaseCommand):
         self._spread_created_at(ModerationFlag, len(rows), 60)
         self.counts["Follow-up queue"] = len(rows)
 
-    # ----------------------------------------------------------------- helpers
 
     def _spread_created_at(self, model, expected: int, days: int) -> None:
         """Push created_at back over `days`, since auto_now_add stamps every bulk row with now.

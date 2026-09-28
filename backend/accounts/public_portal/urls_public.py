@@ -7,8 +7,6 @@ from accounts.public_portal.views_public import (
 )
 from reviews.public_portal.views_public import PublicFarmerReviewListView
 
-# PU-08 pickup-options belongs to the Customer branch; it gets its own url module so this
-# file is not edited by two branches at once.
 urlpatterns = [
     path("public/geocode/", GeocodeView.as_view(), name="public-geocode"),
     path("public/farmers/", PublicFarmerListView.as_view(), name="public-farmer-list"),

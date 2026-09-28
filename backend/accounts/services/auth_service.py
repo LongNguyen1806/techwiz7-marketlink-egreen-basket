@@ -22,8 +22,6 @@ from notifications.services import disconnect_realtime
 MARKET_PORTAL_ROLES = frozenset({RoleCode.CUSTOMER, RoleCode.FARMER})
 ADMIN_PORTAL_ROLES = frozenset({RoleCode.ADMIN})
 
-# Revocation state lives in Redis (accounts.auth.sessions). The one rule that must survive a Redis wipe,
-# "a password change logs out every other device", is enforced by the pwv claim against the users table.
 
 
 def account_locked_error(user: CustomUser) -> AccountLockedError:
@@ -44,12 +42,10 @@ def _lock_user(user_id) -> CustomUser | None:
 def authenticate_user(*, email: str, password: str, roles: frozenset[str]) -> CustomUser:
     user = CustomUser.objects.select_related("role").filter(email=email).first()
     if user is None:
-        # Hash anyway so unknown emails take as long as wrong passwords (no user enumeration by timing).
         CustomUser().set_password(password)
         raise InvalidCredentialsError()
     if not user.check_password(password):
         raise InvalidCredentialsError()
-    # D-027: a wrong portal looks like a wrong password, and is checked before the lock so it never leaks the reason.
     if user.role.code not in roles:
         raise InvalidCredentialsError()
     if not user.is_active:
@@ -76,8 +72,6 @@ def _decode_refresh_payload(raw: str) -> dict:
 
 
 def _exempt_after_own_password_change(keeper, *, session_id: str, token_version, current_version: str) -> bool:
-    # Only the device that made the change, only across that exact change: any later password reset
-    # (admin, manage.py, a rolled-back attempt) no longer matches "to" and ends the exemption.
     return (
         bool(keeper)
         and keeper.get("sid") == session_id
@@ -95,7 +89,6 @@ def rotate_refresh_token(*, refresh: str) -> dict:
     if user is None:
         raise TokenInvalidError()
 
-    # Every revocation check runs before the lock check, so a dead token never learns the lock reason.
     revoked, keeper = session_state(user.pk, session_id)
     if revoked:
         raise TokenInvalidError()
@@ -105,7 +98,6 @@ def rotate_refresh_token(*, refresh: str) -> dict:
     ):
         raise TokenInvalidError()
     if not claim_refresh_token(token["jti"], ttl_seconds=int(token["exp"] - time.time())):
-        # A rotated token presented again means it leaked: end the whole session so neither copy survives.
         revoke_session(session_id)
         raise TokenInvalidError()
 
@@ -119,7 +111,6 @@ def logout(*, user: CustomUser, session_id: str, refresh: str) -> None:
     if str(payload.get(jwt_settings.USER_ID_CLAIM)) != str(user.pk) or payload.get(SESSION_CLAIM) != session_id:
         raise TokenInvalidError()
     revoke_session(session_id)
-    # Only this device's sockets close; the user's other sessions stay connected.
     disconnect_realtime(session_id=session_id)
 
 
@@ -130,8 +121,6 @@ def change_password(*, user: CustomUser, current_password: str, new_password: st
             raise serializers.ValidationError({"current_password": ["Current password is incorrect"]})
         old_version = password_version(locked)
         locked.set_password(new_password)
-        # Stored before the new password commits: if Redis is down nothing changes, and if the save rolls
-        # back the exemption points at a password that never went live, so it can never match.
         keep_session_on_password_change(
             locked.pk, session_id=session_id, old_version=old_version, new_version=password_version(locked)
         )

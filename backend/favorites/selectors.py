@@ -11,7 +11,6 @@ MODELS = {
 
 def favorite_ids(*, user, kind: str, object_ids) -> set[int] | None:
     """Which of `object_ids` this viewer has hearted, for the is_favorite flag on public lists."""
-    # None, not an empty set: is_favorite is null unless a customer is signed in.
     if user is None or not getattr(user, "is_authenticated", False):
         return None
     if getattr(getattr(user, "role", None), "code", None) != RoleCode.CUSTOMER:
