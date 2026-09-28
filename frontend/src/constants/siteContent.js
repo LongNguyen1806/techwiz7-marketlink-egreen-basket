@@ -3,13 +3,13 @@ export const DEFAULT_BOOKING_HORIZON_DAYS = 7;
 export const LAST_UPDATED = { privacy: '27/09/2026' };
 
 export const CONTACT = {
-  address: 'Ben Thanh Ward, District 1, Ho Chi Minh City, Vietnam',
+  address: 'FPT Aptech Ho Chi Minh, 21 Bis Hau Giang, Tan Son Nhat Ward, Ho Chi Minh City, Vietnam',
   email: 'support@marketlink.example',
   phone: '+84 28 0000 0000',
   hours: 'Every day, 06:00–18:00 (GMT+7)',
   replyTime: 'We reply to emails within one business day.',
-  latitude: 10.7725,
-  longitude: 106.698,
+  latitude: 10.8079,
+  longitude: 106.6631,
 };
 
 export const TEAM = [
@@ -28,6 +28,31 @@ export const TEAM = [
     role: 'Admin console & public pages',
     focus: 'Approvals, moderation, markets, reports and the pages you are reading.',
   },
+  {
+    name: 'Khanh Danh',
+    role: 'UI/UX design',
+    focus: 'Page layouts, visual style and the mockups every screen was built from.',
+  },
+  {
+    name: 'Kim Nghi',
+    role: 'Research & documentation',
+    focus: 'Requirements, the analysis document and the project reports.',
+  },
+];
+
+export const ABOUT_REGIONS = ['Da Lat – Lam Dong', 'Dong Nai', 'Cu Chi', 'Mekong Delta'];
+
+export const ABOUT_CHALLENGES = [
+  {
+    tag: 'Market mornings · 5:00 – 9:00 AM',
+    title: 'Shoppers arrive to empty stalls',
+    text: 'You wake up early and travel across town, only to find your favourite farmer is not there that day or the best produce has already sold out.',
+  },
+  {
+    tag: 'Harvested the day before · trucked overnight',
+    title: 'Farmers take home unsold produce',
+    text: 'Without knowing how much to bring, farmers often end the morning with leftovers that wilt in the heat and get sold off cheaply or thrown away.',
+  },
 ];
 
 export const howItWorks = (horizonDays = DEFAULT_BOOKING_HORIZON_DAYS) => [
@@ -43,13 +68,6 @@ export const howItWorks = (horizonDays = DEFAULT_BOOKING_HORIZON_DAYS) => [
     title: 'Pick up at the market',
     text: 'Go to the stall in your slot, check your produce and pay when you collect.',
   },
-];
-
-export const VALUES = [
-  { title: 'Fresh and local', text: 'Produce comes from farmers who sell at markets near you, not from a warehouse.' },
-  { title: 'Fair to farmers', text: 'Stalls know what is reserved before market day, so they pick and bring what is wanted.' },
-  { title: 'Checked listings', text: 'Every stall is approved by our team, and every new listing is reviewed before shoppers see it.' },
-  { title: 'Pay at the stall', text: 'No card details online. You pay the farmer in person when you collect.' },
 ];
 
 export const faq = (horizonDays = DEFAULT_BOOKING_HORIZON_DAYS) => [
