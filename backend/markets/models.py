@@ -79,12 +79,27 @@ class MarketOperatingDay(BaseModel):
         return f"{self.market_id} - {self.get_day_of_week_display()}"
 
 
+class FarmerMarketStatus(models.TextChoices):
+    PENDING = "PENDING", "Waiting for approval"
+    APPROVED = "APPROVED", "Approved"
+
+
+class FarmerMarketQuerySet(models.QuerySet):
+    def selling(self):
+        return self.filter(status=FarmerMarketStatus.APPROVED, market__is_active=True)
+
+
 class FarmerMarket(BaseModel):
     farmer = models.ForeignKey(
         "accounts.FarmerProfile", on_delete=models.CASCADE, related_name="farmer_markets"
     )
     market = models.ForeignKey(Market, on_delete=models.RESTRICT, related_name="farmer_markets")
     stall_label = models.CharField(max_length=100)
+    status = models.CharField(
+        max_length=10, choices=FarmerMarketStatus.choices, default=FarmerMarketStatus.APPROVED
+    )
+
+    objects = FarmerMarketQuerySet.as_manager()
 
     history = HistoricalRecords(
         table_name="farmer_market_histories",
@@ -93,11 +108,11 @@ class FarmerMarket(BaseModel):
 
     class Meta:
         db_table = "farmer_markets"
+        indexes = [
+            models.Index(fields=["status"], name="fm_status_idx"),
+        ]
         constraints = [
-            # A stall trades at exactly one market; moving elsewhere is a fresh registration.
-            # Unique on the farmer alone, which also subsumes the old (farmer, market) pair
-            # constraint, so that one is gone rather than left as a second index saying less.
-            models.UniqueConstraint(fields=["farmer"], name="fm_uniq_farmer"),
+            models.UniqueConstraint(fields=["farmer", "market"], name="fm_uniq_farmer_market"),
         ]
 
     def __str__(self) -> str:

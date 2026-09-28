@@ -5,7 +5,9 @@ from django.db.models import (
     BooleanField,
     Case,
     Count,
+    Exists,
     F,
+    FloatField,
     IntegerField,
     OuterRef,
     Prefetch,
@@ -25,7 +27,7 @@ from marketlink_core.geo import distance_km
 from marketlink_core.policies.roles import RoleCode
 from marketlink_core.ordering import both_directions, resolve_ordering
 from marketlink_core.shortcuts import get_or_404
-from markets.models import FarmerClosure, FarmerMarket, PickupSlot
+from markets.models import FarmerClosure, FarmerMarket, FarmerMarketStatus, PickupSlot
 from orders.admin_selectors import AT_RISK_STATUSES, at_risk_threshold, at_risk_window_start
 from orders.models import OPEN_STATUSES, Order, OrderStatus
 
@@ -119,7 +121,11 @@ def public_farmer_base() -> QuerySet[FarmerProfile]:
     # §6.2: a farmer is public only while APPROVED and their account is enabled.
     visible_review = Q(orders__farmer_review__is_hidden_by_admin=False)
     return (
-        FarmerProfile.objects.filter(status=FarmerStatus.APPROVED, user__is_active=True)
+        FarmerProfile.objects.filter(
+            Exists(FarmerMarket.objects.selling().filter(farmer_id=OuterRef("pk"))),
+            status=FarmerStatus.APPROVED,
+            user__is_active=True,
+        )
         .select_related("user")
         .annotate(
             rating_avg=Avg("orders__farmer_review__rating", filter=visible_review),
@@ -146,18 +152,26 @@ def public_farmers(
     *, q=None, market_id=None, day=None, category_id=None, coordinates=None, ordering=None
 ) -> QuerySet[FarmerProfile]:
     queryset = public_farmer_base()
+    selling = FarmerMarket.objects.selling().filter(farmer_id=OuterRef("pk"))
     if q:
         # Not the farmer's own address: searching it would locate their home.
         queryset = queryset.filter(
-            Q(stall_name__icontains=q) | Q(farmer_markets__market__name__icontains=q)
+            Q(stall_name__icontains=q) | Q(Exists(selling.filter(market__name__icontains=q)))
         )
     if market_id is not None:
-        queryset = queryset.filter(farmer_markets__market_id=market_id)
+        queryset = queryset.filter(Exists(selling.filter(market_id=market_id)))
     if day is not None:
         queryset = queryset.filter(
+            Exists(
+                PickupSlot.objects.filter(
+                    farmer_market__farmer_id=OuterRef("pk"),
+                    farmer_market__status=FarmerMarketStatus.APPROVED,
+                    farmer_market__market__is_active=True,
+                    day_of_week=day,
+                    is_active=True,
+                )
+            ),
             operating_days__contains=[day],
-            farmer_markets__pickup_slots__day_of_week=day,
-            farmer_markets__pickup_slots__is_active=True,
         )
     if category_id is not None:
         queryset = queryset.filter(
@@ -168,15 +182,16 @@ def public_farmers(
         )
     if coordinates is not None:
         lat, lng = coordinates
-        # Distance to the market the stall trades at (one per farmer), where the shopper goes.
-        queryset = queryset.annotate(
-            distance=distance_km(
-                lat=lat,
-                lng=lng,
-                lat_field="farmer_markets__market__latitude",
-                lng_field="farmer_markets__market__longitude",
+        nearest = (
+            selling.annotate(
+                distance=distance_km(
+                    lat=lat, lng=lng, lat_field="market__latitude", lng_field="market__longitude"
+                )
             )
+            .order_by("distance")
+            .values("distance")[:1]
         )
+        queryset = queryset.annotate(distance=Subquery(nearest, output_field=FloatField()))
     # ordering=distance needs coordinates; without them it falls back to name.
     # No explicit sort means the home page, which wants the busiest stalls first.
     key = ordering if ordering in FARMER_ORDERING else "popular"
@@ -191,7 +206,8 @@ def public_farmer(*, farmer_id: int) -> FarmerProfile:
 
 def farmer_market_rows(*, farmer_ids) -> dict[int, list[dict]]:
     rows = (
-        FarmerMarket.objects.filter(farmer_id__in=set(farmer_ids), market__is_active=True)
+        FarmerMarket.objects.selling()
+        .filter(farmer_id__in=set(farmer_ids))
         .select_related("market")
         .order_by("market__name")
     )
@@ -222,7 +238,8 @@ def farmer_closure_map(*, farmer_ids) -> dict[int, list[FarmerClosure]]:
 
 def pickup_windows(*, farmer_id: int) -> list[dict]:
     rows = (
-        FarmerMarket.objects.filter(farmer_id=farmer_id, market__is_active=True)
+        FarmerMarket.objects.selling()
+        .filter(farmer_id=farmer_id)
         .select_related("market")
         .prefetch_related(
             Prefetch(

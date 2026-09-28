@@ -5,3 +5,122 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+.farmer-products-page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.farmer-products-page__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-card);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.farmer-products-page__chip:hover:not(:disabled) {
+  border-color: var(--color-primary-500);
+}
+
+.farmer-products-page__chip.is-active {
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+}
+
+.farmer-products-page__chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.farmer-products-page__chip-note {
+  font-weight: var(--weight-normal);
+}
+
+.farmer-products-page__chip-count {
+  min-width: 1.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-muted);
+  padding: 0 var(--space-2);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+.farmer-products-page__chip.is-active .farmer-products-page__chip-count {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.farmer-products-page__market-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  max-width: 14rem;
+}
+
+.farmer-products-page__market-tag {
+  border-radius: var(--radius-full);
+  background-color: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  padding: 0.125rem var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-primary-700);
+  white-space: nowrap;
+}
+
+.dark .farmer-products-page__market-tag {
+  color: var(--color-primary-300);
+}
+
+.farmer-products-page__select-cell {
+  width: 2.5rem;
+}
+
+.farmer-products-page__checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary-600);
+  cursor: pointer;
+}
+
+.farmer-products-page__row--selected {
+  background-color: color-mix(in srgb, var(--color-primary-500) 6%, transparent);
+}
+
+.farmer-products-page__bulk-bar {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-primary-500);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+  padding: var(--space-2) var(--space-3);
+}
+
+.farmer-products-page__bulk-count {
+  margin-right: var(--space-2);
+  font-weight: var(--weight-semibold);
+}
+
+.farmer-products-page__more-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.farmer-products-page__danger-item {
+  color: var(--color-destructive, #dc2626);
+}

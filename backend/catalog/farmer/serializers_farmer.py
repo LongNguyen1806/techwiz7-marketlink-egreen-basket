@@ -92,7 +92,7 @@ class FarmerProductSerializer(serializers.ModelSerializer):
         return None  # only meaningful for customers
 
     def get_markets(self, obj: Product) -> list[dict[str, Any]]:
-        return self._metrics(obj)["markets"]
+        return self._metrics(obj)["markets"].get(obj.id, [])
 
     def get_held_quantity(self, obj: Product) -> int:
         return self._metrics(obj)["held"].get(obj.id, 0)
@@ -122,6 +122,9 @@ class FarmerProductCreateSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=1000, required=False, allow_blank=True, allow_null=True)
     image = serializers.FileField(required=False, allow_null=True)
     is_available = serializers.BooleanField(required=False, default=True)
+    market_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, allow_empty=False
+    )
 
     def validate_category_id(self, value: int) -> int:
         if not Category.objects.filter(id=value, is_active=True).exists():
@@ -160,6 +163,9 @@ class FarmerProductUpdateSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=1000, required=False, allow_blank=True, allow_null=True)
     image = serializers.FileField(required=False, allow_null=True)
     is_available = serializers.BooleanField(required=False)
+    market_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, allow_empty=False
+    )
 
     def validate_category_id(self, value: int) -> int:
         if not Category.objects.filter(id=value, is_active=True).exists():
@@ -169,6 +175,25 @@ class FarmerProductUpdateSerializer(serializers.Serializer):
     def validate_image(self, value: Any) -> Any:
         # The re-encoded copy is stored, never the uploaded bytes.
         return validate_image_upload(value) if value else value
+
+
+BULK_ACTIONS = ("sold_out", "pause", "resume", "set_markets")
+BULK_LIMIT = 100
+
+
+class FarmerProductBulkSerializer(serializers.Serializer):
+    product_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), allow_empty=False, max_length=BULK_LIMIT
+    )
+    action = serializers.ChoiceField(choices=BULK_ACTIONS)
+    market_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, allow_empty=False
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs["action"] == "set_markets" and not attrs.get("market_ids"):
+            raise serializers.ValidationError({"market_ids": ["Choose at least one market."]})
+        return attrs
 
 
 class WeeklyTemplateRowSerializer(serializers.Serializer):

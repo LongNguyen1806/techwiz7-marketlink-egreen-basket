@@ -45,14 +45,19 @@ function readGroupErrors(fieldErrors, bodyGroups) {
 }
 
 function PickupPicker({ group, selection, onChange, error }) {
-  const { data: options, isLoading } = usePickupOptions(group.farmer_id);
+  const { data: options, isLoading } = usePickupOptions(
+    group.farmer_id,
+    group.lines.map((line) => line.product_id),
+  );
   const now = useNow();
 
   if (isLoading) return <PageSkeleton />;
   if (!options?.length) {
     return (
       <p className="checkout-page__none">
-        This stall has no pickup window in the next few days. Remove its items to continue.
+        {group.lines.length > 1
+          ? 'No pickup window fits all of these items in the next few days. Some may only be sold at other markets: remove an item, or order it separately.'
+          : 'This stall has no pickup window for this item in the next few days. Remove it to continue.'}
       </p>
     );
   }

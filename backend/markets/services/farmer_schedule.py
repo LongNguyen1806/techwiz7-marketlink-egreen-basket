@@ -18,8 +18,17 @@ from marketlink_core.exceptions import (
     ResourceNotFoundError,
     UnprocessableEntityError,
 )
-from marketlink_core.history import delete_with_history
-from markets.models import FarmerClosure, FarmerMarket, Market, MarketOperatingDay, PickupSlot
+from marketlink_core.history import delete_with_history, save_with_history
+from markets.models import (
+    FarmerClosure,
+    FarmerMarket,
+    FarmerMarketStatus,
+    Market,
+    MarketOperatingDay,
+    PickupSlot,
+)
+from notifications.models import NotificationType
+from notifications.services import notify
 from orders.models import OPEN_STATUSES, Order
 from orders.services.expiry import expire_overdue_orders
 from orders.services.fsm import run_with_retry_if_top_level
@@ -67,7 +76,12 @@ def join_market(*, farmer_id: int, market_id: int, stall_label: str) -> FarmerMa
                 raise _invalid({"market_id": ["This market is not available."]})
             if FarmerMarket.objects.filter(farmer_id=farmer_id, market_id=market_id).exists():
                 raise _invalid({"market_id": ["You already sell at this market."]})
-            return FarmerMarket.objects.create(farmer_id=farmer_id, market=market, stall_label=stall_label)
+            return FarmerMarket.objects.create(
+                farmer_id=farmer_id,
+                market=market,
+                stall_label=stall_label,
+                status=FarmerMarketStatus.PENDING,
+            )
 
     try:
         return run_with_retry_if_top_level(_execute)
@@ -114,6 +128,64 @@ def leave_market(*, farmer_id: int, farmer_market_id: int) -> None:
             delete_with_history(farmer_market, reason=reason)
 
     run_with_retry_if_top_level(_execute)
+
+
+def _lock_pending_request(farmer_market_id: int) -> FarmerMarket:
+    farmer_market = (
+        FarmerMarket.objects.select_for_update(of=("self",))
+        .select_related("market", "farmer__user")
+        .filter(pk=farmer_market_id)
+        .first()
+    )
+    if farmer_market is None:
+        raise ResourceNotFoundError("Market registration not found.", code=ErrorCode.NOT_FOUND)
+    if farmer_market.status != FarmerMarketStatus.PENDING:
+        raise UnprocessableEntityError(
+            "This market registration has already been decided.",
+            code=ErrorCode.INVALID_STATUS_TRANSITION,
+        )
+    return farmer_market
+
+
+@transaction.atomic
+def approve_market_request(*, farmer_market_id: int, actor) -> FarmerMarket:
+    farmer_market = _lock_pending_request(farmer_market_id)
+    farmer_market.status = FarmerMarketStatus.APPROVED
+    save_with_history(
+        farmer_market,
+        update_fields=["status", "updated_at"],
+        reason="Market registration approved by Admin",
+        user=actor,
+    )
+    notify(
+        recipient=farmer_market.farmer.user,
+        event_type=NotificationType.STALL_MARKET_APPROVED,
+        context={"market_name": farmer_market.market.name, "stall_label": farmer_market.stall_label},
+    )
+    return farmer_market
+
+
+@transaction.atomic
+def reject_market_request(*, farmer_market_id: int, reason: str, actor) -> dict[str, Any]:
+    farmer_market = _lock_pending_request(farmer_market_id)
+    summary = {
+        "farmer_id": farmer_market.farmer_id,
+        "market_id": farmer_market.market_id,
+        "market_name": farmer_market.market.name,
+    }
+    history_reason = "Market registration refused by Admin"
+    for slot in PickupSlot.objects.select_for_update(of=("self",)).filter(
+        farmer_market=farmer_market
+    ).order_by("id"):
+        delete_with_history(slot, reason=history_reason, user=actor)
+    recipient = farmer_market.farmer.user
+    delete_with_history(farmer_market, reason=history_reason, user=actor)
+    notify(
+        recipient=recipient,
+        event_type=NotificationType.STALL_MARKET_REJECTED,
+        context={"market_name": summary["market_name"], "reason": reason},
+    )
+    return summary
 
 
 # --- Pickup slots (FA-08, FA-09, FA-10) ---

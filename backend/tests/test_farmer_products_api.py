@@ -60,6 +60,17 @@ class FarmerProductsAPITestCase(TestCase):
             order_cutoff_hours=12,
             operating_days=[1, 2, 3, 4, 5, 6, 7],
         )
+        self.home_market = Market.objects.create(
+            name="Home Market",
+            address="9 Home Street",
+            latitude=Decimal("10.7"),
+            longitude=Decimal("106.6"),
+            open_time=time(6, 0),
+            close_time=time(12, 0),
+        )
+        FarmerMarket.objects.create(
+            farmer=self.farmer_profile, market=self.home_market, stall_label="Home row, Stall 1"
+        )
 
         # Farmer 2 (Pending approval)
         self.pending_farmer_user = CustomUser.objects.create(
@@ -176,7 +187,11 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(tomato_item["held_quantity"], 0)
         self.assertNotIn("available_stock", tomato_item)
         self.assertEqual(
-            tomato_item["markets"], [{"market_id": market.id, "market_name": "Downtown Market", "days": [1]}]
+            tomato_item["markets"],
+            [
+                {"market_id": market.id, "market_name": "Downtown Market", "days": [1]},
+                {"market_id": self.home_market.id, "market_name": "Home Market", "days": []},
+            ],
         )
 
     def test_fa11_filtering_by_state(self):
@@ -436,7 +451,13 @@ class FarmerProductsAPITestCase(TestCase):
         self.assertEqual(data["farmer"], {"id": self.farmer_profile.pk, "stall_name": "Green Garden"})
         self.assertIsNone(data["rating_avg"])
         self.assertEqual(data["rating_count"], 0)
-        self.assertEqual(data["markets"], [{"market_id": market.id, "market_name": "Riverside Market", "days": [3]}])
+        self.assertEqual(
+            data["markets"],
+            [
+                {"market_id": self.home_market.id, "market_name": "Home Market", "days": []},
+                {"market_id": market.id, "market_name": "Riverside Market", "days": [3]},
+            ],
+        )
 
         sold_out = self.client.get(f"/api/farmer/products/{self.prod2.id}/").data["data"]
         self.assertEqual(sold_out["availability"], "OUT_OF_STOCK")

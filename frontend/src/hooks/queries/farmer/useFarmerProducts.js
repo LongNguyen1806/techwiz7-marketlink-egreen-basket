@@ -33,6 +33,24 @@ export function useFarmerProductList(filters) {
 }
 
 
+export function useFarmerProductCounts(filters) {
+  return useQuery({
+    queryKey: [...farmerKeys.products.all(), 'counts', filters],
+    queryFn: ({ signal }) => farmerApi.getProductCounts(filters, { signal }),
+    placeholderData: keepPreviousData,
+    staleTime: STALE.SEARCH,
+  });
+}
+
+export function useBulkProducts() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({
+    mutationFn: farmerApi.bulkProducts,
+    onSuccess: ({ updated }) => notify.success(`${updated} product${updated === 1 ? '' : 's'} updated`),
+    onSettled: invalidate,
+  });
+}
+
 export function useFarmerProduct(id, { enabled = true } = {}) {
   const productId = Number(id);
   return useQuery({
@@ -111,7 +129,7 @@ export function useSaveFarmerProduct(productId) {
       queryClient.setQueryData(farmerKeys.products.detail(product.id), product);
       if (!isEdit) {
         notify.success('Produce submitted for review', {
-          description: 'Shoppers will see it once an administrator approves it.',
+          description: 'It is checked automatically; most listings go on sale within minutes.',
         });
       } else if (product.sent_for_review) {
         notify.success('Changes saved and sent for review', {

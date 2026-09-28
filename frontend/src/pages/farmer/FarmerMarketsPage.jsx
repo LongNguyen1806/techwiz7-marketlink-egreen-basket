@@ -101,11 +101,11 @@ function JoinMarketPanel({ joinedMarketIds, onJoined }) {
         ))}
       </select>
       <FieldError error={errors.market_id} />
-      <Input label="Stall label (e.g. Aisle A · Stall 12)" maxLength={100} {...register('stall_label')} />
+      <Input label="Stall number(s) (e.g. Aisle A · Stalls 12–13)" maxLength={100} {...register('stall_label')} />
       <FieldError error={errors.stall_label} />
       <FieldError error={errors.root?.server} />
       <Button type="submit" className="page-primitive__btn-full" loading={join.isPending}>
-        Add market
+        Send for approval
       </Button>
     </form>
   );
@@ -141,7 +141,7 @@ function StallLabelForm({ farmerMarket }) {
   return (
     <form className="page-primitive__form-field" onSubmit={onSubmit} noValidate>
       <div className="page-primitive__inline-row">
-        <Input label="Stall label" maxLength={100} {...register('stall_label')} />
+        <Input label="Stall number(s)" maxLength={100} {...register('stall_label')} />
         <Button type="submit" loading={update.isPending} disabled={!isDirty}>
           Save
         </Button>
@@ -249,6 +249,12 @@ function MarketDetail({ farmerMarket, farmerDays, onLeft }) {
       {!farmerMarket.is_market_active ? (
         <p className="page-primitive__warn-banner">
           An administrator has closed this market. Its pickup slots are off and new orders can&apos;t be placed here.
+        </p>
+      ) : null}
+      {farmerMarket.status === 'PENDING' ? (
+        <p className="page-primitive__warn-banner">
+          Waiting for an administrator to approve your stall here. You can set up pickup slots now; shoppers can
+          book them once the market is approved.
         </p>
       ) : null}
 
@@ -418,7 +424,7 @@ export default function FarmerMarketsPage() {
     <div className="farmer-markets-page">
       <PageHeader
         title="Markets & pickup times"
-        description="Join markets, set your stall label, and publish bookable pickup slots."
+        description="Ask to join markets, set your stall number(s), and publish bookable pickup slots. A new market opens to shoppers once an administrator approves it."
       />
 
       <div className="page-primitive__layout-5">
@@ -445,6 +451,7 @@ export default function FarmerMarketsPage() {
                 <p className="page-primitive__muted-sm">
                   {item.stall_label}
                   {!item.is_market_active ? ' · Closed by admin' : ''}
+                  {item.status === 'PENDING' ? ' · Waiting for approval' : ''}
                 </p>
               </button>
             ))

@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -12,6 +12,7 @@ from accounts.models import FarmerProfile, FarmerStatus
 from catalog.ai_review.rules import run_rules
 from catalog.ai_review.types import ListingInput, verdict_for
 from catalog.farmer.serializers_farmer import (
+    FarmerProductBulkSerializer,
     FarmerProductCreateSerializer,
     FarmerProductPrecheckSerializer,
     FarmerProductSerializer,
@@ -24,6 +25,8 @@ from catalog.services.farmer_product import (
     build_product_metrics,
     notify_restock_for_product,
     preview_weekly_template,
+    set_product_markets,
+    validate_market_ids,
 )
 from catalog.ai_review.service import close_ai_flags, schedule_listing_review
 from catalog.services.product_moderation_service import needs_review_again, send_back_for_review
@@ -38,6 +41,7 @@ from marketlink_core.history import save_with_history
 from marketlink_core.pagination import StandardPagination
 from marketlink_core.permissions import IsFarmer
 from marketlink_core.responses import api_response
+from markets.models import FarmerMarket
 from orders.farmer.serializers_farmer import FarmerOrderSummarySerializer
 from orders.services.fsm import run_with_retry_if_top_level
 
@@ -65,6 +69,66 @@ def _reviewable_changes(product: Product, before: dict[str, Any], had_image: boo
     if "image" in validated and (validated["image"] or had_image):
         changed.append("image")
     return changed
+
+
+ACTIVE = Q(is_archived=False)
+STATE_FILTERS = {
+    "in_stock": Q(
+        is_archived=False,
+        is_hidden_by_admin=False,
+        is_available=True,
+        stock_quantity__gt=0,
+        review_status=ReviewStatus.APPROVED,
+    ),
+    "out_of_stock": Q(is_archived=False, is_hidden_by_admin=False, stock_quantity=0),
+    "unavailable": Q(is_archived=False, is_available=False),
+    "hidden": Q(is_hidden_by_admin=True),
+    "archived": Q(is_archived=True),
+    "in_review": Q(is_archived=False, review_status=ReviewStatus.PENDING),
+    "rejected": Q(is_archived=False, review_status=ReviewStatus.REJECTED),
+}
+
+
+def _positive_int(raw: str | None, field: str, errors: dict[str, list[str]]) -> int | None:
+    if raw in (None, ""):
+        return None
+    if not raw.isdigit() or int(raw) < 1:
+        errors[field] = ["Must be a positive integer."]
+        return None
+    return int(raw)
+
+
+def _parse_list_filters(params) -> dict[str, Any]:
+    errors: dict[str, list[str]] = {}
+    category_id = _positive_int(params.get("category_id"), "category_id", errors)
+    market_id = _positive_int(params.get("market_id"), "market_id", errors)
+    state = params.get("state") or None
+    if state and state not in PRODUCT_STATES:
+        errors["state"] = [f"Use one of: {', '.join(PRODUCT_STATES)}."]
+    if errors:
+        raise BusinessValidationError(
+            "Invalid query parameters.", code=ErrorCode.VALIDATION_ERROR, errors=errors
+        )
+    return {
+        "q": params.get("q", "").strip(),
+        "category_id": category_id,
+        "market_id": market_id,
+        "state": state,
+    }
+
+
+def _farmer_products(profile: FarmerProfile, filters: dict[str, Any]):
+    qs = Product.objects.filter(farmer=profile).select_related("category", "farmer")
+    if filters["q"]:
+        qs = qs.filter(Q(name__icontains=filters["q"]) | Q(description__icontains=filters["q"]))
+    if filters["category_id"] is not None:
+        qs = qs.filter(category_id=filters["category_id"])
+    if filters["market_id"] is not None:
+        stall = FarmerMarket.objects.filter(farmer=profile, market_id=filters["market_id"]).first()
+        if stall is None:
+            return qs.none()
+        qs = qs.exclude(market_exclusions__farmer_market_id=stall.pk)
+    return qs
 
 
 class FarmerBaseProductView(APIView):
@@ -118,54 +182,8 @@ class FarmerProductListView(FarmerBaseProductView):
     def get(self, request: Request) -> Response:
         """FA-11: list the farmer's products with search, category and state filters."""
         profile = self._get_farmer_profile(request)
-        params = request.query_params
-        errors: dict[str, list[str]] = {}
-
-        category_id = None
-        raw_category = params.get("category_id")
-        if raw_category not in (None, ""):
-            if not raw_category.isdigit() or int(raw_category) < 1:
-                errors["category_id"] = ["Must be a positive integer."]
-            else:
-                category_id = int(raw_category)
-        state = params.get("state") or None
-        if state and state not in PRODUCT_STATES:
-            errors["state"] = [f"Use one of: {', '.join(PRODUCT_STATES)}."]
-        if errors:
-            raise BusinessValidationError(
-                "Invalid query parameters.", code=ErrorCode.VALIDATION_ERROR, errors=errors
-            )
-
-        qs = Product.objects.filter(farmer=profile).select_related("category", "farmer")
-        q = params.get("q", "").strip()
-        if q:
-            qs = qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
-        if category_id is not None:
-            qs = qs.filter(category_id=category_id)
-
-        if state == "in_stock":
-            # "On sale" to the farmer means shoppers can see it, so a listing still in review is not here.
-            qs = qs.filter(
-                is_archived=False,
-                is_hidden_by_admin=False,
-                is_available=True,
-                stock_quantity__gt=0,
-                review_status=ReviewStatus.APPROVED,
-            )
-        elif state == "out_of_stock":
-            qs = qs.filter(is_archived=False, is_hidden_by_admin=False, stock_quantity=0)
-        elif state == "unavailable":
-            qs = qs.filter(is_archived=False, is_available=False)
-        elif state == "hidden":
-            qs = qs.filter(is_hidden_by_admin=True)
-        elif state == "archived":
-            qs = qs.filter(is_archived=True)
-        elif state == "in_review":
-            qs = qs.filter(is_archived=False, review_status=ReviewStatus.PENDING)
-        elif state == "rejected":
-            qs = qs.filter(is_archived=False, review_status=ReviewStatus.REJECTED)
-        else:
-            qs = qs.filter(is_archived=False)  # default excludes archived products
+        filters = _parse_list_filters(request.query_params)
+        qs = _farmer_products(profile, filters).filter(STATE_FILTERS.get(filters["state"], ACTIVE))
 
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(qs.order_by("-created_at", "-id"), request)
@@ -179,27 +197,38 @@ class FarmerProductListView(FarmerBaseProductView):
         """FA-12: create a product (APPROVED farmer only)."""
         profile = self._get_farmer_profile(request)
         self._check_can_write(profile, require_approved=True)
+        if not FarmerMarket.objects.selling().filter(farmer=profile).exists():
+            raise UnprocessableEntityError(
+                "You can list products once a market has approved your stall.",
+                code=ErrorCode.FAILED_PRECONDITION,
+            )
 
         serializer = FarmerProductCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated = serializer.validated_data
+        market_ids = validated.get("market_ids")
+        if market_ids is not None:
+            validate_market_ids(farmer=profile, market_ids=market_ids)
 
-        product = Product.objects.create(
-            farmer=profile,
-            category=Category.objects.get(id=validated["category_id"]),
-            name=validated["name"].strip(),
-            price=validated["price"],
-            unit=validated["unit"],
-            stock_quantity=validated["stock_quantity"],
-            weekly_default_quantity=validated.get("weekly_default_quantity"),
-            min_per_order=validated.get("min_per_order", 1),
-            max_per_order=validated.get("max_per_order"),
-            description=validated.get("description"),
-            image=validated.get("image"),
-            is_available=validated.get("is_available", True),
-        )
-        # New listings start PENDING; the AI advises the admin in the background.
-        schedule_listing_review(product.pk)
+        with transaction.atomic():
+            product = Product.objects.create(
+                farmer=profile,
+                category=Category.objects.get(id=validated["category_id"]),
+                name=validated["name"].strip(),
+                price=validated["price"],
+                unit=validated["unit"],
+                stock_quantity=validated["stock_quantity"],
+                weekly_default_quantity=validated.get("weekly_default_quantity"),
+                min_per_order=validated.get("min_per_order", 1),
+                max_per_order=validated.get("max_per_order"),
+                description=validated.get("description"),
+                image=validated.get("image"),
+                is_available=validated.get("is_available", True),
+            )
+            if market_ids is not None:
+                set_product_markets(product=product, market_ids=market_ids)
+            # New listings start PENDING; the AI advises the admin in the background.
+            schedule_listing_review(product.pk)
         return api_response(
             message="Product created successfully.",
             data=self._product_data(request, profile, product),
@@ -255,6 +284,8 @@ class FarmerProductDetailView(FarmerBaseProductView):
                     )
                 if changed:
                     product.save(update_fields=[*changed, "updated_at"])
+                if "market_ids" in validated:
+                    set_product_markets(product=product, market_ids=validated["market_ids"])
 
                 # Changing what the listing is (name, description, image, category) takes it off
                 # the shopper side until an admin approves it again; open orders keep going.
@@ -311,6 +342,75 @@ class FarmerProductMarkSoldOutView(FarmerBaseProductView):
 
         product = run_with_retry_if_top_level(_execute)
         return api_response(message="OK", data=self._product_data(request, profile, product), request=request)
+
+
+class FarmerProductCountsView(FarmerBaseProductView):
+    def get(self, request: Request) -> Response:
+        profile = self._get_farmer_profile(request)
+        filters = _parse_list_filters(request.query_params)
+        counts = _farmer_products(profile, filters).aggregate(
+            all=Count("id", filter=ACTIVE),
+            **{state: Count("id", filter=condition) for state, condition in STATE_FILTERS.items()},
+        )
+        return api_response(message="OK", data=counts, request=request)
+
+
+BULK_MESSAGES = {
+    "sold_out": "Marked sold out.",
+    "pause": "Paused.",
+    "resume": "Open for sale again.",
+    "set_markets": "Markets updated.",
+}
+
+
+class FarmerProductBulkView(FarmerBaseProductView):
+    def post(self, request: Request) -> Response:
+        profile = self._get_farmer_profile(request)
+        serializer = FarmerProductBulkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        action = serializer.validated_data["action"]
+        product_ids = serializer.validated_data["product_ids"]
+        market_ids = serializer.validated_data.get("market_ids")
+        self._check_can_write(profile, require_approved=action != "sold_out")
+        if action == "set_markets":
+            validate_market_ids(farmer=profile, market_ids=market_ids)
+
+        def _execute() -> int:
+            with transaction.atomic():
+                products = list(
+                    Product.objects.select_for_update(of=("self",))
+                    .select_related("farmer")
+                    .filter(farmer=profile, pk__in=product_ids, is_archived=False)
+                    .order_by("id")
+                )
+                updated = 0
+                for product in products:
+                    if action == "sold_out":
+                        if product.stock_quantity == 0:
+                            continue
+                        product.stock_quantity = 0
+                        save_with_history(
+                            product, update_fields=["stock_quantity", "updated_at"], reason="Marked sold out by farmer"
+                        )
+                    elif product.is_hidden_by_admin:
+                        continue
+                    elif action in ("pause", "resume"):
+                        open_for_sale = action == "resume"
+                        if product.is_available == open_for_sale:
+                            continue
+                        product.is_available = open_for_sale
+                        save_with_history(
+                            product,
+                            update_fields=["is_available", "updated_at"],
+                            reason="Opened for sale by farmer" if open_for_sale else "Paused by farmer",
+                        )
+                    else:
+                        set_product_markets(product=product, market_ids=market_ids)
+                    updated += 1
+                return updated
+
+        updated = run_with_retry_if_top_level(_execute)
+        return api_response(message=BULK_MESSAGES[action], data={"updated": updated}, request=request)
 
 
 class FarmerWeeklyTemplatePreviewView(FarmerBaseProductView):

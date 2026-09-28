@@ -5,6 +5,7 @@ from system.views import (
     AdminFlagListView,
     AdminFlagResolveView,
     AdminSettingsView,
+    ApprovalCountsView,
     AuditLogDetailView,
     AuditLogListView,
     DashboardOrdersByMonthView,
@@ -17,6 +18,7 @@ from system.views import (
 urlpatterns = [
     path("public/config/", PublicConfigView.as_view(), name="public-config"),
     path("admin/dashboard/", DashboardView.as_view(), name="admin-dashboard"),
+    path("admin/approvals/counts/", ApprovalCountsView.as_view(), name="admin-approval-counts"),
     path(
         "admin/dashboard/orders-by-day/",
         DashboardOrdersByMonthView.as_view(),

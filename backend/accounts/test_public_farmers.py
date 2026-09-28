@@ -7,7 +7,7 @@ from django.utils import timezone
 from accounts.models import FarmerStatus
 from catalog.models import Category, Product, ReviewStatus, Unit
 from favorites.models import FavoriteFarmer
-from markets.models import FarmerClosure, FarmerMarket, Market, PickupSlot
+from markets.models import FarmerClosure, FarmerMarket, FarmerMarketStatus, Market, PickupSlot
 
 LIST_URL = "public-farmer-list"
 DETAIL_URL = "public-farmer-detail"
@@ -98,7 +98,7 @@ def category(db):
 
 
 @pytest.mark.django_db
-def test_a_guest_can_list_approved_farmers(api_client, approved_farmer):
+def test_a_guest_can_list_approved_farmers(api_client, approved_farmer, stall):
     response = api_client.get(reverse(LIST_URL))
 
     assert response.status_code == 200
@@ -143,7 +143,7 @@ def test_operating_days_come_from_the_profile(api_client, approved_farmer, stall
 
 @pytest.mark.django_db
 def test_in_stock_count_ignores_hidden_and_sold_out_products(
-    api_client, approved_farmer, category
+    api_client, approved_farmer, stall, category
 ):
     Product.objects.create(
         review_status=ReviewStatus.APPROVED,
@@ -168,7 +168,7 @@ def test_in_stock_count_ignores_hidden_and_sold_out_products(
 
 @pytest.mark.django_db
 def test_the_rating_average_survives_the_product_count(
-    api_client, approved_farmer, category, market
+    api_client, approved_farmer, stall, category, market
 ):
     # Two multi-valued relations in one query would multiply rows and corrupt both numbers.
     from datetime import datetime
@@ -200,7 +200,7 @@ def test_the_rating_average_survives_the_product_count(
 
 
 @pytest.mark.django_db
-def test_upcoming_closures_respect_the_horizon(api_client, approved_farmer):
+def test_upcoming_closures_respect_the_horizon(api_client, approved_farmer, stall):
     today = timezone.localdate()
     soon = FarmerClosure.objects.create(
         farmer=approved_farmer,
@@ -290,18 +290,96 @@ def test_the_detail_adds_contact_details_and_pickup_windows(api_client, approved
 
 @pytest.mark.django_db
 def test_pickup_windows_skip_deactivated_markets(api_client, approved_farmer, stall, market):
+    other = Market.objects.create(
+        name="Riverside Market",
+        address="88 Riverside Road",
+        latitude="10.800000",
+        longitude="106.700000",
+        open_time=time(6, 0),
+        close_time=time(12, 0),
+    )
+    FarmerMarket.objects.create(farmer=approved_farmer, market=other, stall_label="Gate 2")
     market.is_active = False
     market.save(update_fields=["is_active"])
 
     data = api_client.get(reverse(DETAIL_URL, args=[approved_farmer.user_id])).data["data"]
 
-    assert data["pickup_windows"] == []
-    assert data["markets"] == []
+    assert [window["market_name"] for window in data["pickup_windows"]] == ["Riverside Market"]
+    assert [row["market_name"] for row in data["markets"]] == ["Riverside Market"]
+
+
+@pytest.mark.django_db
+def test_a_stall_whose_only_market_closed_is_no_longer_public(
+    api_client, approved_farmer, stall, market
+):
+    market.is_active = False
+    market.save(update_fields=["is_active"])
+
+    assert api_client.get(reverse(LIST_URL)).data["data"]["count"] == 0
+    assert api_client.get(reverse(DETAIL_URL, args=[approved_farmer.user_id])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_a_stall_waiting_for_its_first_market_is_not_public(api_client, approved_farmer, market):
+    FarmerMarket.objects.create(
+        farmer=approved_farmer,
+        market=market,
+        stall_label="Row B, Stall 12",
+        status=FarmerMarketStatus.PENDING,
+    )
+
+    assert api_client.get(reverse(LIST_URL)).data["data"]["count"] == 0
+    assert api_client.get(reverse(LIST_URL), {"q": "central market"}).data["data"]["count"] == 0
+    assert api_client.get(reverse(DETAIL_URL, args=[approved_farmer.user_id])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_a_pending_second_market_stays_out_of_the_public_profile(
+    api_client, approved_farmer, stall
+):
+    other = Market.objects.create(
+        name="Riverside Market",
+        address="88 Riverside Road",
+        latitude="10.800000",
+        longitude="106.700000",
+        open_time=time(6, 0),
+        close_time=time(12, 0),
+    )
+    FarmerMarket.objects.create(
+        farmer=approved_farmer, market=other, stall_label="Gate 2", status=FarmerMarketStatus.PENDING
+    )
+
+    data = api_client.get(reverse(DETAIL_URL, args=[approved_farmer.user_id])).data["data"]
+
+    assert [row["market_name"] for row in data["markets"]] == ["Central Market"]
+    assert api_client.get(reverse(LIST_URL), {"market_id": other.id}).data["data"]["count"] == 0
+
+
+@pytest.mark.django_db
+def test_a_stall_at_two_markets_is_listed_once_by_its_nearest_market(
+    api_client, approved_farmer, stall
+):
+    far = Market.objects.create(
+        name="Far Market",
+        address="200 Far Road",
+        latitude="11.500000",
+        longitude="107.500000",
+        open_time=time(6, 0),
+        close_time=time(12, 0),
+    )
+    FarmerMarket.objects.create(farmer=approved_farmer, market=far, stall_label="Far row")
+
+    results = api_client.get(
+        reverse(LIST_URL), {"lat": "10.762622", "lng": "106.660172", "ordering": "distance"}
+    ).data["data"]["results"]
+
+    assert [row["id"] for row in results] == [approved_farmer.user_id]
+    assert results[0]["distance_km"] == 0.0
 
 
 @pytest.mark.django_db
 def test_is_favorite_is_filled_in_for_a_signed_in_customer(
-    api_client, customer_user, approved_farmer
+    api_client, customer_user, approved_farmer, stall
 ):
     FavoriteFarmer.objects.create(customer=customer_user, farmer=approved_farmer)
     api_client.force_authenticate(user=customer_user)
@@ -324,11 +402,12 @@ def test_an_unknown_farmer_is_a_404(api_client):
 
 @pytest.mark.django_db
 def test_the_busiest_stall_comes_first_by_default(
-    api_client, approved_farmer, make_farmer, market, make_completed_order
+    api_client, approved_farmer, stall, make_farmer, market, make_completed_order
 ):
     quiet = make_farmer(email="quiet@marketlink.test", stall_name="Quiet Stall")
     quiet.status = FarmerStatus.APPROVED
     quiet.save(update_fields=["status"])
+    FarmerMarket.objects.create(farmer=quiet, market=market, stall_label="Row Q")
     for _ in range(3):
         make_completed_order(farmer=approved_farmer)
 
@@ -341,7 +420,7 @@ def test_the_busiest_stall_comes_first_by_default(
 
 @pytest.mark.django_db
 def test_a_sale_counts_double_a_review(
-    api_client, approved_farmer, make_farmer, make_completed_order
+    api_client, approved_farmer, stall, market, make_farmer, make_completed_order
 ):
     # Two sales, no reviews: 2x2 = 4.
     make_completed_order(farmer=approved_farmer)
@@ -351,6 +430,7 @@ def test_a_sale_counts_double_a_review(
     smaller = make_farmer(email="small@marketlink.test", stall_name="Small Stall")
     smaller.status = FarmerStatus.APPROVED
     smaller.save(update_fields=["status"])
+    FarmerMarket.objects.create(farmer=smaller, market=market, stall_label="Row S")
     make_completed_order(farmer=smaller, with_review=True)
 
     names = [
@@ -362,7 +442,7 @@ def test_a_sale_counts_double_a_review(
 
 @pytest.mark.django_db
 def test_enough_reviews_can_overturn_a_one_sale_lead(
-    api_client, approved_farmer, make_farmer, make_completed_order
+    api_client, approved_farmer, stall, market, make_farmer, make_completed_order
 ):
     # Four sales, nobody reviewed: 4x2 = 8.
     for _ in range(4):
@@ -373,6 +453,7 @@ def test_enough_reviews_can_overturn_a_one_sale_lead(
     talked_about = make_farmer(email="talked@marketlink.test", stall_name="Talked About")
     talked_about.status = FarmerStatus.APPROVED
     talked_about.save(update_fields=["status"])
+    FarmerMarket.objects.create(farmer=talked_about, market=market, stall_label="Row T")
     for _ in range(3):
         make_completed_order(farmer=talked_about, with_review=True)
 

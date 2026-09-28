@@ -33,7 +33,8 @@ export function useJoinMarket() {
       queryClient.setQueryData(farmerKeys.markets(), (markets) =>
         [...(markets ?? []), item].sort((a, b) => a.market.name.localeCompare(b.market.name)),
       );
-      notify.success(`You now sell at ${item.market.name}`);
+      queryClient.invalidateQueries({ queryKey: farmerKeys.profile() });
+      notify.success(`Request sent. You can sell at ${item.market.name} once an administrator approves it.`);
     },
   });
 }

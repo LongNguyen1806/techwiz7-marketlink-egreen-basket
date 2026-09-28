@@ -8,7 +8,7 @@ from django.utils import timezone
 from accounts.models import CustomerProfile, FarmerProfile, FarmerStatus
 from accounts.selectors import list_pending_farmers
 from marketlink_core.policies.roles import RoleCode
-from markets.models import Market
+from markets.models import FarmerMarket, FarmerMarketStatus, Market
 from accounts.selectors import list_customers_for_admin
 from catalog.models import Product, ReviewStatus
 from orders.models import Order, OrderStatus
@@ -106,6 +106,13 @@ def dashboard_snapshot() -> dict:
     }
 
 
+def approval_counts() -> dict:
+    stalls = FarmerProfile.objects.filter(status=FarmerStatus.PENDING).count()
+    products = Product.objects.filter(review_status=ReviewStatus.PENDING).count()
+    markets = FarmerMarket.objects.filter(status=FarmerMarketStatus.PENDING).count()
+    return {"stalls": stalls, "products": products, "markets": markets, "total": stalls + products + markets}
+
+
 def _needs_attention() -> dict:
     """The work queue. Every number here is something an admin can act on today."""
     return {
@@ -114,6 +121,9 @@ def _needs_attention() -> dict:
         ).count(),
         "products_awaiting_approval": Product.objects.filter(
             review_status=ReviewStatus.PENDING, is_archived=False
+        ).count(),
+        "market_requests_awaiting_approval": FarmerMarket.objects.filter(
+            status=FarmerMarketStatus.PENDING
         ).count(),
         "flags_open": open_flags().count(),
         "customers_at_risk": list_customers_for_admin(at_risk=True).count(),

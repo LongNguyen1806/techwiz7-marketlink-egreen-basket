@@ -53,6 +53,7 @@ export function makeProductSchema({ maxUploadMb = DEFAULT_MAX_UPLOAD_MB } = {}) 
       .nullable(),
     description: z.string().trim().max(1000, 'Description must be 1000 characters or fewer'),
     is_available: z.boolean(),
+    market_ids: z.array(z.number().int().positive()).min(1, 'Choose at least one market'),
     
     image: z
       .instanceof(File)
@@ -78,6 +79,7 @@ export const PRODUCT_DEFAULTS = {
   max_per_order: null,
   description: '',
   is_available: true,
+  market_ids: [],
   image: null,
 };
 
@@ -93,6 +95,7 @@ export function productToFormValues(product) {
     max_per_order: product.max_per_order ?? null,
     description: product.description ?? '',
     is_available: product.is_available,
+    market_ids: (product.markets ?? []).map((market) => market.market_id),
     image: null,
   };
 }

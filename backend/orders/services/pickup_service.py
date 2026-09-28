@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from django.utils import timezone
 
 from marketlink_core.exceptions import ErrorCode, UnprocessableEntityError
-from markets.models import FarmerClosure, MarketClosure, PickupSlot
+from markets.models import FarmerClosure, FarmerMarketStatus, MarketClosure, PickupSlot
 from markets.services.validation import validate_pickup_date
 from orders.constants import BOOKING_HORIZON_DAYS
 from orders.exceptions import CutoffPassedError, SlotNotAvailableError
@@ -42,12 +42,20 @@ def pickup_window(slot: PickupSlot, farmer, pickup_date: date) -> PickupWindow:
     )
 
 
-def _active_slots(farmer):
-    return (
+def _active_slots(farmer, product_ids=None):
+    slots = (
         PickupSlot.objects.select_related("farmer_market__market")
         .prefetch_related("farmer_market__market__operating_days")
-        .filter(farmer_market__farmer=farmer, is_active=True, farmer_market__market__is_active=True)
+        .filter(
+            farmer_market__farmer=farmer,
+            farmer_market__status=FarmerMarketStatus.APPROVED,
+            farmer_market__market__is_active=True,
+            is_active=True,
+        )
     )
+    if product_ids:
+        slots = slots.exclude(farmer_market__product_exclusions__product_id__in=list(product_ids))
+    return slots
 
 
 def _closures(farmer, market_ids, first: date, last: date):
@@ -119,12 +127,14 @@ def resolve_pickup(*, farmer, pickup_slot_id: int, pickup_date: date, now=None) 
     )
 
 
-def list_pickup_options(*, farmer, date_from: date | None = None, days: int = BOOKING_HORIZON_DAYS, now=None) -> list[dict]:
+def list_pickup_options(
+    *, farmer, date_from: date | None = None, days: int = BOOKING_HORIZON_DAYS, now=None, product_ids=None
+) -> list[dict]:
     now = now or timezone.now()
     today = timezone.localdate(now)
     first = max(date_from or today, today)
     last = min(first + timedelta(days=days - 1), today + timedelta(days=BOOKING_HORIZON_DAYS - 1))
-    slots = list(_active_slots(farmer).order_by("farmer_market__market__name", "start_time"))
+    slots = list(_active_slots(farmer, product_ids).order_by("farmer_market__market__name", "start_time"))
     if first > last or not slots:
         return []
     market_ranges, farmer_ranges = _closures(farmer, {slot.farmer_market.market_id for slot in slots}, first, last)

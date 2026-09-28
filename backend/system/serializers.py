@@ -61,11 +61,19 @@ class OrdersByStatusSerializer(serializers.Serializer):
     count = serializers.IntegerField()
 
 
+class ApprovalCountsSerializer(serializers.Serializer):
+    stalls = serializers.IntegerField()
+    products = serializers.IntegerField()
+    markets = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
 class NeedsAttentionSerializer(serializers.Serializer):
     """Counts an admin can act on, as opposed to counts that merely describe the platform."""
 
     stalls_awaiting_approval = serializers.IntegerField()
     products_awaiting_approval = serializers.IntegerField()
+    market_requests_awaiting_approval = serializers.IntegerField()
     flags_open = serializers.IntegerField()
     customers_at_risk = serializers.IntegerField()
     hidden_products = serializers.IntegerField()

@@ -8,6 +8,11 @@ import {
   useRejectFarmer,
 } from '../../hooks/queries/admin/useAdminFarmers';
 import { useAdminMarkets } from '../../hooks/queries/admin/useAdminMarkets';
+import {
+  useAdminMarketRequests,
+  useApproveMarketRequest,
+  useRejectMarketRequest,
+} from '../../hooks/queries/admin/useAdminMarketRequests';
 import { useAdminCategories } from '../../hooks/queries/admin/useAdminCategories';
 import { useModerationProducts } from '../../hooks/queries/admin/useAdminModeration';
 import {
@@ -69,6 +74,8 @@ export default function AdminApprovalsPage() {
   const linkedProduct = searchParams.get('product');
   const [stallFilters, setStallFilters] = useState({});
   const [stallOrdering, setStallOrdering] = useState('date_joined');
+  const [marketFilters, setMarketFilters] = useState({});
+  const [marketOrdering, setMarketOrdering] = useState('requested_at');
   const [productFilters, setProductFilters] = useState(() => (linkedProduct ? { product_id: linkedProduct } : {}));
   const [confirmAIPassed, setConfirmAIPassed] = useState(false);
   const [productOrdering, setProductOrdering] = useState('oldest');
@@ -89,8 +96,15 @@ export default function AdminApprovalsPage() {
     ordering: productOrdering,
   });
 
+  const marketRequestsQuery = useAdminMarketRequests({
+    ...marketFilters,
+    ordering: marketOrdering,
+  });
+
   const approveStall = useApproveFarmer();
   const rejectStall = useRejectFarmer();
+  const approveMarket = useApproveMarketRequest();
+  const rejectMarket = useRejectMarketRequest();
   const approveProduct = useApproveProduct();
   const approveProducts = useApproveProducts();
   const rejectProduct = useRejectProduct();
@@ -98,6 +112,7 @@ export default function AdminApprovalsPage() {
 
   const stallCount = stallsQuery.data?.count ?? 0;
   const productCount = productsQuery.data?.count ?? 0;
+  const marketCount = marketRequestsQuery.data?.count ?? 0;
   const aiPassed = (productsQuery.data?.results ?? []).filter((item) => item.ai_review?.verdict === 'PASS');
   const aiFilter = productFilters.ai_verdict ?? '';
 
@@ -159,23 +174,45 @@ export default function AdminApprovalsPage() {
 
   const confirmReject = () => {
     if (!rejecting) return;
-    const mutation = rejecting.kind === 'stall' ? rejectStall : rejectProduct;
-    mutation.mutate({ id: rejecting.id, reason }, { onSuccess: () => setRejecting(null) });
+    const mutations = { stall: rejectStall, product: rejectProduct, market: rejectMarket };
+    mutations[rejecting.kind].mutate({ id: rejecting.id, reason }, { onSuccess: () => setRejecting(null) });
+  };
+
+  const openRejectMarket = (request) => {
+    setRejecting({
+      kind: 'market',
+      id: request.id,
+      name: `${request.stall_name} at ${request.market_name}`,
+      findings: [],
+    });
+    setReason('');
   };
 
   const sortStalls = (next) => setStallOrdering(next);
+  const sortMarketRequests = (next) => setMarketOrdering(next);
+
+  const rejectDescriptions = {
+    stall: 'The grower is told, and can apply again once the problem is fixed.',
+    product: 'The stall is told and the listing stays off sale. It comes back here once they have changed it.',
+    market: 'The stall is told why and can send a new request. Its other markets keep trading as before.',
+  };
+
+  let defaultTab = 'stalls';
+  if (linkedProduct || (stallCount === 0 && productCount > 0)) defaultTab = 'products';
+  else if (stallCount === 0 && productCount === 0 && marketCount > 0) defaultTab = 'markets';
 
   return (
     <div className="page-primitive__stack-4">
       <PageHeader
         title="Waiting for approval"
-        description="New stalls and new listings, before shoppers see them. Approving takes one click; refusing asks for a reason the applicant can act on."
+        description="New stalls, new listings and stalls joining another market, before shoppers see them. Approving takes one click; refusing asks for a reason the applicant can act on."
       />
 
-      <Tabs defaultValue={linkedProduct || (stallCount === 0 && productCount > 0) ? 'products' : 'stalls'}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="stalls">Stalls ({stallCount})</TabsTrigger>
           <TabsTrigger value="products">Products ({productCount})</TabsTrigger>
+          <TabsTrigger value="markets">Markets ({marketCount})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="stalls">
@@ -414,6 +451,78 @@ export default function AdminApprovalsPage() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="markets">
+          <FilterBar
+            fields={stallFilterFields}
+            value={marketFilters}
+            onChange={setMarketFilters}
+            onReset={() => setMarketFilters({})}
+          />
+
+          {marketRequestsQuery.isLoading ? (
+            <PageSkeleton />
+          ) : !marketRequestsQuery.data?.results.length ? (
+            <EmptyState
+              title="No market requests waiting"
+              description="A stall that asks to sell at another market appears here until you decide."
+            />
+          ) : (
+            <div className="page-primitive__table-wrap">
+              <table className="page-primitive__table page-primitive__table-min-800">
+                <thead className="page-primitive__table-head">
+                  <tr>
+                    <SortableTh column="stall_name" current={marketOrdering} onSort={sortMarketRequests}>
+                      Stall
+                    </SortableTh>
+                    <SortableTh column="market" current={marketOrdering} onSort={sortMarketRequests}>
+                      Market
+                    </SortableTh>
+                    <th className="page-primitive__table-th">Stall number(s)</th>
+                    <SortableTh column="requested_at" current={marketOrdering} onSort={sortMarketRequests}>
+                      Requested
+                    </SortableTh>
+                    <th className="page-primitive__table-th">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {marketRequestsQuery.data.results.map((request) => (
+                    <tr key={request.id} className="page-primitive__table-row">
+                      <td className="page-primitive__table-td">
+                        <Link className="admin-approvals-page__name" to={`/admin/farmers/${request.farmer_id}`}>
+                          {request.stall_name}
+                        </Link>
+                        <span className="page-primitive__muted-xs admin-approvals-page__table-td-stacked">
+                          {request.email} · {request.phone}
+                        </span>
+                        {request.farmer_status !== 'APPROVED' ? (
+                          <Badge variant="warning">Stall not approved yet</Badge>
+                        ) : null}
+                      </td>
+                      <td className="page-primitive__table-td">{request.market_name}</td>
+                      <td className="page-primitive__table-td">{request.stall_label}</td>
+                      <td className="page-primitive__table-td">{formatDate(request.requested_at)}</td>
+                      <td className="page-primitive__table-td">
+                        <div className="page-primitive__actions-row">
+                          <Button size="sm" variant="outline" onClick={() => openRejectMarket(request)}>
+                            Refuse
+                          </Button>
+                          <Button
+                            size="sm"
+                            loading={approveMarket.isPending && approveMarket.variables === request.id}
+                            onClick={() => approveMarket.mutate(request.id)}
+                          >
+                            Approve
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       <ConfirmDialog
@@ -422,14 +531,10 @@ export default function AdminApprovalsPage() {
           if (!open) setRejecting(null);
         }}
         title={`Refuse ${rejecting?.name ?? 'this'}?`}
-        description={
-          rejecting?.kind === 'stall'
-            ? 'The grower is told, and can apply again once the problem is fixed.'
-            : 'The stall is told and the listing stays off sale. It comes back here once they have changed it.'
-        }
+        description={rejectDescriptions[rejecting?.kind] ?? ''}
         confirmLabel="Refuse"
         destructive
-        loading={rejectStall.isPending || rejectProduct.isPending}
+        loading={rejectStall.isPending || rejectProduct.isPending || rejectMarket.isPending}
         confirmDisabled={reason.trim().length < REASON_MIN_LENGTH}
         onConfirm={confirmReject}
       >

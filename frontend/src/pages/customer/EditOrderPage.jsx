@@ -44,7 +44,10 @@ export default function EditOrderPage() {
   const [itemErrors, setItemErrors] = useState({});
   const [formError, setFormError] = useState(null);
 
-  const { data: options } = usePickupOptions(order?.farmer?.id);
+  const { data: options } = usePickupOptions(
+    order?.farmer?.id,
+    (order?.items ?? []).map((item) => item.product_id),
+  );
 
   if (isLoading || !order) return <PageSkeleton />;
 

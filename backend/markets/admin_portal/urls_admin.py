@@ -9,9 +9,23 @@ from markets.admin_portal.views_admin import (
     MarketEditImpactView,
     MarketGeocodeView,
     MarketListCreateView,
+    MarketRequestApproveView,
+    MarketRequestListView,
+    MarketRequestRejectView,
 )
 
 urlpatterns = [
+    path("admin/market-requests/", MarketRequestListView.as_view(), name="admin-market-request-list"),
+    path(
+        "admin/market-requests/<int:id>/approve/",
+        MarketRequestApproveView.as_view(),
+        name="admin-market-request-approve",
+    ),
+    path(
+        "admin/market-requests/<int:id>/reject/",
+        MarketRequestRejectView.as_view(),
+        name="admin-market-request-reject",
+    ),
     path("admin/markets/", MarketListCreateView.as_view(), name="admin-market-list"),
     path("admin/markets/geocode/", MarketGeocodeView.as_view(), name="admin-market-geocode"),
     path("admin/markets/<int:id>/", MarketDetailView.as_view(), name="admin-market-detail"),

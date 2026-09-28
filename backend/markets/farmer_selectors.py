@@ -8,7 +8,14 @@ from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
-from markets.models import FarmerClosure, Market, MarketClosure, MarketOperatingDay, PickupSlot
+from markets.models import (
+    FarmerClosure,
+    FarmerMarketStatus,
+    Market,
+    MarketClosure,
+    MarketOperatingDay,
+    PickupSlot,
+)
 from markets.services.validation import BOOKING_HORIZON_DAYS
 
 
@@ -61,7 +68,10 @@ def build_market_summaries(market_ids: Iterable[int], *, request: Any = None) ->
         .annotate(
             approved_farmer_count=Count(
                 "farmer_markets",
-                filter=Q(farmer_markets__farmer__status=FarmerStatus.APPROVED),
+                filter=Q(
+                    farmer_markets__farmer__status=FarmerStatus.APPROVED,
+                    farmer_markets__status=FarmerMarketStatus.APPROVED,
+                ),
                 distinct=True,
             )
         )

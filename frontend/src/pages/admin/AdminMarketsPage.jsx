@@ -139,7 +139,7 @@ export default function AdminMarketsPage() {
         title={`Close ${closing?.name ?? 'this market'}?`}
         description={
           'Every order still open at this market will be cancelled and the stock returned. ' +
-          'Each stall here is suspended until the market reopens, and put back when it does.'
+          'Pickup slots here are switched off until the market reopens; the stalls keep trading at their other markets.'
         }
         confirmLabel="Close market"
         destructive

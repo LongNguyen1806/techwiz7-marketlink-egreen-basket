@@ -98,7 +98,20 @@ export default function AdminFarmerDetailPage() {
           <CardContent className='admin-farmer-detail-page__profile-body'>
             <p>{f.description}</p>
             <p>Phone: {f.phone ?? "—"}</p>
-            <p>Market: {f.markets?.length ? f.markets.map((m) => `${m.market_name} (${m.stall_label})`).join(", ") : "No market assigned"}</p>
+            <p>
+              Markets:{' '}
+              {f.market_registrations?.length
+                ? f.market_registrations
+                    .map((m) => {
+                      const notes = [
+                        m.status === 'PENDING' ? 'waiting for approval' : null,
+                        !m.is_market_active ? 'market closed' : null,
+                      ].filter(Boolean);
+                      return `${m.market_name} (${m.stall_label})${notes.length ? ` · ${notes.join(', ')}` : ''}`;
+                    })
+                    .join('; ')
+                : 'No market assigned'}
+            </p>
           </CardContent>
         </Card>
 

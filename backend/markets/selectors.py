@@ -7,7 +7,13 @@ from accounts.models import FarmerStatus
 from marketlink_core.constants import BOOKING_HORIZON_DAYS
 from marketlink_core.geo import distance_km
 from marketlink_core.shortcuts import get_or_404
-from markets.models import Market, MarketClosure, MarketOperatingDay
+from markets.models import (
+    FarmerMarket,
+    FarmerMarketStatus,
+    Market,
+    MarketClosure,
+    MarketOperatingDay,
+)
 from orders.models import OPEN_STATUSES
 from marketlink_core.ordering import both_directions, resolve_ordering
 
@@ -23,7 +29,10 @@ def _market_annotations(queryset: QuerySet[Market]) -> QuerySet[Market]:
     return queryset.annotate(
         farmer_count=Count(
             "farmer_markets",
-            filter=Q(farmer_markets__farmer__status=FarmerStatus.APPROVED),
+            filter=Q(
+                farmer_markets__farmer__status=FarmerStatus.APPROVED,
+                farmer_markets__status=FarmerMarketStatus.APPROVED,
+            ),
             distinct=True,
         ),
         open_order_count=Count(
@@ -78,6 +87,35 @@ def list_markets_for_admin(
 
 def get_market_for_admin(*, market_id: int) -> Market:
     return list_markets_for_admin().get(pk=market_id)
+
+
+MARKET_REQUEST_ORDERING = both_directions(
+    {
+        "requested_at": ("created_at",),
+        "stall_name": ("farmer__stall_name",),
+        "market": ("market__name",),
+    },
+    tiebreak=("id",),
+)
+
+
+def list_market_requests_for_admin(
+    *, q: str | None = None, market_id: int | None = None, ordering: str | None = None
+) -> QuerySet[FarmerMarket]:
+    queryset = FarmerMarket.objects.filter(status=FarmerMarketStatus.PENDING).select_related(
+        "farmer__user", "market"
+    )
+    if q:
+        queryset = queryset.filter(
+            Q(farmer__stall_name__icontains=q)
+            | Q(farmer__user__email__icontains=q)
+            | Q(farmer__phone__icontains=q)
+        )
+    if market_id is not None:
+        queryset = queryset.filter(market_id=market_id)
+    return queryset.order_by(
+        *resolve_ordering(ordering, allowed=MARKET_REQUEST_ORDERING, default="requested_at")
+    )
 
 
 def list_closures(*, market_id: int, include_past: bool = False) -> QuerySet[MarketClosure]:

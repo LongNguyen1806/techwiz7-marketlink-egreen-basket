@@ -5,11 +5,10 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import FarmerStatus
-from accounts.services.farmer_status_service import suspend_farmer
 from markets.conftest import MONDAY, SATURDAY, WEDNESDAY
 from markets.models import FarmerMarket, Market, PickupSlot
 from notifications.models import Notification, NotificationType
-from orders.models import ChangeReason, OrderStatus, OrderStatusHistory
+from orders.models import ChangeReason, Order, OrderStatus, OrderStatusHistory
 from system.models import AuditAction, AuditLog
 
 LIST_URL_NAME = "admin-market-list"
@@ -434,7 +433,7 @@ REASON = "The market building is being demolished."
 
 
 @pytest.mark.django_db
-def test_closing_a_market_suspends_its_stalls(
+def test_closing_a_market_does_not_suspend_its_stalls(
     admin_client, market, farmer_market, approved_farmer
 ):
     admin_client.post(
@@ -442,32 +441,55 @@ def test_closing_a_market_suspends_its_stalls(
     )
 
     approved_farmer.refresh_from_db()
-    # A stall trades at exactly one market. Closing it leaves the stall with nowhere to sell,
-    # so it is suspended rather than left listed with no way to trade.
-    assert approved_farmer.status == FarmerStatus.SUSPENDED
-    assert market.name in approved_farmer.status_reason
+    assert approved_farmer.status == FarmerStatus.APPROVED
+    assert approved_farmer.status_reason is None
 
 
 @pytest.mark.django_db
-def test_a_pending_stall_at_a_closed_market_is_left_alone(
-    admin_client, market, approved_farmer, make_farmer
+def test_closing_one_market_leaves_the_farmers_other_market_alone(
+    admin_client, market, farmer_market, approved_farmer, customer_user
 ):
-    # Only APPROVED -> SUSPENDED exists. Forcing an unapproved profile through it would raise
-    # and take the whole closure down with it.
-    pending = make_farmer(email="waiting@marketlink.test", stall_name="Waiting Stall")
-    FarmerMarket.objects.create(farmer=pending, market=market, stall_label="Row Z, Stall 1")
+    other = Market.objects.create(
+        name="Riverside Market",
+        address="88 Riverside Road",
+        latitude="10.800000",
+        longitude="106.700000",
+        open_time=time(6, 0),
+        close_time=time(12, 0),
+    )
+    other_stall = FarmerMarket.objects.create(
+        farmer=approved_farmer, market=other, stall_label="Gate 2, Stall 4"
+    )
+    other_slot = PickupSlot.objects.create(
+        farmer_market=other_stall, day_of_week=MONDAY, start_time=time(7, 0), end_time=time(9, 0)
+    )
+    start = timezone.now() + timedelta(days=2)
+    other_order = Order.objects.create(
+        customer=customer_user,
+        farmer=approved_farmer,
+        market=other,
+        pickup_slot=other_slot,
+        pickup_date=timezone.localdate(start),
+        pickup_start_at=start,
+        pickup_end_at=start + timedelta(hours=2),
+        cutoff_at=start - timedelta(hours=12),
+        status=OrderStatus.PLACED,
+        total_amount="10.00",
+    )
 
-    response = admin_client.post(
+    admin_client.post(
         reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
     )
 
-    assert response.status_code == 200
-    pending.refresh_from_db()
-    assert pending.status == FarmerStatus.PENDING
+    other_order.refresh_from_db()
+    other_slot.refresh_from_db()
+    assert other_order.status == OrderStatus.PLACED
+    assert other_slot.is_active is True
+    assert FarmerMarket.objects.filter(farmer=approved_farmer).count() == 2
 
 
 @pytest.mark.django_db
-def test_the_stall_hears_about_the_closure_and_the_suspension_in_one_message(
+def test_the_stall_hears_about_the_closure_in_one_message(
     admin_client, market, farmer_market, approved_farmer
 ):
     admin_client.post(
@@ -475,11 +497,10 @@ def test_the_stall_hears_about_the_closure_and_the_suspension_in_one_message(
     )
 
     notes = Notification.objects.filter(recipient=approved_farmer.user)
-    # One event, one message. Two would read as two separate problems.
     assert notes.count() == 1
     note = notes.get()
     assert note.type == NotificationType.MARKET_CLOSED
-    assert "suspended" in note.message
+    assert "suspended" not in note.message
 
 
 @pytest.mark.django_db
@@ -496,41 +517,6 @@ def test_an_order_cancelled_by_a_closure_says_the_market_closed(
     # Not FARMER_SUSPENDED_BY_ADMIN: the stall did nothing wrong, and telling the shopper
     # otherwise is a slur on a stall that was trading normally.
     assert row.change_reason == ChangeReason.MARKET_CLOSED_BY_ADMIN
-
-
-@pytest.mark.django_db
-def test_reopening_a_market_puts_its_stalls_back(
-    admin_client, market, farmer_market, approved_farmer
-):
-    admin_client.post(
-        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
-    )
-
-    admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
-
-    approved_farmer.refresh_from_db()
-    assert approved_farmer.status == FarmerStatus.APPROVED
-    # The sentence explaining the suspension goes with the suspension.
-    assert approved_farmer.status_reason is None
-
-
-@pytest.mark.django_db
-def test_reopening_does_not_reinstate_a_stall_suspended_for_its_own_reasons(
-    admin_client, market, farmer_market, approved_farmer, admin_user
-):
-    suspend_farmer(
-        farmer_id=approved_farmer.user_id, reason="Sold mislabelled produce", actor=admin_user
-    )
-
-    admin_client.post(
-        reverse(DEACTIVATE_URL_NAME, args=[market.id]), {"reason": REASON}, format="json"
-    )
-    admin_client.post(reverse(ACTIVATE_URL_NAME, args=[market.id]))
-
-    approved_farmer.refresh_from_db()
-    # Reopening a market undoes what the closure did. It is not an amnesty.
-    assert approved_farmer.status == FarmerStatus.SUSPENDED
-    assert approved_farmer.status_reason == "Sold mislabelled produce"
 
 
 @pytest.mark.django_db

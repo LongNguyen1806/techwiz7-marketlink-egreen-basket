@@ -80,8 +80,11 @@ FARMERS = [
         "phone": "0912345678",
         "address": "Ben Tre Province",
         "stalls": [
-            # One stall, one market: trading somewhere else is a fresh registration, and the
-            # database now carries that as a unique index on the farmer.
+            {
+                "market": "Cho Ben Thanh",
+                "stall_label": "Row D, Stall 5",
+                "slots": [(DayOfWeek.SATURDAY, time(8, 0), time(11, 0))],
+            },
             {
                 "market": "Cho Ba Chieu",
                 "stall_label": "Fruit row, Stall 3",
@@ -223,10 +226,6 @@ class Command(BaseCommand):
         )
         for stall in spec["stalls"]:
             market = markets[stall["market"]]
-            # A stall trades at one market. A database seeded before that rule may still have
-            # this farmer registered somewhere else, and the unique index would refuse the new
-            # row rather than explain itself, so the old registration goes first.
-            FarmerMarket.objects.filter(farmer=farmer).exclude(market=market).delete()
             farmer_market, _ = FarmerMarket.objects.get_or_create(
                 farmer=farmer,
                 market=market,

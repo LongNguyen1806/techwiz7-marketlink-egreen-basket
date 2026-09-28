@@ -19,6 +19,15 @@ def approved_farmer(farmer_user):
     profile = farmer_user.farmer_profile
     profile.status = FarmerStatus.APPROVED
     profile.save(update_fields=["status"])
+    home = Market.objects.create(
+        name="Home Market",
+        address="9 Home Street",
+        latitude="10.700000",
+        longitude="106.600000",
+        open_time=time(6, 0),
+        close_time=time(12, 0),
+    )
+    FarmerMarket.objects.create(farmer=profile, market=home, stall_label="Home row, Stall 1")
     return profile
 
 

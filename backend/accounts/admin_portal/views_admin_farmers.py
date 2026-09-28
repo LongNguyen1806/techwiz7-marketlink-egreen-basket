@@ -35,6 +35,7 @@ from catalog.services.stock import get_open_held_quantities, get_pending_quantit
 from marketlink_core.exceptions import ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
+from markets.models import FarmerMarket
 from system.models import AuditAction
 from django.http import StreamingHttpResponse
 from drf_spectacular.types import OpenApiTypes
@@ -111,6 +112,19 @@ class AdminFarmerDetailView(APIView):
                 "longitude": float(farmer.longitude) if farmer.longitude is not None else None,
                 "status": farmer.status,
                 "status_reason": farmer.status_reason,
+                "market_registrations": [
+                    {
+                        "id": row.pk,
+                        "market_id": row.market_id,
+                        "market_name": row.market.name,
+                        "stall_label": row.stall_label,
+                        "status": row.status,
+                        "is_market_active": row.market.is_active,
+                    }
+                    for row in FarmerMarket.objects.filter(farmer=farmer)
+                    .select_related("market")
+                    .order_by("market__name")
+                ],
                 "products": ProductAdminSerializer(
                     products,
                     many=True,

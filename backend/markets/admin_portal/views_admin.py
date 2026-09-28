@@ -1,9 +1,10 @@
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.admin_portal.serializers_admin import AdminReasonSerializer
 from accounts.geocoding import geocode_address
 from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
@@ -16,15 +17,19 @@ from markets.admin_portal.serializers_admin import (
     MarketAdminWriteSerializer,
     MarketEditImpactSerializer,
     MarketGeocodeSerializer,
+    MarketRequestSerializer,
 )
 from markets.models import Market, MarketClosure
 from markets.selectors import (
     ADMIN_MARKET_ORDERING,
+    MARKET_REQUEST_ORDERING,
     get_market_for_admin,
     list_closures,
+    list_market_requests_for_admin,
     list_markets_for_admin,
 )
 from markets.services.closure_service import create_closure, delete_closure
+from markets.services.farmer_schedule import approve_market_request, reject_market_request
 from markets.services.market_service import (
     activate_market,
     create_market,
@@ -274,6 +279,82 @@ class MarketActivateView(_MarketStateView):
         data = MarketAdminReadSerializer(get_market_for_admin(market_id=id)).data
         data["restored_slots"] = restored
         return api_response(message="Market reopened.", request=request, data=data)
+
+
+class MarketRequestListView(ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = MarketRequestSerializer
+
+    def get_queryset(self):
+        params = self.request.query_params
+        market_id = params.get("market_id")
+        return list_market_requests_for_admin(
+            q=params.get("q"),
+            market_id=int(market_id) if market_id and market_id.isdigit() else None,
+            ordering=params.get("ordering"),
+        )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, description="Matches the stall name, email or phone."),
+            OpenApiParameter("market_id", int, description="Only requests for this market."),
+            OpenApiParameter(
+                "ordering",
+                str,
+                enum=sorted(MARKET_REQUEST_ORDERING),
+                description="Sort column; prefix with - for descending.",
+            ),
+        ],
+        summary="Market registrations waiting for approval",
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+class MarketRequestApproveView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(request=None, responses={200: MarketRequestSerializer, 404: None, 422: None})
+    def post(self, request, id: int) -> Response:
+        farmer_market = approve_market_request(farmer_market_id=id, actor=request.user)
+        log_request_event(
+            request,
+            action=AuditAction.STALL_MARKET_APPROVED,
+            status_code=200,
+            details={
+                "farmer_market_id": id,
+                "farmer_id": farmer_market.farmer_id,
+                "market_id": farmer_market.market_id,
+            },
+        )
+        return api_response(
+            message="Market registration approved.",
+            request=request,
+            data=MarketRequestSerializer(farmer_market).data,
+        )
+
+
+class MarketRequestRejectView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(request=AdminReasonSerializer, responses={200: None, 400: None, 404: None, 422: None})
+    def post(self, request, id: int) -> Response:
+        serializer = AdminReasonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data["reason"]
+        summary = reject_market_request(farmer_market_id=id, reason=reason, actor=request.user)
+        log_request_event(
+            request,
+            action=AuditAction.STALL_MARKET_REJECTED,
+            status_code=200,
+            details={
+                "farmer_market_id": id,
+                "farmer_id": summary["farmer_id"],
+                "market_id": summary["market_id"],
+                "reason": reason,
+            },
+        )
+        return api_response(message="Market registration refused.", request=request, data={"id": id})
 
 
 class MarketClosureListCreateView(ListCreateAPIView):

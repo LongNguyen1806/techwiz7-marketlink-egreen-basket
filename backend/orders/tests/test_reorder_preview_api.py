@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 
 from accounts.auth.tokens import issue_tokens
 from accounts.models import FarmerStatus
+from markets.models import FarmerMarket
 from orders.models import Order, OrderItem, OrderStatus
 from tests_support.factories import make_customer, make_farmer, make_market, make_order, make_product
 
@@ -29,8 +30,10 @@ def _url(order) -> str:
 def shop(db):
     customer = make_customer()
     farmer = make_farmer()
+    market = make_market()
+    FarmerMarket.objects.create(farmer=farmer, market=market, stall_label="Row A, Stall 1")
     return SimpleNamespace(
-        customer=customer, api=_client(customer), farmer=farmer, market=make_market(),
+        customer=customer, api=_client(customer), farmer=farmer, market=market,
         tomato=make_product(farmer=farmer, stock=10, price="2.50"),
         herbs=make_product(farmer=farmer, stock=5, price="3.00"),
     )

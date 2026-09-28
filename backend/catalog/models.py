@@ -181,6 +181,22 @@ class Product(BaseModel):
         )
 
 
+class ProductMarketExclusion(CreatedAtModel):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="market_exclusions")
+    farmer_market = models.ForeignKey(
+        "markets.FarmerMarket", on_delete=models.CASCADE, related_name="product_exclusions"
+    )
+
+    class Meta:
+        db_table = "product_market_exclusions"
+        constraints = [
+            models.UniqueConstraint(fields=["product", "farmer_market"], name="pme_uniq_product_stall"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product_id} not at {self.farmer_market_id}"
+
+
 # --------------------------------------------------------------------------------------------
 # AI-assisted listing review. The AI only advises; every decision stays with an administrator.
 

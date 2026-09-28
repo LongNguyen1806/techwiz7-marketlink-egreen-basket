@@ -133,6 +133,20 @@ export const farmerApi = {
     return data;
   },
 
+  getProductCounts: async (params, { signal } = {}) => {
+    const { data } = await axiosClient.get('/farmer/products/counts/', { params, signal });
+    return data;
+  },
+
+  bulkProducts: async ({ productIds, action, marketIds }) => {
+    const { data } = await axiosClient.post('/farmer/products/bulk/', {
+      product_ids: productIds,
+      action,
+      market_ids: marketIds,
+    });
+    return data;
+  },
+
   
   createProduct: async (payload) => {
     const { data } = await axiosClient.post('/farmer/products/', toRequestBody(payload));

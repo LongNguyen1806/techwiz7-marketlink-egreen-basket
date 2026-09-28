@@ -704,8 +704,6 @@ class Command(BaseCommand):
         )
         links = []
         for farmer in tradeable:
-            # Exactly one market per stall: trading somewhere else is a fresh registration,
-            # and the database now carries that as a unique index.
             for market in [self.rng.choice(active_markets)]:
                 if (farmer.user_id, market.id) in existing_pairs:
                     continue

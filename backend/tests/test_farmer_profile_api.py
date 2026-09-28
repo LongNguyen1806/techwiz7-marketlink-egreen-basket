@@ -129,7 +129,7 @@ class FarmerProfileAPITestCase(TestCase):
             "id", "stall_name", "image", "rating_avg", "rating_count", "markets", "operating_days",
             "in_stock_product_count", "upcoming_closures", "distance_km", "is_favorite", "contact_person",
             "phone", "address", "description", "latitude", "longitude", "order_cutoff_hours",
-            "pickup_windows", "email", "status", "status_reason", "location_found",
+            "pickup_windows", "email", "status", "status_reason", "location_found", "can_list_products",
         }
         self.assertEqual(set(data), expected)
         self.assertEqual(data["email"], "profile_farmer@marketlink.local")

@@ -44,7 +44,8 @@ def build_farmer_public(
     if not include_inactive_slots:
         slots = slots.filter(is_active=True)
     farmer_markets = (
-        FarmerMarket.objects.filter(farmer=profile, market__is_active=True)
+        FarmerMarket.objects.selling()
+        .filter(farmer=profile)
         .select_related("market")
         .prefetch_related(Prefetch("pickup_slots", queryset=slots))
         .order_by("market__name", "id")
@@ -100,6 +101,7 @@ def build_farmer_own_profile(profile: FarmerProfile, *, request: Any = None) -> 
             "status": profile.status,
             "status_reason": profile.status_reason,
             "location_found": profile.latitude is not None and profile.longitude is not None,
+            "can_list_products": FarmerMarket.objects.selling().filter(farmer=profile).exists(),
         }
     )
     return data

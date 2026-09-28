@@ -44,6 +44,11 @@ const ATTENTION = [
     label: 'Listings awaiting approval',
     to: '/admin/approvals',
   },
+  {
+    key: 'market_requests_awaiting_approval',
+    label: 'Market requests awaiting approval',
+    to: '/admin/approvals',
+  },
   { key: 'hidden_products', label: 'Products hidden', to: '/admin/products' },
   { key: 'markets_closed', label: 'Markets closed', to: '/admin/markets' },
 ];

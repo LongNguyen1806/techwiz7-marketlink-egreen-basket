@@ -17,6 +17,8 @@ import { ROUTES } from '../../constants/routes';
 import { useObjectUrl } from '../../hooks/common/useObjectUrl';
 import { useUnsavedChangesGuard } from '../../hooks/common/useUnsavedChangesGuard';
 import { ListingPrecheck } from '../../components/farmer/ListingPrecheck';
+import { MarketChecklist, isSellingMarket } from '../../components/farmer/MarketChecklist';
+import { useFarmerMarkets } from '../../hooks/queries/farmer/useFarmerMarkets';
 import { useFarmerProduct, useSaveFarmerProduct } from '../../hooks/queries/farmer/useFarmerProducts';
 import { useCategories, usePublicConfig } from '../../hooks/queries/guest/usePublicCatalog';
 import { ApiError } from '../../lib/ApiError';
@@ -68,16 +70,27 @@ export default function FarmerProductFormPage() {
   const schema = useMemo(() => makeProductSchema({ maxUploadMb }), [maxUploadMb]);
 
   const categoriesQuery = useCategories();
+  const marketsQuery = useFarmerMarkets();
+  const farmerMarkets = useMemo(() => marketsQuery.data ?? [], [marketsQuery.data]);
   const productQuery = useFarmerProduct(productId, { enabled: isEdit });
   const product = productQuery.data;
   const save = useSaveFarmerProduct(productId);
 
-  
   const serverValues = useMemo(() => (product ? productToFormValues(product) : undefined), [product]);
+  const createValues = useMemo(
+    () =>
+      !isEdit && marketsQuery.data
+        ? {
+            ...PRODUCT_DEFAULTS,
+            market_ids: marketsQuery.data.filter(isSellingMarket).map((item) => item.market.id),
+          }
+        : undefined,
+    [isEdit, marketsQuery.data],
+  );
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: PRODUCT_DEFAULTS,
-    values: serverValues,
+    values: isEdit ? serverValues : createValues,
     resetOptions: { keepDirtyValues: true },
   });
   const {
@@ -135,15 +148,13 @@ export default function FarmerProductFormPage() {
         title={isEdit ? 'Edit produce' : 'Add produce'}
         description={
           isEdit
-            ? 'Update the photo, price and stock of this item.'
-            : 'Add a photo, set price and stock. An administrator reviews new produce before shoppers see it.'
+            ? 'Update the photo, price, stock and the markets this item is sold at.'
+            : 'Add a photo, choose where it is sold, and set price and stock. New produce is checked automatically; most listings go on sale within minutes.'
         }
       />
 
       {!locked && product?.review_status === 'PENDING' ? (
-        <p className="page-primitive__warn-banner">
-          Waiting for an administrator to approve this listing. Shoppers cannot see it until then.
-        </p>
+        <p className="page-primitive__warn-banner">Waiting for review. Shoppers cannot see this listing until it passes.</p>
       ) : null}
       {!locked && product?.review_status === 'REJECTED' ? (
         <p className="page-primitive__warn-banner">
@@ -151,13 +162,6 @@ export default function FarmerProductFormPage() {
           again.
         </p>
       ) : null}
-      {!locked && product?.review_status === 'APPROVED' ? (
-        <p className="page-primitive__muted-xs">
-          Changing the name, description, photo or category sends this listing back for review and hides it from
-          shoppers until it is approved. Price, stock and limits can change freely.
-        </p>
-      ) : null}
-
       {locked ? (
         <p className="page-primitive__warn-banner">
           {product.is_archived
@@ -191,15 +195,25 @@ export default function FarmerProductFormPage() {
             />
             <FieldError error={errors.image} />
           </div>
+          {!locked ? <ListingPrecheck values={watch()} productId={productId} /> : null}
         </div>
 
         <div className="farmer-product-form-page__fields">
-          <div className="page-primitive__form-field">
-            <Input id="name" label="Product name" {...register('name')} />
-            <FieldError error={errors.name} />
-          </div>
-
-          <div className="page-primitive__form-grid-2">
+          <section className="farmer-product-form-page__section" aria-labelledby="product-section-basics">
+            <header className="farmer-product-form-page__section-head">
+              <h2 id="product-section-basics" className="farmer-product-form-page__section-title">
+                1. The produce
+              </h2>
+              {!locked && product?.review_status === 'APPROVED' ? (
+                <p className="page-primitive__muted-xs">
+                  Changing the name, description, photo or category sends it back for review.
+                </p>
+              ) : null}
+            </header>
+            <div className="page-primitive__form-field">
+              <Input id="name" label="Product name" {...register('name')} />
+              <FieldError error={errors.name} />
+            </div>
             <div className="page-primitive__form-field">
               <Label htmlFor="category_id">Category</Label>
               <select
@@ -217,58 +231,67 @@ export default function FarmerProductFormPage() {
               <FieldError error={errors.category_id} />
             </div>
             <div className="page-primitive__form-field">
-              <Label htmlFor="unit">Unit</Label>
-              <select id="unit" className="page-primitive__select-full" {...register('unit')}>
-                {UNIT_OPTIONS.map((unit) => (
-                  <option key={unit.value} value={unit.value}>
-                    {unit.label}
-                  </option>
-                ))}
-              </select>
-              <FieldError error={errors.unit} />
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" rows={4} maxLength={1000} {...register('description')} />
+              <FieldError error={errors.description} />
             </div>
-          </div>
+          </section>
 
-          <div className="farmer-product-form-page__grid-3">
-            <div className="page-primitive__form-field">
-              <Input
-                id="price"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0.01"
-                label="Price ($)"
-                {...register('price')}
-              />
-              <FieldError error={errors.price} />
+          <section className="farmer-product-form-page__section" aria-labelledby="product-section-stock">
+            <header className="farmer-product-form-page__section-head">
+              <h2 id="product-section-stock" className="farmer-product-form-page__section-title">
+                2. Price and stock
+              </h2>
+              <p className="page-primitive__muted-xs">Price, stock and limits can change any time without a new review.</p>
+            </header>
+            <div className="farmer-product-form-page__grid-3">
+              <div className="page-primitive__form-field">
+                <Label htmlFor="unit">Unit</Label>
+                <select id="unit" className="page-primitive__select-full" {...register('unit')}>
+                  {UNIT_OPTIONS.map((unit) => (
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </option>
+                  ))}
+                </select>
+                <FieldError error={errors.unit} />
+              </div>
+              <div className="page-primitive__form-field farmer-product-form-page__field-bottom">
+                <Input
+                  id="price"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0.01"
+                  label="Price ($)"
+                  {...register('price')}
+                />
+                <FieldError error={errors.price} />
+              </div>
+              <div className="page-primitive__form-field farmer-product-form-page__field-bottom">
+                <Input
+                  id="stock_quantity"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  label="Stock"
+                  {...register('stock_quantity', { setValueAs: toNumberOrNaN })}
+                />
+                <FieldError error={errors.stock_quantity} />
+              </div>
             </div>
-            <div className="page-primitive__form-field">
-              <Input
-                id="stock_quantity"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                label="Stock"
-                {...register('stock_quantity', { setValueAs: toNumberOrNaN })}
-              />
-              <FieldError error={errors.stock_quantity} />
-            </div>
-            <div className="page-primitive__form-field">
-              <Input
-                id="weekly_default_quantity"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                label="Weekly default stock"
-                {...register('weekly_default_quantity', { setValueAs: toNumberOrNull })}
-              />
-              <p className="page-primitive__muted-xs">Leave blank to skip this item in the weekly reset.</p>
-              <FieldError error={errors.weekly_default_quantity} />
-            </div>
-          </div>
-
-          <div>
-            <div className="page-primitive__form-grid-2">
+            <div className="farmer-product-form-page__grid-3">
+              <div className="page-primitive__form-field">
+                <Input
+                  id="weekly_default_quantity"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  label="Weekly default stock"
+                  {...register('weekly_default_quantity', { setValueAs: toNumberOrNull })}
+                />
+                <FieldError error={errors.weekly_default_quantity} />
+              </div>
               <div className="page-primitive__form-field">
                 <Input
                   id="min_per_order"
@@ -295,48 +318,66 @@ export default function FarmerProductFormPage() {
               </div>
             </div>
             <p className="page-primitive__muted-xs">
-              How much one order can take, based on what you can supply. Min 1 means any amount; leave max blank for no
-              limit.
+              Weekly default: leave blank to skip this item in the weekly reset. Min 1 means any amount; leave max blank
+              for no limit.
             </p>
-          </div>
-
-          <div className="page-primitive__form-field">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" rows={4} maxLength={1000} {...register('description')} />
-            <FieldError error={errors.description} />
-          </div>
-
-          <div className="farmer-product-form-page__toggle-row">
-            <div>
-              <p className="page-primitive__font-medium">Open for sale</p>
-              <p className="page-primitive__muted-xs">Turn off to pause accepting orders</p>
+            <div className="farmer-product-form-page__toggle-row">
+              <div>
+                <p className="page-primitive__font-medium">Open for sale</p>
+                <p className="page-primitive__muted-xs">Turn off to pause accepting orders</p>
+              </div>
+              <Controller
+                control={control}
+                name="is_available"
+                render={({ field }) => (
+                  <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Open for sale" />
+                )}
+              />
             </div>
-            <Controller
-              control={control}
-              name="is_available"
-              render={({ field }) => (
-                <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Open for sale" />
-              )}
-            />
-          </div>
+          </section>
 
-          {!locked ? <ListingPrecheck values={watch()} productId={productId} /> : null}
+          <section className="farmer-product-form-page__section" aria-labelledby="product-section-markets">
+            <header className="farmer-product-form-page__section-head">
+              <h2 id="product-section-markets" className="farmer-product-form-page__section-title">
+                3. Where it is sold
+              </h2>
+              <p className="page-primitive__muted-xs">
+                Shoppers can only collect this item at the markets you tick. Stock is shared across them.
+              </p>
+            </header>
+            {marketsQuery.isPending ? (
+              <p className="page-primitive__muted-xs">Loading your markets…</p>
+            ) : farmerMarkets.length === 0 ? (
+              <p className="page-primitive__warn-banner">
+                You have no markets yet. Ask to join one in <Link to={ROUTES.FARMER.MARKETS}>Markets &amp; slots</Link>.
+              </p>
+            ) : (
+              <Controller
+                control={control}
+                name="market_ids"
+                render={({ field }) => (
+                  <MarketChecklist
+                    markets={farmerMarkets}
+                    value={field.value}
+                    onChange={(next) => field.onChange(next)}
+                    disabled={locked}
+                  />
+                )}
+              />
+            )}
+            <FieldError error={errors.market_ids} />
+          </section>
 
           <FieldError error={errors.root?.server} />
+        </div>
 
-          <div className="farmer-product-form-page__actions">
-            <Button asChild variant="outline">
-              <Link to={ROUTES.FARMER.PRODUCTS}>Cancel</Link>
-            </Button>
-            <Button
-              type="submit"
-              data-write
-              loading={save.isPending}
-              disabled={locked || (isEdit && !isDirty)}
-            >
-              {isEdit ? 'Save changes' : 'Save'}
-            </Button>
-          </div>
+        <div className="farmer-product-form-page__actions">
+          <Button asChild variant="outline">
+            <Link to={ROUTES.FARMER.PRODUCTS}>Cancel</Link>
+          </Button>
+          <Button type="submit" data-write loading={save.isPending} disabled={locked || (isEdit && !isDirty)}>
+            {isEdit ? 'Save changes' : 'Save'}
+          </Button>
         </div>
       </form>
 

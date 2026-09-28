@@ -4,7 +4,7 @@ from rest_framework.validators import UniqueValidator
 
 from catalog.services.farmer_product import validate_image_upload
 from marketlink_core.exceptions import BusinessValidationError
-from markets.models import DayOfWeek, Market
+from markets.models import DayOfWeek, FarmerMarket, Market
 from markets.serializers import ClosureSerializer
 from markets.selectors import OPERATING_DAYS_ATTR, UPCOMING_CLOSURES_ATTR, today
 
@@ -14,6 +14,35 @@ ADDRESS_MIN_LENGTH = 5
 ADDRESS_MAX_LENGTH = 255
 DESCRIPTION_MAX_LENGTH = 1000
 DUPLICATE_NAME_MESSAGE = "A market with this name already exists."
+
+
+class MarketRequestSerializer(serializers.ModelSerializer):
+    farmer_id = serializers.IntegerField(source="farmer.user_id", read_only=True)
+    stall_name = serializers.CharField(source="farmer.stall_name", read_only=True)
+    contact_person = serializers.CharField(source="farmer.contact_person", read_only=True)
+    email = serializers.EmailField(source="farmer.user.email", read_only=True)
+    phone = serializers.CharField(source="farmer.phone", read_only=True)
+    farmer_status = serializers.CharField(source="farmer.status", read_only=True)
+    market_id = serializers.IntegerField(read_only=True)
+    market_name = serializers.CharField(source="market.name", read_only=True)
+    requested_at = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = FarmerMarket
+        fields = [
+            "id",
+            "farmer_id",
+            "stall_name",
+            "contact_person",
+            "email",
+            "phone",
+            "farmer_status",
+            "market_id",
+            "market_name",
+            "stall_label",
+            "status",
+            "requested_at",
+        ]
 
 
 class ClosureWriteSerializer(serializers.Serializer):

@@ -1,12 +1,20 @@
 from collections import defaultdict
 from collections.abc import Iterable
 
-from django.db.models import Avg, Count, F, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Avg, Count, Exists, F, OuterRef, Q, QuerySet, Subquery
 
 from accounts.models import FarmerStatus
-from catalog.models import AIReviewKind, AIVerdict, Category, Product, ProductAIReview, ReviewStatus
+from catalog.models import (
+    AIReviewKind,
+    AIVerdict,
+    Category,
+    Product,
+    ProductAIReview,
+    ProductMarketExclusion,
+    ReviewStatus,
+)
 from marketlink_core.shortcuts import get_or_404
-from markets.models import PickupSlot
+from markets.models import FarmerMarket, FarmerMarketStatus, PickupSlot
 from marketlink_core.ordering import both_directions, resolve_ordering
 
 
@@ -105,24 +113,53 @@ def get_product_for_admin(*, product_id: int) -> Product:
     return list_products_for_admin().get(pk=product_id)
 
 
+def _not_excluded_here(product_ref: str = "pk", stall_ref: str = "pk"):
+    return ~Exists(
+        ProductMarketExclusion.objects.filter(
+            product_id=OuterRef(OuterRef(product_ref)), farmer_market_id=OuterRef(stall_ref)
+        )
+    )
+
+
+def open_stalls_for_product():
+    """Inside a Product query: the approved, running stalls this product is sold at."""
+    return FarmerMarket.objects.selling().filter(
+        _not_excluded_here(), farmer_id=OuterRef("farmer_id")
+    )
+
+
+def excluded_pairs(*, product_ids: Iterable[int]) -> set[tuple[int, int]]:
+    return set(
+        ProductMarketExclusion.objects.filter(product_id__in=set(product_ids)).values_list(
+            "product_id", "farmer_market_id"
+        )
+    )
+
+
 def markets_for_products(*, product_ids: Iterable[int]) -> dict[int, list[dict]]:
     # Farmer operating days come from active pickup slots, not a stored column (§3.2).
+    ids = set(product_ids)
     rows = (
         PickupSlot.objects.filter(
             is_active=True,
-            farmer_market__farmer__products__id__in=set(product_ids),
+            farmer_market__status=FarmerMarketStatus.APPROVED,
+            farmer_market__farmer__products__id__in=ids,
         )
         .values(
             "farmer_market__farmer__products__id",
+            "farmer_market_id",
             "farmer_market__market_id",
             "farmer_market__market__name",
             "day_of_week",
         )
         .distinct()
     )
+    skipped = excluded_pairs(product_ids=ids)
     grouped: dict[int, dict[int, dict]] = defaultdict(dict)
     for row in rows:
         product_id = row["farmer_market__farmer__products__id"]
+        if (product_id, row["farmer_market_id"]) in skipped:
+            continue
         market_id = row["farmer_market__market_id"]
         entry = grouped[product_id].setdefault(
             market_id,
@@ -152,6 +189,7 @@ def public_product_base() -> QuerySet[Product]:
     # here so no branch reinvents the visibility filter.
     return (
         Product.objects.filter(
+            Exists(open_stalls_for_product()),
             is_archived=False,
             is_hidden_by_admin=False,
             # A listing reaches shoppers only once an admin has looked at it. An edit that
@@ -203,11 +241,19 @@ def public_products(
     if farmer_id is not None:
         queryset = queryset.filter(farmer_id=farmer_id)
     if market_id is not None:
-        queryset = queryset.filter(farmer__farmer_markets__market_id=market_id)
+        queryset = queryset.filter(Exists(open_stalls_for_product().filter(market_id=market_id)))
     if day is not None:
         queryset = queryset.filter(
-            farmer__farmer_markets__pickup_slots__day_of_week=day,
-            farmer__farmer_markets__pickup_slots__is_active=True,
+            Exists(
+                PickupSlot.objects.filter(
+                    _not_excluded_here(stall_ref="farmer_market_id"),
+                    farmer_market__farmer_id=OuterRef("farmer_id"),
+                    farmer_market__status=FarmerMarketStatus.APPROVED,
+                    farmer_market__market__is_active=True,
+                    day_of_week=day,
+                    is_active=True,
+                )
+            )
         )
     if price_min is not None:
         queryset = queryset.filter(price__gte=price_min)

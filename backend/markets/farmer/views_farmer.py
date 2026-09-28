@@ -68,6 +68,7 @@ def _farmer_market_items(
             "market": summaries[fm.market_id],
             # Not in MarketSummary: lets F-07 show markets closed by an admin (AD-17).
             "is_market_active": fm.market.is_active,
+            "status": fm.status,
             "stall_label": fm.stall_label,
             "slots": [serialize_pickup_slot(slot) for slot in fm.pickup_slots.all()],
             "open_order_count": open_counts.get(fm.market_id, 0),
@@ -90,7 +91,10 @@ class FarmerMarketListView(FarmerScheduleBaseView):
         farmer_market = farmer_schedule.join_market(farmer_id=profile.pk, **serializer.validated_data)
         item = _farmer_market_items(profile, request=request, farmer_market_ids=[farmer_market.pk])[0]
         return api_response(
-            message="Market added.", data=item, status_code=status.HTTP_201_CREATED, request=request
+            message="Sent for approval. Shoppers will see this market once an administrator approves it.",
+            data=item,
+            status_code=status.HTTP_201_CREATED,
+            request=request,
         )
 
 

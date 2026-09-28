@@ -1,6 +1,7 @@
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -107,7 +108,9 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data["data"]), 1)
         item = res.data["data"][0]
-        self.assertEqual(set(item), {"id", "market", "is_market_active", "stall_label", "slots", "open_order_count"})
+        self.assertEqual(
+            set(item), {"id", "market", "is_market_active", "status", "stall_label", "slots", "open_order_count"}
+        )
         self.assertEqual(item["open_order_count"], 1)
         self.assertEqual(item["stall_label"], "Row A1")
         self.assertEqual(item["slots"][0]["start_time"], "07:00")
@@ -144,6 +147,12 @@ class FarmerMarketsAndSlotsAPITestCase(TestCase):
                 res = self.client.post(MARKETS_URL, body, format="json")
                 self.assertEqual(res.status_code, 400)
                 self.assertIn(field, res.data["errors"])
+
+    def test_database_allows_many_markets_but_one_stall_per_market(self):
+        FarmerMarket.objects.create(farmer=self.farmer, market=self.market_b, stall_label="B1")
+        self.assertEqual(FarmerMarket.objects.filter(farmer=self.farmer).count(), 2)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            FarmerMarket.objects.create(farmer=self.farmer, market=self.market_b, stall_label="B2")
 
     def test_suspended_farmer_can_manage_markets(self):
         FarmerProfile.objects.filter(pk=self.farmer.pk).update(status=FarmerStatus.SUSPENDED)

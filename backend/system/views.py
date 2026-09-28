@@ -16,7 +16,7 @@ from marketlink_core.constants import (
 from marketlink_core.exceptions import BusinessValidationError, ResourceNotFoundError
 from marketlink_core.permissions import IsAdmin
 from marketlink_core.responses import api_response
-from system.dashboard import dashboard_snapshot, month_bounds, orders_per_month
+from system.dashboard import approval_counts, dashboard_snapshot, month_bounds, orders_per_month
 from system.excel import XLSX_CONTENT_TYPE, build_report_workbook, report_filename
 from system.models import AuditAction, FlagTarget
 from system.reports import parse_report_range, report_summary
@@ -34,6 +34,7 @@ from marketlink_core.constants import (
 from orders.admin_selectors import at_risk_threshold, at_risk_window_days
 from system.flags import list_flags, raise_flag, resolve_flag, target_previews
 from system.serializers import (
+    ApprovalCountsSerializer,
     AuditLogReadSerializer,
     FlagResolutionSerializer,
     ModerationFlagReadSerializer,
@@ -106,6 +107,16 @@ class DashboardView(APIView):
     def get(self, request) -> Response:
         serializer = DashboardSerializer(dashboard_snapshot())
         return api_response(message="OK", request=request, data=serializer.data)
+
+
+class ApprovalCountsView(APIView):
+    permission_classes = [IsAdmin]
+
+    @extend_schema(responses={200: ApprovalCountsSerializer}, summary="What is waiting for approval")
+    def get(self, request) -> Response:
+        return api_response(
+            message="OK", request=request, data=ApprovalCountsSerializer(approval_counts()).data
+        )
 
 
 class DashboardOrdersByMonthView(APIView):

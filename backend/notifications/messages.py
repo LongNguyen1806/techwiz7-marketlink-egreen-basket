@@ -117,7 +117,7 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         title="{market_name} has closed",
         message=(
             "{market_name} is no longer running, so {order_count} of your orders there were "
-            "cancelled. Reason: {reason} {stall_note}"
+            "cancelled. Reason: {reason}"
         ),
         target_url="{target_url}",
         required=("market_name", "order_count", "reason", "target_url"),
@@ -186,6 +186,24 @@ NOTIFICATION_SPECS: dict[str, NotificationSpec] = {
         ),
         target_url="/farmer/products",
         required=("product_name", "reason"),
+    ),
+    NotificationType.STALL_MARKET_APPROVED: NotificationSpec(
+        title="You can now sell at {market_name}",
+        message=(
+            "An administrator approved your stall at {market_name} ({stall_label}). Shoppers "
+            "can now book your pickup slots there."
+        ),
+        target_url="/farmer/markets",
+        required=("market_name", "stall_label"),
+    ),
+    NotificationType.STALL_MARKET_REJECTED: NotificationSpec(
+        title="Your request to sell at {market_name} was not approved",
+        message=(
+            "An administrator did not approve your stall at {market_name}. Reason: {reason} "
+            "You can send a new request from Markets & slots."
+        ),
+        target_url="/farmer/markets",
+        required=("market_name", "reason"),
     ),
     NotificationType.MARKET_SCHEDULE_CHANGED: NotificationSpec(
         title="{market_name} changed its schedule",

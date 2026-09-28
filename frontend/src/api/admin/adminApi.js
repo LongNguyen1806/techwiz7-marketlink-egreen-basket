@@ -43,6 +43,26 @@ export const adminApi = {
     return data;
   },
 
+  getApprovalCounts: async ({ signal } = {}) => {
+    const { data } = await axiosClient.get('/admin/approvals/counts/', { signal });
+    return data;
+  },
+
+  getMarketRequests: async (params = {}) => {
+    const { data } = await axiosClient.get('/admin/market-requests/', { params });
+    return adaptPaginated(data);
+  },
+
+  approveMarketRequest: async (id) => {
+    const { data } = await axiosClient.post(`/admin/market-requests/${id}/approve/`);
+    return data;
+  },
+
+  rejectMarketRequest: async (id, reason) => {
+    const { data } = await axiosClient.post(`/admin/market-requests/${id}/reject/`, { reason });
+    return data;
+  },
+
   suspendFarmer: async (id, reason) => {
     const { data } = await axiosClient.post(`/admin/farmers/${id}/suspend/`, { reason });
     return data;

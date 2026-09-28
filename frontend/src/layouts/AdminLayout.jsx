@@ -34,6 +34,7 @@ import {
 import { UserMenu } from '../components/common/layout/UserMenu';
 import { useUiStore } from '../stores/ui.store';
 import { useAIReviewStats } from '../hooks/queries/admin/useAdminAIReview';
+import { useAdminApprovalCounts } from '../hooks/queries/admin/useAdminApprovalCounts';
 import { cn } from '../lib/cn';
 
 import '../styles/admin/AdminLayout.css';
@@ -44,7 +45,7 @@ const navItems = [
   { to: '/admin/farmers', label: 'Farmers', icon: Warehouse, end: false },
   { to: '/admin/customers', label: 'Customers', icon: Users, end: false },
   { to: '/admin/orders', label: 'Orders', icon: ReceiptText, end: false },
-  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'open_ai_flags' },
+  { to: '/admin/approvals', label: 'Approvals', icon: BadgeCheck, end: false, badge: 'approvals' },
   { to: '/admin/ai-decisions', label: 'AI decisions', icon: Sparkles, end: false, badge: 'unchecked_ai_decisions' },
   { to: '/admin/queue', label: 'Follow-up queue', icon: ListChecks, end: false },
   { to: '/admin/markets', label: 'Markets', icon: Store, end: false },
@@ -61,9 +62,15 @@ const navItems = [
 
 function SideNav({ collapsed }                        ) {
   const aiStats = useAIReviewStats(30);
+  const approvals = useAdminApprovalCounts();
   const badges = {
-    open_ai_flags: aiStats.data?.open_ai_flags ?? 0,
+    approvals: approvals.data?.total ?? 0,
     unchecked_ai_decisions: aiStats.data?.unchecked_ai_decisions ?? 0,
+  };
+  const badgeTitles = {
+    approvals: approvals.data
+      ? `${approvals.data.stalls} stalls, ${approvals.data.products} products, ${approvals.data.markets} markets waiting`
+      : '',
   };
   return (
     <nav className="admin-layout__nav">
@@ -84,7 +91,10 @@ function SideNav({ collapsed }                        ) {
           <item.icon className="admin-layout__nav-icon" />
           {!collapsed ? <span>{item.label}</span> : null}
           {item.badge && badges[item.badge] ? (
-            <span className="admin-layout__nav-badge" title={`${badges[item.badge]} waiting for you`}>
+            <span
+              className="admin-layout__nav-badge"
+              title={badgeTitles[item.badge] || `${badges[item.badge]} waiting for you`}
+            >
               {badges[item.badge]}
             </span>
           ) : null}

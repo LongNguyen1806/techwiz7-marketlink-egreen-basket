@@ -10,8 +10,6 @@ from marketlink_core.exceptions import (
     ErrorCode,
     UnprocessableEntityError,
 )
-from accounts.models import FarmerProfile, FarmerStatus
-from accounts.services.farmer_status_service import reinstate_farmer, suspend_farmer
 from marketlink_core.history import save_with_history
 from markets.models import FarmerMarket, Market, MarketOperatingDay, PickupSlot
 from notifications.models import NotificationType
@@ -31,8 +29,6 @@ SCHEDULE_FIELDS = ("operating_days", "open_time", "close_time")
 
 CLOSURE_REASON = "Market #{market_id} closed by Admin (AD-17)"
 REOPEN_REASON = "Market #{market_id} reopened by Admin (AD-17)"
-
-SUSPENSION_TEXT = "{market_name} has closed. The stall is suspended until it reopens."
 
 
 def _replace_operating_days(*, market: Market, days: list[int]) -> None:
@@ -346,42 +342,15 @@ def deactivate_market(
             reason=CLOSURE_REASON.format(market_id=market_id),
         )
 
-    suspended = _suspend_stalls(market=market, actor=actor)
-
     _notify_closure(market=market, reason=reason, per_customer=orders_per_customer,
                     per_farmer=orders_per_farmer, market_id=market_id,
-                    farmer_message=farmer_message, suspended=suspended)
+                    farmer_message=farmer_message)
     return market, len(order_ids)
-
-
-def _suspend_stalls(*, market: Market, actor) -> set[int]:
-    """Suspend every approved stall at this market. Returns whose accounts changed.
-
-    Pending and rejected stalls are left alone: the state machine only admits
-    APPROVED -> SUSPENDED, and forcing an unapproved profile through it would raise and take
-    the whole closure down with it.
-    """
-    farmer_ids = list(
-        FarmerProfile.objects.filter(
-            farmer_markets__market_id=market.pk, status=FarmerStatus.APPROVED
-        )
-        .order_by("user_id")
-        .values_list("user_id", flat=True)
-    )
-    for farmer_id in farmer_ids:
-        suspend_farmer(
-            farmer_id=farmer_id,
-            reason=SUSPENSION_TEXT.format(market_name=market.name),
-            actor=actor,
-            history_reason=CLOSURE_REASON.format(market_id=market.pk),
-            send_notification=False,
-        )
-    return set(farmer_ids)
 
 
 def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int],
                     per_farmer: dict[int, int], market_id: int,
-                    farmer_message: str = "", suspended: set[int] | None = None) -> None:
+                    farmer_message: str = "") -> None:
     """Tell everyone who had something at the market, with the reason the admin typed."""
     silent_farmers = set(
         FarmerMarket.objects.filter(market_id=market_id).values_list("farmer_id", flat=True)
@@ -397,18 +366,12 @@ def _notify_closure(*, market: Market, reason: str, per_customer: dict[int, int]
             context={"market_name": market.name, "order_count": count, "reason": reason,
                      "target_url": "/customer/orders", "admin_message": ""},
         )
-    suspended = suspended or set()
     for recipient_id, count in sorted(per_farmer.items()):
         notify(
             recipient=users[recipient_id],
             event_type=NotificationType.MARKET_CLOSED,
             context={"market_name": market.name, "order_count": count, "reason": reason,
-                     "target_url": "/farmer/markets", "admin_message": farmer_message,
-                     "stall_note": (
-                         "Your stall is suspended until this market reopens."
-                         if recipient_id in suspended
-                         else ""
-                     )},
+                     "target_url": "/farmer/markets", "admin_message": farmer_message},
         )
 
 
@@ -419,7 +382,6 @@ def activate_market(*, market_id: int) -> tuple[Market, int]:
     market.save(update_fields=["is_active", "updated_at"])
 
     reason = CLOSURE_REASON.format(market_id=market_id)
-    _reinstate_stalls(market_id=market_id, marker=reason)
 
     slots = list(
         PickupSlot.objects.filter(farmer_market__market_id=market_id, is_active=False)
@@ -444,36 +406,3 @@ def activate_market(*, market_id: int) -> tuple[Market, int]:
         restored += 1
 
     return market, restored
-
-
-def _reinstate_stalls(*, market_id: int, marker: str) -> set[int]:
-    """Put back exactly the stalls this closure suspended.
-
-    Matched by the marker the closure stamped on the profile history, the same way the slots
-    above are matched. A stall suspended for its own reasons, before or during the closure,
-    keeps its suspension: reopening a market is not an amnesty.
-    """
-    pk_field = FarmerProfile._meta.pk.attname
-    reinstated: set[int] = set()
-    farmer_ids = list(
-        FarmerProfile.objects.filter(
-            farmer_markets__market_id=market_id, status=FarmerStatus.SUSPENDED
-        )
-        .order_by("user_id")
-        .values_list("user_id", flat=True)
-    )
-    for farmer_id in farmer_ids:
-        latest = (
-            FarmerProfile.history.filter(**{pk_field: farmer_id})
-            .order_by("history_date", "history_id")
-            .last()
-        )
-        if latest is None or latest.history_change_reason != marker:
-            continue
-        reinstate_farmer(
-            farmer_id=farmer_id,
-            actor=None,
-            history_reason=REOPEN_REASON.format(market_id=market_id),
-        )
-        reinstated.add(farmer_id)
-    return reinstated

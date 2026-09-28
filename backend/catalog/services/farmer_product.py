@@ -11,7 +11,7 @@ from django.utils import timezone
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from accounts.models import FarmerProfile
-from catalog.models import Product
+from catalog.models import Product, ProductMarketExclusion
 from catalog.services.stock import (
     get_pending_quantities,
     get_weekly_pattern_held_quantities,
@@ -170,6 +170,41 @@ def notify_restock_for_product(*, product: Product) -> int:
     return notified
 
 
+def validate_market_ids(*, farmer: FarmerProfile, market_ids: list[int]) -> list[int]:
+    chosen = list(dict.fromkeys(market_ids))
+    if not chosen:
+        raise BusinessValidationError(
+            "Choose at least one market.", errors={"market_ids": ["Choose at least one market."]}
+        )
+    selling = set(FarmerMarket.objects.selling().filter(farmer=farmer).values_list("market_id", flat=True))
+    unknown = [market_id for market_id in chosen if market_id not in selling]
+    if unknown:
+        raise BusinessValidationError(
+            "You can only sell at markets that have approved your stall.",
+            errors={"market_ids": ["You can only sell at markets that have approved your stall."]},
+        )
+    return chosen
+
+
+def set_product_markets(*, product: Product, market_ids: list[int]) -> None:
+    """Sell the product at exactly these approved markets; every other approved stall excludes it."""
+    chosen = set(validate_market_ids(farmer=product.farmer, market_ids=market_ids))
+    stalls = FarmerMarket.objects.selling().filter(farmer_id=product.farmer_id)
+    excluded_stall_ids = {stall.pk for stall in stalls if stall.market_id not in chosen}
+    ProductMarketExclusion.objects.filter(product=product).exclude(
+        farmer_market_id__in=excluded_stall_ids
+    ).delete()
+    existing = set(
+        ProductMarketExclusion.objects.filter(product=product).values_list("farmer_market_id", flat=True)
+    )
+    ProductMarketExclusion.objects.bulk_create(
+        [
+            ProductMarketExclusion(product=product, farmer_market_id=stall_id)
+            for stall_id in sorted(excluded_stall_ids - existing)
+        ]
+    )
+
+
 def build_product_metrics(*, farmer: FarmerProfile, product_ids: list[int]) -> dict[str, Any]:
     """Batch data for FarmerProduct (Pass 4B §3.3) so a page costs a fixed number of queries."""
     ids = list(product_ids)
@@ -191,16 +226,24 @@ def build_product_metrics(*, farmer: FarmerProfile, product_ids: list[int]) -> d
         "farmer_market__market_id", "day_of_week"
     ):
         days_by_market.setdefault(slot["farmer_market__market_id"], set()).add(slot["day_of_week"])
-    markets = [
-        {
-            "market_id": fm.market_id,
-            "market_name": fm.market.name,
-            "days": sorted(days_by_market.get(fm.market_id, set())),
-        }
-        for fm in FarmerMarket.objects.filter(farmer=farmer, market__is_active=True)
-        .select_related("market")
-        .order_by("market__name")
-    ]
+    stalls = list(
+        FarmerMarket.objects.selling().filter(farmer=farmer).select_related("market").order_by("market__name")
+    )
+    excluded = set(
+        ProductMarketExclusion.objects.filter(product_id__in=ids).values_list("product_id", "farmer_market_id")
+    )
+    markets = {
+        product_id: [
+            {
+                "market_id": fm.market_id,
+                "market_name": fm.market.name,
+                "days": sorted(days_by_market.get(fm.market_id, set())),
+            }
+            for fm in stalls
+            if (product_id, fm.pk) not in excluded
+        ]
+        for product_id in ids
+    }
     return {
         # D-029 / v1.8 option A: every open ACCEPTED / READY order, even past its pickup time.
         "held": {row["product_id"]: row["total"] for row in held_rows},

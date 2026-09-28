@@ -4,12 +4,14 @@ import { toast } from 'sonner';
 import { ApiError } from '@/lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
 import { QUERY_KEYS } from '@/config/constants';
+import { invalidateApprovalCounts } from './useAdminApprovalCounts';
 
 function invalidateApprovals(queryClient) {
   void queryClient.invalidateQueries({
     queryKey: [QUERY_KEYS.ADMIN_MODERATION_PRODUCTS()[0]],
   });
   void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_DASHBOARD });
+  invalidateApprovalCounts(queryClient);
 }
 
 export function useApproveProduct() {

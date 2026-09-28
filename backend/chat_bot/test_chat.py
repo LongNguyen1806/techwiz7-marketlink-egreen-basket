@@ -10,7 +10,14 @@ from chat_bot import services
 from chat_bot.ai_chatbot import TOOLS_BY_ROLE, Asker, run_tool
 from chat_bot.prompts import system_instruction
 from marketlink_core.gemini import AIUnavailable
-from tests_support.factories import make_customer, make_farmer, make_order, make_product
+from tests_support.factories import (
+    make_customer,
+    make_farmer,
+    make_market,
+    make_order,
+    make_product,
+    make_slot,
+)
 
 URL = "/api/chat/messages/"
 
@@ -80,6 +87,7 @@ def test_the_request_is_validated(messages):
 @pytest.mark.django_db
 def test_a_guest_gets_an_answer_built_from_the_tools(model):
     farmer = make_farmer()
+    make_slot(farmer=farmer, market=make_market(), day_of_week=1)
     make_product(farmer=farmer, name="Cucumber", stock=30)
     model.turns = [_call("search_products", {"keywords": ["dưa leo", "cucumber"]}), _say("Green stall sells cucumbers.")]
 

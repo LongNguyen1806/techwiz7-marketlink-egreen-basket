@@ -3,12 +3,14 @@ import { toast } from 'sonner';
 
 import { ApiError } from '../../../lib/ApiError';
 import { adminApi } from '../../../api/admin/adminApi';
+import { invalidateApprovalCounts } from './useAdminApprovalCounts';
 
 function invalidateFarmers(queryClient) {
   void queryClient.invalidateQueries({
     queryKey: ['admin', 'farmers'],
   });
   void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+  invalidateApprovalCounts(queryClient);
 }
 
 export function useAdminFarmers(params = {}) {
