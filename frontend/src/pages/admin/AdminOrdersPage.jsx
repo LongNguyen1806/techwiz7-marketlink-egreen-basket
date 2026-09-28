@@ -30,7 +30,8 @@ const STATUSES = [
 // Read only. Accepting, declining and cancelling stay with the stall and the shopper; this
 // screen exists so support can answer a question about an order without changing it.
 export default function AdminOrdersPage() {
-  const [q, setQ] = useState('');
+  // ?q= lets another page (a customer's missed orders) open this list on one order.
+  const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
