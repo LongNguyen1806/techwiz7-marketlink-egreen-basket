@@ -252,3 +252,40 @@ class ProductBlockImpactSerializer(serializers.Serializer):
 
     open_orders = OpenOrderBreakdownSerializer()
     affected_customers = serializers.IntegerField()
+
+
+class AIDecisionSerializer(serializers.ModelSerializer):
+    """#8: one thing the AI decided on its own, and whether an admin has looked at it since."""
+
+    product = serializers.SerializerMethodField()
+    checked_by = serializers.EmailField(source="admin_checked_by.email", default=None, read_only=True)
+
+    class Meta:
+        model = ProductAIReview
+        fields = [
+            "id",
+            "product",
+            "verdict",
+            "risk_score",
+            "summary",
+            "findings",
+            "auto_action",
+            "auto_action_at",
+            "admin_decision",
+            "admin_checked_at",
+            "checked_by",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.DictField())
+    def get_product(self, review) -> dict:
+        product = review.product
+        return {
+            "id": product.pk,
+            "name": product.name,
+            "stall_name": product.farmer.stall_name,
+            "farmer_id": product.farmer_id,
+            "category": product.category.name if product.category_id else None,
+            "review_status": product.review_status,
+            "image": product.image.url if product.image else None,
+        }

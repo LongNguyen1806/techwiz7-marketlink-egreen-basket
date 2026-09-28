@@ -198,6 +198,13 @@ class AIReviewKind(models.TextChoices):
     WEEKLY_IMAGE = "WEEKLY_IMAGE", "Weekly photo check"
 
 
+class AIAutoAction(models.TextChoices):
+    # PASS: the listing went on sale without waiting for an admin.
+    APPROVED = "APPROVED", "Approved by AI"
+    # LIKELY_VIOLATION: kept off sale and put in the follow-up queue.
+    HELD = "HELD", "Held by AI"
+
+
 class ProductAIReview(CreatedAtModel):
     """One advisory pass over a listing. Rows are never updated except to record what the
     admin then decided, so the history shows how the advice and the decisions compare."""
@@ -223,6 +230,13 @@ class ProductAIReview(CreatedAtModel):
     # What the admin decided afterwards (APPROVED / REJECTED), for the agreement figures.
     admin_decision = models.CharField(max_length=10, choices=ReviewStatus.choices, null=True, blank=True)
     admin_decided_at = models.DateTimeField(null=True, blank=True)
+    # What the AI did on its own (#6), and whether an admin has looked at it since (#8).
+    auto_action = models.CharField(max_length=10, choices=AIAutoAction.choices, null=True, blank=True)
+    auto_action_at = models.DateTimeField(null=True, blank=True)
+    admin_checked_at = models.DateTimeField(null=True, blank=True)
+    admin_checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
 
     class Meta:
         db_table = "product_ai_reviews"

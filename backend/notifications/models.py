@@ -31,6 +31,8 @@ class NotificationType(models.TextChoices):
     # carrying every change and any orders it cancelled.
     MARKET_UPDATED = "MARKET_UPDATED", "Market Details Changed"
     # To both sides when an order that needed a new pickup time got none before the old one.
+    # To the shopper when repeated no-shows lock the account.
+    ACCOUNT_LOCKED_NO_SHOW = "ACCOUNT_LOCKED_NO_SHOW", "Account Locked After No-shows"
     ORDER_RESCHEDULE_MISSED = "ORDER_RESCHEDULE_MISSED", "Order Cancelled, No New Pickup Time"
     # Sent to the stall when Admin takes one of its products down (AD-21b).
     PRODUCT_BLOCKED = "PRODUCT_BLOCKED", "Product Blocked by Admin"
@@ -40,6 +42,8 @@ class NotificationType(models.TextChoices):
     # Admin notifications
     # The AI listing review found a likely violation (or the weekly photo check found a problem).
     AI_LISTING_FLAGGED = "AI_LISTING_FLAGGED", "Listing Flagged by AI Review"
+    # One running notice, not one per listing: how many AI approvals no admin has checked yet.
+    AI_AUTO_APPROVED = "AI_AUTO_APPROVED", "Listings Approved by AI"
 
 
 

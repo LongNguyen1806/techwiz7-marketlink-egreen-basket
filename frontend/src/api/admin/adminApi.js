@@ -228,6 +228,17 @@ export const adminApi = {
     return data;
   },
 
+  // #8: what the AI approved or held on its own; `checked` false (default) is the to-do list.
+  getAIDecisions: async (params = {}, { signal } = {}) => {
+    const { data } = await axiosClient.get('/admin/ai-review/decisions/', { params, signal });
+    return data;
+  },
+
+  checkAIDecision: async (id) => {
+    const { data } = await axiosClient.post(`/admin/ai-review/decisions/${id}/check/`);
+    return data;
+  },
+
   getAIReviewStats: async (days = 30, { signal } = {}) => {
     const { data } = await axiosClient.get('/admin/ai-review/stats/', { params: { days }, signal });
     return data;

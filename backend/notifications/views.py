@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 
 from marketlink_core.exceptions import BusinessValidationError, ErrorCode, ResourceNotFoundError
 from marketlink_core.pagination import StandardPagination
-from marketlink_core.permissions import IsCustomerOrFarmer
+from marketlink_core.permissions import IsAnyRole
 from marketlink_core.responses import api_response
 from notifications.models import Notification
 from notifications.services import serialize_notification
@@ -17,7 +17,7 @@ BOOLEAN_VALUES = {"true": True, "false": False}
 class NotificationBaseView(APIView):
     """Pass 4B §4.6: Customer and Farmer only (Admin has no personal notifications -> 403)."""
 
-    permission_classes = [IsCustomerOrFarmer]
+    permission_classes = [IsAnyRole]
 
 
 class NotificationListView(NotificationBaseView):

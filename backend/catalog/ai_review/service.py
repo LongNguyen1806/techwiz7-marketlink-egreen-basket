@@ -1,7 +1,10 @@
-"""Runs both layers over a listing, stores the advice, and tells admins about the risky ones.
+"""Runs both layers over a listing, stores the advice, and acts on the clear cases.
 
-Nothing here changes a listing: no approve, reject, hide, block or account action. Those stay
-with an administrator (the endpoints in catalog/admin_portal).
+#6: a new or re-submitted listing the AI passes goes on sale at once; one it thinks breaks
+the rules stays off sale and goes to the follow-up queue; anything else (unsure, or the AI
+could not be asked) waits for an admin as before. Every automatic decision is listed in
+AI decisions (#8), where an admin can confirm or undo it. Hiding, blocking and account
+actions stay with an administrator.
 """
 
 import hashlib
@@ -18,8 +21,17 @@ from django.utils import timezone
 from accounts.models import CustomUser, RoleCode
 from catalog.ai_review import gemini, rules
 from catalog.ai_review.types import Finding, ListingInput, risk_score, verdict_for
-from catalog.models import AIReviewKind, AIVerdict, Category, ProductAIReview, Product, ReviewStatus
-from notifications.models import NotificationType
+from catalog.models import (
+    AIAutoAction,
+    AIReviewKind,
+    AIVerdict,
+    Category,
+    Product,
+    ProductAIReview,
+    ReviewStatus,
+)
+from notifications.messages import render_notification
+from notifications.models import Notification, NotificationType
 from notifications.services import notify
 from system.models import FlagTarget, ModerationFlag
 
@@ -170,7 +182,73 @@ def review_product(product_id: int, *, kind: str = AIReviewKind.LISTING, force: 
         duration_ms=result["duration_ms"],
     )
     _alert_admins(product, review)
+    if kind == AIReviewKind.LISTING:
+        _act_on_listing(product.pk, review)
     return review
+
+
+def _act_on_listing(product_id: int, review: ProductAIReview) -> None:
+    """#6: approve a clean pass, hold a likely violation, leave the rest to an admin."""
+    if review.verdict == AIVerdict.LIKELY_VIOLATION:
+        # Already off sale while PENDING; the flag raised above puts it in the queue.
+        review.auto_action, review.auto_action_at = AIAutoAction.HELD, timezone.now()
+        review.save(update_fields=["auto_action", "auto_action_at"])
+        return
+    if review.verdict != AIVerdict.PASS or not settings.AI_AUTO_APPROVE:
+        return
+    with transaction.atomic():
+        product = (
+            Product.objects.select_for_update()
+            .select_related("farmer__user")
+            .filter(pk=product_id, review_status=ReviewStatus.PENDING, is_archived=False)
+            .first()
+        )
+        # An admin may have decided in the seconds the model took; theirs stands.
+        if product is None:
+            return
+        now = timezone.now()
+        product.review_status = ReviewStatus.APPROVED
+        product.review_note = None
+        product.reviewed_at = now
+        product.reviewed_by = None
+        product.save(
+            update_fields=["review_status", "review_note", "reviewed_at", "reviewed_by", "updated_at"]
+        )
+        review.auto_action, review.auto_action_at = AIAutoAction.APPROVED, now
+        review.save(update_fields=["auto_action", "auto_action_at"])
+        notify(
+            recipient=product.farmer.user,
+            event_type=NotificationType.PRODUCT_APPROVED,
+            context={"product_name": product.name},
+        )
+        _tell_admins_of_approval(product)
+
+
+def unchecked_auto_approvals() -> int:
+    return ProductAIReview.objects.filter(
+        auto_action=AIAutoAction.APPROVED, admin_checked_at__isnull=True
+    ).count()
+
+
+def _tell_admins_of_approval(product: Product) -> None:
+    """#8: one running notice per admin, rewritten as approvals come in, not one per listing."""
+    context = {
+        "count": unchecked_auto_approvals(),
+        "product_name": product.name,
+        "stall_name": product.farmer.stall_name,
+    }
+    title, message, target_url = render_notification(NotificationType.AI_AUTO_APPROVED, context)
+    for admin in CustomUser.objects.filter(role__code=RoleCode.ADMIN, is_active=True):
+        unread = Notification.objects.filter(
+            recipient=admin, type=NotificationType.AI_AUTO_APPROVED, is_read=False
+        ).first()
+        if unread is None:
+            notify(recipient=admin, event_type=NotificationType.AI_AUTO_APPROVED, context=context)
+        else:
+            # Moved to the top of the list with the new count, still a single row.
+            Notification.objects.filter(pk=unread.pk).update(
+                title=title, message=message, target_url=target_url, created_at=timezone.now()
+            )
 
 
 def _alert_admins(product: Product, review: ProductAIReview) -> None:
@@ -213,7 +291,12 @@ def record_admin_decision(product_id: int, decision: str, actor=None) -> None:
     if review is not None and review.admin_decision is None:
         review.admin_decision = decision
         review.admin_decided_at = timezone.now()
-        review.save(update_fields=["admin_decision", "admin_decided_at"])
+        fields = ["admin_decision", "admin_decided_at"]
+        # Deciding a listing the AI already decided counts as having checked it (#8).
+        if review.auto_action and review.admin_checked_at is None:
+            review.admin_checked_at, review.admin_checked_by = review.admin_decided_at, actor
+            fields += ["admin_checked_at", "admin_checked_by"]
+        review.save(update_fields=fields)
     close_ai_flags(product_id, resolution=f"Listing {decision.lower()} on the approval page.", actor=actor)
 
 

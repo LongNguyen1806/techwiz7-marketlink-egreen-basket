@@ -80,12 +80,17 @@ export function NotificationBell({ role, listPath }) {
             </DropdownMenuItem>
           ))
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to={listPath} className="notification-bell__view-all">
-            View all
-          </Link>
-        </DropdownMenuItem>
+        {/* The admin portal has no full notifications page, so it leaves listPath out. */}
+        {listPath ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to={listPath} className="notification-bell__view-all">
+                View all
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

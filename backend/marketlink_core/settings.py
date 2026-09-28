@@ -324,6 +324,8 @@ AI_CHAT_ENABLED = os.environ.get("AI_CHAT_ENABLED", "True").lower() in (
 
 # --- AI-assisted listing review (advice for admins; never decides on its own) ---
 AI_MODERATION_ENABLED = os.environ.get("AI_MODERATION_ENABLED", "True").lower() in ("true", "1", "t")
+# #6: a listing the AI passes goes on sale without waiting for an admin (who can still undo it).
+AI_AUTO_APPROVE = os.environ.get("AI_AUTO_APPROVE", "True").lower() in ("true", "1", "t")
 # Configurable because the Flash model names change; the call fails soft (UNAVAILABLE) if wrong.
 GEMINI_MODERATION_MODEL = os.environ.get("GEMINI_MODERATION_MODEL", "gemini-flash-latest")
 # Tried in order when the model above is out of quota for the day or not available to the key.

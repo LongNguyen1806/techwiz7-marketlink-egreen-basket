@@ -48,5 +48,9 @@ def ai_review_stats(*, days: int = 30) -> dict:
         "open_ai_flags": ModerationFlag.objects.filter(
             target_type=FlagTarget.PRODUCT, resolved_at__isnull=True, note__startswith=FLAG_NOTE_PREFIX
         ).count(),
+        # #8: what the AI approved or held on its own that no admin has looked at yet.
+        "unchecked_ai_decisions": ProductAIReview.objects.filter(
+            auto_action__isnull=False, admin_checked_at__isnull=True
+        ).count(),
         "last_photo_check_at": ProductAIReview.objects.filter(kind=AIReviewKind.WEEKLY_IMAGE).aggregate(last=Max("created_at"))["last"],
     }

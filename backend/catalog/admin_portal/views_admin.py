@@ -4,7 +4,11 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpda
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.db.models import Q
+from django.utils import timezone
+
 from catalog.admin_portal.serializers_admin import (
+    AIDecisionSerializer,
     CategoryAdminReadSerializer,
     CategoryAdminWriteSerializer,
     ModerationReasonSerializer,
@@ -12,7 +16,7 @@ from catalog.admin_portal.serializers_admin import (
     ProductAdminSerializer,
     ProductBlockImpactSerializer,
 )
-from catalog.models import AIReviewKind, AIVerdict, PriceGuideline, Product, ProductAIReview
+from catalog.models import AIAutoAction, AIReviewKind, AIVerdict, PriceGuideline, Product, ProductAIReview
 from catalog.selectors import (
     get_product_for_admin,
     list_categories_for_admin,
@@ -450,3 +454,58 @@ class AIReviewStatsView(APIView):
     @extend_schema(parameters=[OpenApiParameter("days", int, description="Look-back window, 1-365 (default 30).")])
     def get(self, request) -> Response:
         return api_response(message="OK", data=ai_review_stats(days=_int(request.query_params.get("days")) or 30), request=request)
+
+
+class AIDecisionListView(ListAPIView):
+    """#8: what the AI approved or held on its own, newest first, unchecked by default."""
+
+    permission_classes = [IsAdmin]
+    serializer_class = AIDecisionSerializer
+
+    def get_queryset(self):
+        params = self.request.query_params
+        rows = (
+            ProductAIReview.objects.filter(auto_action__isnull=False)
+            .select_related("product__farmer", "product__category", "admin_checked_by")
+            .order_by("-auto_action_at", "-id")
+        )
+        action = params.get("action")
+        if action in AIAutoAction.values:
+            rows = rows.filter(auto_action=action)
+        checked = (params.get("checked") or "false").lower()
+        if checked in ("true", "false"):
+            rows = rows.filter(admin_checked_at__isnull=checked == "false")
+        q = (params.get("q") or "").strip()
+        if q:
+            rows = rows.filter(Q(product__name__icontains=q) | Q(product__farmer__stall_name__icontains=q))
+        return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("action", str, enum=[*AIAutoAction.values]),
+            OpenApiParameter("checked", str, enum=["true", "false", "all"], description="Default false."),
+            OpenApiParameter("q", str, description="Product or stall name."),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+class AIDecisionCheckView(APIView):
+    """#8: the admin looked at an AI decision and lets it stand."""
+
+    permission_classes = [IsAdmin]
+
+    @extend_schema(request=None, responses={200: AIDecisionSerializer, 404: None})
+    def post(self, request, id: int) -> Response:
+        review = (
+            ProductAIReview.objects.select_related("product__farmer", "product__category")
+            .filter(pk=id, auto_action__isnull=False)
+            .first()
+        )
+        if review is None:
+            raise ResourceNotFoundError("AI decision not found.")
+        if review.admin_checked_at is None:
+            review.admin_checked_at, review.admin_checked_by = timezone.now(), request.user
+            review.save(update_fields=["admin_checked_at", "admin_checked_by"])
+        return api_response(message="Marked as checked.", request=request, data=AIDecisionSerializer(review).data)
