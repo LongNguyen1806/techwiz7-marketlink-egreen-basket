@@ -1,13 +1,3 @@
-"""FA-01 / F-01: farmer dashboard figures (FR-46).
-
-Decisions v1.8:
-- D1: the date range is on pickup_date (cash is paid at pickup, so sales happen that day).
-- D2: total_orders, revenue, revenue_by_day and top_products follow the range; pending_approval,
-  in_progress, overdue_open_count and upcoming show the current state (same numbers as F-02).
-- D3: upcoming = open orders (PLACED, ACCEPTED, READY) whose pickup has not ended, nearest first.
-- D4: from <= to, at most 366 days; revenue_by_day lists every day of the range (0 when none).
-"""
-
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal

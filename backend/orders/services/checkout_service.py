@@ -58,21 +58,11 @@ def _lock_farmers(groups) -> dict:
 
 
 def expire_overdue_before_checkout(*, farmer_ids) -> None:
-    """Lazy sweep (A-005) for the farmers in the cart, run by the view BEFORE the checkout transaction.
-
-    Uses the Farmer branch's expire_overdue_orders(), which commits each T8 on its own; a PLACED order never
-    took stock (D-029), so expiring it changes no stock.
-    """
     for farmer_id in sorted(set(farmer_ids)):
         expire_overdue_orders(farmer_id=farmer_id)
 
 
 def _check_placed_order_limit(customer, groups, now) -> None:
-    """D-005 v1.5 guard 2: at most MAX_PLACED_ORDERS_PER_CUSTOMER orders waiting for farmer confirmation.
-
-    Orders the farmer already accepted do not count, and there is no per-farmer limit. A PLACED order past
-    its pickup start is already "expired" for the customer (A-005) even before a sweep, so it does not count.
-    """
     limit = settings.MAX_PLACED_ORDERS_PER_CUSTOMER
     waiting = (
         Order.objects.filter(customer=customer, status=OrderStatus.PLACED)
@@ -199,7 +189,6 @@ def _create_order(*, customer, farmer, group, window, products) -> Order:
 
 
 def place_orders(*, customer, groups: list[dict], now=None) -> list[Order]:
-    """CU-04 (v1.7 D-029): checks available stock but neither locks nor takes it; T2 does that."""
     now = now or timezone.now()
     with transaction.atomic():
         customer = _lock_customer(customer)

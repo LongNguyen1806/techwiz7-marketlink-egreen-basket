@@ -119,7 +119,6 @@ def _cancel_unrescheduled(order_id: int) -> None:
 
 
 def expire_overdue_orders(*, farmer_id: int | None = None) -> int:
-    """A-005 lazy sweep. Each order runs in its own transaction; returns the number expired."""
     now = timezone.now()
 
     unrescheduled = Order.objects.filter(

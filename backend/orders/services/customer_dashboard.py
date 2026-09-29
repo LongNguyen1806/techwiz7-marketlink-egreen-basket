@@ -1,9 +1,3 @@
-"""CU-01 / C-00: the figures and shortcuts on the customer's own dashboard (FR-03, FR-32).
-
-Read-only. The caller runs the lazy sweep first (A-005, D-009) so an overdue PLACED order is not
-counted as open, then serializes each block with the schema its own branch owns.
-"""
-
 from typing import Any
 
 from django.db.models import Count, Q
@@ -21,11 +15,6 @@ NOTIFICATION_LIMIT = 5
 
 
 def _counts(customer) -> dict[str, int]:
-    """One query for the four cards on C-00.
-
-    `ready_for_pickup` is also part of `open`: C-00 repeats it as a separate reminder card.
-    `pending_review` counts COMPLETED orders that still miss a review (D-016), not single reviews.
-    """
     return Order.objects.filter(customer=customer).aggregate(
         open=Count("pk", filter=Q(status__in=OPEN_TAB)),
         ready_for_pickup=Count("pk", filter=Q(status=OrderStatus.READY_FOR_PICKUP)),

@@ -81,6 +81,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "marketlink_core.wsgi.application"
 ASGI_APPLICATION = "marketlink_core.asgi.application"
 
+_db_options = {
+    "charset": "utf8mb4",
+    "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+    "isolation_level": "read committed",
+}
+if os.environ.get("DB_SSL", "False").lower() in ("true", "1", "t"):
+    _db_options["ssl"] = {"ssl": {}}
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -90,11 +98,7 @@ DATABASES = {
         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         "PORT": os.environ.get("DB_PORT", "3306"),
         "ATOMIC_REQUESTS": False,
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-            "isolation_level": "read committed",
-        },
+        "OPTIONS": _db_options,
         "TEST": {
             "CHARSET": "utf8mb4",
             "COLLATION": "utf8mb4_0900_ai_ci",
@@ -177,6 +181,16 @@ if _extra_origins:
         [o.strip() for o in _extra_origins.split(",") if o.strip()]
     )
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+_extra_csrf = os.environ.get("CSRF_TRUSTED_ORIGINS", "") or os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if _extra_csrf:
+    CSRF_TRUSTED_ORIGINS.extend(
+        [o.strip() for o in _extra_csrf.split(",") if o.strip()]
+    )
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "if-match",
@@ -205,11 +219,23 @@ USE_REDIS = os.environ.get("USE_REDIS", "False").lower() in ("true", "1", "t")
 
 _REDIS_CACHE_OPTIONS = {
     "CLIENT_CLASS": "django_redis.client.DefaultClient",
-    "SOCKET_CONNECT_TIMEOUT": 2,
-    "SOCKET_TIMEOUT": 2,
+    "SOCKET_CONNECT_TIMEOUT": 5,
+    "SOCKET_TIMEOUT": 5,
 }
+if REDIS_URL.startswith("rediss://"):
+    _REDIS_CACHE_OPTIONS["CONNECTION_POOL_KWARGS"] = {"ssl_cert_reqs": None}
 
 if USE_REDIS:
+    _channel_host = {
+        "address": REDIS_URL,
+        "socket_connect_timeout": 5,
+        "socket_timeout": 10,
+        "socket_keepalive": True,
+        "health_check_interval": 30,
+    }
+    if REDIS_URL.startswith("rediss://"):
+        _channel_host["ssl_cert_reqs"] = None
+
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -228,15 +254,7 @@ if USE_REDIS:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [
-                    {
-                        "address": REDIS_URL,
-                        "socket_connect_timeout": 5,
-                        "socket_timeout": 10,
-                        "socket_keepalive": True,
-                        "health_check_interval": 30,
-                    }
-                ],
+                "hosts": [_channel_host],
                 "prefix": "marketlink",
                 "capacity": 1500,
                 "expiry": 60,

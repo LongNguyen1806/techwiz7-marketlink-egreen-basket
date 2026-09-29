@@ -13,7 +13,6 @@ def _own_order(*, customer, order_id: int) -> Order:
 
 
 def cancel_customer_order(*, customer, order_id: int, expected_version: int, reason: str | None = None) -> Order:
-    """CU-08: T5 (PLACED) or T6 (ACCEPTED) through the Farmer branch's FSM, which checks cutoff and stock."""
     _own_order(customer=customer, order_id=order_id)
     return transition_order(
         order_id=order_id,
@@ -26,8 +25,6 @@ def cancel_customer_order(*, customer, order_id: int, expected_version: int, rea
 
 
 def modify_customer_order(*, customer, order_id: int, expected_version: int, data: dict) -> Order:
-    """CU-07 (D-030) through the Farmer branch's modify_order(): PLACED is edited in place, ACCEPTED gets a
-    change request in orders.pending_change."""
     order = _own_order(customer=customer, order_id=order_id)
     if data.get("pickup_date") is not None:
         check_customer_pickup_date(farmer=order.farmer, pickup_date=data["pickup_date"])
