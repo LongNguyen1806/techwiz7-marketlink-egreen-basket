@@ -60,10 +60,16 @@ jobs:
         continue-on-error: true
 
       - name: ⚙️ Django System Integrity Check
+        env:
+          SECRET_KEY: 'ci-secret-key-for-testing-only-replace-in-production-1234567890'
+          DEBUG: 'True'
         run: |
           python manage.py check
 
       - name: 🗄️ Verify Database Migration Consistency
+        env:
+          SECRET_KEY: 'ci-secret-key-for-testing-only-replace-in-production-1234567890'
+          DEBUG: 'True'
         run: |
           python manage.py makemigrations --check --dry-run
 
