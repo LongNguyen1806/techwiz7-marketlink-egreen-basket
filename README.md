@@ -169,5 +169,7 @@ Every pre-seeded account across all roles uses the unified password: **`Pass@123
 
 In compliance with the SRS disclosure guidelines, the following AI-assisted tools were used as supporting aids during development:
 
-- **Google Gemini API (`gemini-2.5-flash`):** Integrated into the application backend for the optional AI Customer Assistant chatbot and automated product listing/review moderation.
+- **Google Gemini API (`gemini-3.1-flash`):** Integrated into the application backend for the optional AI Customer Assistant chatbot and automated product listing/review moderation.
 - **AI Coding Assistants (GitHub Copilot / Gemini Code Assist):** Used as productivity aids for boilerplate generation, debugging, and test case scaffolding. All system architecture, database modeling, business logic, and final implementations were designed, verified, and customized by the development team.
+
+https://github.com/cadaik01/techwiz7-marketlink-egreen-basket/tree/main
