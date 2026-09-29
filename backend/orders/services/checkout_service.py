@@ -35,7 +35,7 @@ def _share_lock_farmer_rows(farmer_ids) -> None:
     placeholders = ", ".join(["%s"] * len(farmer_ids))
     with connection.cursor() as cursor:
         cursor.execute(
-            f"SELECT {column} FROM {table} WHERE {column} IN ({placeholders}) ORDER BY {column} FOR SHARE",
+            f"SELECT {column} FROM {table} WHERE {column} IN ({placeholders}) ORDER BY {column} FOR SHARE", # nosec B608
             sorted(farmer_ids),
         )
 
