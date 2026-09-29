@@ -181,6 +181,11 @@ if _extra_origins:
         [o.strip() for o in _extra_origins.split(",") if o.strip()]
     )
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.vercel\.app$",
+    r"^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$",
+]
+
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -219,6 +224,7 @@ USE_REDIS = os.environ.get("USE_REDIS", "False").lower() in ("true", "1", "t")
 
 _REDIS_CACHE_OPTIONS = {
     "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    "IGNORE_EXCEPTIONS": True,
     "SOCKET_CONNECT_TIMEOUT": 5,
     "SOCKET_TIMEOUT": 5,
 }
