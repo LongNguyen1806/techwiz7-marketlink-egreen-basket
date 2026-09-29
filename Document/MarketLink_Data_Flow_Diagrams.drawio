@@ -1,0 +1,1020 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="MarketLink DFD generator" type="device">
+  <diagram id="dfd_l0" name="DFD Level 0 (Context)">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1180" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" value="Context Diagram (DFD Level 0) - MarketLink System" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="1620" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Guest&lt;br&gt;(Public Visitor)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="150" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Customer&lt;br&gt;(Shopper)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="470" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Farmer&lt;br&gt;(Stall Owner)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="150" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Administrator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="470" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="0&lt;br&gt;&lt;b&gt;MarketLink System&lt;/b&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=2;fontColor=#000000;fontFamily=Times New Roman;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="400" width="420" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="Google Gemini&lt;br&gt;(AI models)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="900" width="230" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="OpenStreetMap&lt;br&gt;Nominatim" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="715" y="900" width="230" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="Gmail SMTP&lt;br&gt;(outgoing email)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="900" width="230" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="No payment gateway and no courier appear here on purpose: payment is settled in cash at the stall and produce is collected directly there, so neither is an external agent of this booking platform." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=12;fontStyle=2;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1040" width="1500" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="Search queries and filter criteria" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.250;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c13" value="Account registration details" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.167;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c14" value="Public catalog, stall map, reviews" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.333;exitDx=0;exitDy=0;entryX=1.000;entryY=0.750;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c3">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c15" value="Login credentials, cart items, pre-order requests" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.250;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c16" value="Order change/cancel requests, reviews" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c17" value="Order status, pickup details and alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.833;exitDx=0;exitDy=0;entryX=1.000;entryY=0.750;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c4">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c18" value="Stall profile, operating days and cutoff" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.250;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c19" value="Listings, weekly stock, order decisions, review replies" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.200;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c20" value="Incoming orders, picking list and customer reviews" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.400;exitDx=0;exitDy=0;entryX=0.000;entryY=0.750;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c5">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c21" value="Vetting decisions, moderation rules, schedule configs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.333;exitDx=0;exitDy=0;entryX=1.000;entryY=0.600;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c22" value="Platform reports, moderation queues, audit trail" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.800;exitDx=0;exitDy=0;entryX=0.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c6">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c23" value="Questions and listing content" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.167;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c8">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c24" value="Answers and moderation verdicts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=0.000;exitDx=0;exitDy=0;entryX=0.333;entryY=1.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c25" value="Stall address text" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c9">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c26" value="Latitude and longitude coordinates" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=0.000;exitDx=0;exitDy=0;entryX=0.667;entryY=1.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c27" value="Order and account email payloads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.833;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="dfd_l1" name="DFD Level 1 (Decomposition)">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1380" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" value="DFD Level 1: MarketLink System - Process Decomposition" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="2320" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Guest" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Customer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="520" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Farmer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="200" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Administrator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="520" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="OpenStreetMap&lt;br&gt;Nominatim" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="50" width="220" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="Google Gemini&lt;br&gt;(AI models)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="50" width="220" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="Gmail SMTP&lt;br&gt;(outgoing email)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="700" width="220" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="1.0&lt;br&gt;&lt;b&gt;Accounts, Stall Onboarding &amp; Discovery&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="160" width="340" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="2.0&lt;br&gt;&lt;b&gt;Catalog, Listing Review &amp; Weekly Inventory&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="340" width="340" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="3.0&lt;br&gt;&lt;b&gt;Cart, Checkout, Changes &amp; Rescheduling&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="520" width="340" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="4.0&lt;br&gt;&lt;b&gt;Fulfilment, Reviews &amp; Governance&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="700" width="340" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="Users &amp; Profiles" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="50" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="D1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="Markets &amp; Schedules" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="295" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="D2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="295" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="Produce Catalog" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="540" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="D3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="Orders" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="785" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="D4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="785" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="Reviews" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1030" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="D5" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="Favourites" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1275" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="D6" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1275" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c26" value="Notifications" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1520" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c27" value="D7" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1520" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c28" value="Audit &amp; Moderation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1765" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c29" value="D8" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1765" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c30" value="AI Review &amp; Guidelines" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="2010" y="1040" width="225" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c31" value="D9" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2010" y="1040" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c32" value="Stock is written in two places only - process 2.0 when the stall publishes a weekly quantity, and process 4.0 when an order is accepted, cancelled or returned. Placing an order (3.0) never touches D3." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=12;fontStyle=2;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1200" width="2000" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="c33" value="Registration and searches" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.000;entryY=0.167;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c34" value="Sign-in and browsing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.200;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c35" value="Cart, pre-orders and changes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.400;exitDx=0;exitDy=0;entryX=0.000;entryY=0.250;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c36" value="Ratings and comments" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.600;exitDx=0;exitDy=0;entryX=0.000;entryY=0.250;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c37" value="Stall profile and operating days" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.200;exitDx=0;exitDy=0;entryX=1.000;entryY=0.250;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c38" value="Listings and weekly stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.400;exitDx=0;exitDy=0;entryX=1.000;entryY=0.333;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c39" value="Accept, decline, ready, handover, review replies" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.800;exitDx=0;exitDy=0;entryX=1.000;entryY=0.143;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c40" value="Vetting and market schedules" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.250;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c41" value="Listing approvals and guidelines" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c42" value="Moderation, reports and audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.750;exitDx=0;exitDy=0;entryX=1.000;entryY=0.286;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c43" value="Catalog, map and stall pages" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.333;exitDx=0;exitDy=0;entryX=1.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c3">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c44" value="Order status and alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.800;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c4">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c45" value="Incoming orders and picking list" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.600;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c5">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c46" value="Stall address for geocoding" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=0.000;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c47" value="Coordinates (lat/long)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c48" value="Listing content and photo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c8">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c49" value="AI safety verdict and findings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=1.000;entryY=0.167;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c50" value="Email notification payloads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.429;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c9">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c51" value="Read / write accounts and stalls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c14">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c52" value="Read / write markets and windows" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.833;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c53" value="Lock evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.750;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c28">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c54" value="Read / write listings and stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c55" value="Restock alerts to subscribers" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c24">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c56" value="Store verdicts and price bands" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.833;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c30">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c57" value="Check windows and closures" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c58" value="Create and amend orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.750;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c20">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c59" value="Deduct and return stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.750;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c60" value="Close out orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c20">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c61" value="Write reviews and replies" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.571;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c22">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c62" value="Every alert sent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.714;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c26">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c63" value="Audit entries and flags" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.857;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c28">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="dfd_l2_p1" name="DFD Level 2 (Process 1.0)">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2040" pageHeight="1240" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" value="DFD Level 2: Accounts, Stall Onboarding &amp; Discovery (Process 1.0)" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="1960" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Guest" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="150" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Customer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="330" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Farmer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="130" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Administrator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1700" y="150" width="200" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="OpenStreetMap&lt;br&gt;Nominatim" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1700" y="420" width="200" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="1.1&lt;br&gt;&lt;b&gt;Register Customer Account&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="570" width="260" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="1.2&lt;br&gt;&lt;b&gt;Register Farmer Stall&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="570" width="260" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="1.3&lt;br&gt;&lt;b&gt;Authenticate &amp; Issue JWT&lt;/b&gt;&lt;br&gt;(rate limited)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="570" width="260" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="1.4&lt;br&gt;&lt;b&gt;Vet, Approve, Suspend Stall&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="570" width="260" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="1.5&lt;br&gt;&lt;b&gt;Geocode Stall Address&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="570" width="260" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="1.6&lt;br&gt;&lt;b&gt;Discover Markets &amp; Stalls on the Map&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="750" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="1.8&lt;br&gt;&lt;b&gt;Manage Profile &amp; Change Password&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="750" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="1.7&lt;br&gt;&lt;b&gt;Lock Account After Repeated No-Shows&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="750" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="Users &amp; Profiles" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="300" y="1020" width="300" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="D1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1020" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="Markets &amp; Schedules" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="700" y="1020" width="300" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="D2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1020" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="Orders" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1020" width="300" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="D4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1020" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="Audit &amp; Moderation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1500" y="1020" width="300" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="D8" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="1020" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="1.7 is the only process on this page that no person starts: it runs after a no-show is recorded in 4.6. It counts only no-shows since the account was last unlocked, so an administrator who gives someone a fresh start is not immediately overruled by the old history." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=12;fontStyle=2;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1140" width="1900" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="Name, phone, email, address" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c8">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c26" value="Stall name, contact, operating days" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c9">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c27" value="Email and password" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c28" value="Approve / reject / suspend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c29" value="Address text" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c30" value="Coordinates, or nothing on failure" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c31" value="Write the new account" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.111;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c32" value="Write the stall, status PENDING" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.222;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c33" value="Verify, count failed attempts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.444;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c34" value="Set stall status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.250;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c35" value="Save latitude and longitude" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.889;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c36" value="Update profile, rotate password" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.556;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c14" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c37" value="Suspension declines open orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c20">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c38" value="Count no-shows since last unlock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c15" target="c20">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c39" value="Deactivate, cancel open orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.250;exitY=1.000;exitDx=0;exitDy=0;entryX=0.778;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c15" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c40" value="CUSTOMER_AUTO_LOCKED with order numbers" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c15" target="c22">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c41" value="Every vetting decision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c22">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c42" value="Read markets, days and hours" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c43" value="Read approved stalls only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c44" value="Browse by location and day" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="dfd_l2_p2" name="DFD Level 2 (Process 2.0)">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1230" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" value="DFD Level 2: Catalog, Listing Review &amp; Weekly Inventory (Process 2.0)" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="1840" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Administrator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="150" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Farmer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="400" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Customer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="700" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Google Gemini&lt;br&gt;(text &amp; photo)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1610" y="400" width="210" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="2.1&lt;br&gt;&lt;b&gt;Maintain Master Categories&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="130" width="250" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="2.8&lt;br&gt;&lt;b&gt;Tune Price Guidelines&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="260" width="250" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="2.2&lt;br&gt;&lt;b&gt;Create or Edit a Listing&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="400" width="250" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="2.3&lt;br&gt;&lt;b&gt;AI Listing Check&lt;/b&gt;&lt;br&gt;(rules + model)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="830" y="400" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="2.4&lt;br&gt;&lt;b&gt;Approve or Hold the Listing&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="400" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="2.5&lt;br&gt;&lt;b&gt;Apply Weekly Stock Template&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="560" width="250" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="2.6&lt;br&gt;&lt;b&gt;Browse the Published Catalog&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="700" width="250" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="2.7&lt;br&gt;&lt;b&gt;Send Restock Alerts&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="830" y="700" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="AI Review &amp; Guidelines" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="220" y="1000" width="310" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="D9" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="220" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="Produce Catalog" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="580" y="1000" width="310" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="D3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="580" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="Orders" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="940" y="1000" width="280" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="D4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="940" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="Favourites" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1270" y="1000" width="300" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="D6" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="Price and stock edits in 2.2 deliberately do not send a listing back to the queue. A stall that must wait for an administrator before correcting its own stock will stop correcting it, and stock is the one number the whole booking flow rests on. While a re-review is pending, the previously approved version stays on sale." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=12;fontStyle=2;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1120" width="1780" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="Add, rename, reorder categories" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c25" value="Price band per category and unit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c8">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c26" value="Name, description, photo, price, stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c9">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c27" value="Weekly default quantities" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c28" value="Filters: price, category, market, day" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c29" value="Name, text, photo or category changed -&gt; PENDING" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.167;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c17">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c30" value="Hand the listing over" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c31" value="Listing wording and photograph" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.250;exitDx=0;exitDy=0;entryX=0.000;entryY=0.333;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c6">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c32" value="Verdict and findings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.667;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c33" value="Read the price band and peer prices" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c15">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c34" value="Store verdict, risk score, findings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.600;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c15">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c35" value="Verdict decides the outcome" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.750;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c36" value="PASS -&gt; APPROVED, on sale" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.833;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c17">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c37" value="Suspect -&gt; HELD, flag raised" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.800;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c15">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c38" value="Approve, refuse, or undo an auto-approval" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c39" value="Write the band" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.200;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c15">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c40" value="Categories" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c17">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c41" value="Quantity already owed to accepted orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=1.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c19" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c42" value="Set stock = max(template - owed, 0)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c17">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c43" value="Read listings that are APPROVED and on sale" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c17">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c44" value="Stock rose above zero" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c14">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c45" value="Who bookmarked this listing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c14" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c46" value="Restock alert" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c14" target="c5">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="dfd_l2_p3" name="DFD Level 2 (Process 3.0)">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1230" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" value="DFD Level 2: Cart, Checkout, Changes &amp; Rescheduling (Process 3.0)" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="1840" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Customer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="400" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Farmer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="250" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Administrator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="650" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="3.1&lt;br&gt;&lt;b&gt;Build the Multi-Farmer Cart&lt;/b&gt;&lt;br&gt;(held on the device)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="150" width="270" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="3.2&lt;br&gt;&lt;b&gt;Validate Pickup Date &amp; Window&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="150" width="270" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="3.3&lt;br&gt;&lt;b&gt;Place Pre-Orders&lt;/b&gt;&lt;br&gt;(one per farmer, all or none)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="150" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="3.4&lt;br&gt;&lt;b&gt;Edit a PLACED Order Directly&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="400" width="270" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="3.5&lt;br&gt;&lt;b&gt;Request a Change on an ACCEPTED Order&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="400" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="3.6&lt;br&gt;&lt;b&gt;Cancel Before the Cutoff&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="400" width="270" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="3.7&lt;br&gt;&lt;b&gt;Reschedule After a Schedule Change&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="650" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="3.8&lt;br&gt;&lt;b&gt;Expire Overdue Orders&lt;/b&gt;&lt;br&gt;(lazy sweep)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="650" width="270" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="Markets &amp; Schedules" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="300" y="1000" width="310" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="D2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="Produce Catalog" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="670" y="1000" width="300" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="D3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="670" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="Orders" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1030" y="1000" width="290" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="D4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="Notifications" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1000" width="290" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="D7" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1000" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="3.3 checks stock but never deducts it: the produce is committed only when the farmer accepts (4.1). 3.7 suspends the original cutoff, because the customer is being asked to change an order over a decision that was not theirs, and only the pickup time may change on such an order." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=12;fontStyle=2;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1120" width="1780" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="Add produce from several stalls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c6">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c24" value="Chosen date and window" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c6" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c25" value="Market day, opening hours, closures" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=1.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c14" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c26" value="A valid collection time" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c8">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c27" value="Check stock is sufficient (no deduction)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c28" value="Insert one order per farmer, status PLACED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.571;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c29" value="New order alert" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.333;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c4">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c30" value="Amended items or time" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.250;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c9">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c31" value="Rewrite the order in place" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.143;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c32" value="Requested items or time" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.750;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c33" value="Hold it in pending_change" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.286;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c34" value="Change request to decide" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c4">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c35" value="Cancel request before cutoff" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c36" value="Close the order, return any deducted stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c37" value="Status CANCELLED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.714;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c38" value="Market days or hours changed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.333;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c39" value="Mark reschedule_requested_at, suspend the cutoff" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.429;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c40" value="Ask for a new pickup time" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.333;entryY=1.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c3">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c41" value="New time chosen, marker cleared" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c42" value="Old pickup time reached, still unset" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c43" value="Never approved, window started -&gt; EXPIRED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.857;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c18">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c44" value="Tell both sides why" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c20">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="dfd_l2_p4" name="DFD Level 2 (Process 4.0)">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1860" pageHeight="1320" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" value="DFD Level 2: Fulfilment, Reviews &amp; Governance (Process 4.0)" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="1780" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Farmer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="320" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Customer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="640" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Administrator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="320" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Gmail SMTP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="700" width="190" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="4.1&lt;br&gt;&lt;b&gt;Accept Order&lt;/b&gt;&lt;br&gt;(row lock, deduct stock)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="150" width="265" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="4.2&lt;br&gt;&lt;b&gt;Decline or Mark an Item Sold Out&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="150" width="265" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="4.3&lt;br&gt;&lt;b&gt;Resolve the Change Request&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="150" width="265" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="4.4&lt;br&gt;&lt;b&gt;Mark Ready for Pickup&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="330" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="4.5&lt;br&gt;&lt;b&gt;Handover &amp; Cash Settlement&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="330" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="4.6&lt;br&gt;&lt;b&gt;Record a No-Show&lt;/b&gt;&lt;br&gt;(return stock)" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="330" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="4.7&lt;br&gt;&lt;b&gt;Rate, Review &amp; Reply&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="520" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="4.8&lt;br&gt;&lt;b&gt;Moderate Content &amp; Work the Queue&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="520" width="265" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="4.9&lt;br&gt;&lt;b&gt;Reports &amp; Excel Export&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="520" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="4.10&lt;br&gt;&lt;b&gt;Dispatch Notifications&lt;/b&gt;" style="rounded=1;arcSize=24;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="700" width="265" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="Users &amp; Profiles" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="40" y="1030" width="282" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="D1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1030" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="Produce Catalog" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="336" y="1030" width="282" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="D3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="336" y="1030" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="Orders" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="632" y="1030" width="282" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="D4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="632" y="1030" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="Reviews" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="928" y="1030" width="282" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="D5" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="928" y="1030" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="Notifications" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1224" y="1030" width="282" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c26" value="D7" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1224" y="1030" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c27" value="Audit &amp; Moderation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;shadow=1;;spacingLeft=58" vertex="1" parent="1">
+          <mxGeometry x="1520" y="1030" width="282" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c28" value="D8" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontFamily=Times New Roman;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1520" y="1030" width="58" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="c29" value="4.1 is the only place produce leaves stock, and it locks the product rows in ascending id order so two simultaneous orders queue instead of overselling or deadlocking. 4.6 distinguishes a customer who did not come from one whose order was never answered (3.8): only the first is recorded against the account." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=12;fontStyle=2;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1160" width="1740" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c30" value="Accept" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.143;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c7">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c31" value="Lock rows by ascending id, deduct" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.250;exitY=1.000;exitDx=0;exitDy=0;entryX=0.250;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c19">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c32" value="Status ACCEPTED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.125;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c33" value="Decline with a reason" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.286;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c8">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c34" value="Status DECLINED, line removed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.375;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c8" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c35" value="Accept or reject the change" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.429;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c9">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c36" value="Reconcile the stock difference" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c19">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c37" value="Apply items, clear pending_change" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.625;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c9" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c38" value="Produce packed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.571;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c10">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c39" value="Status READY_FOR_PICKUP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.250;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c10" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c40" value="Collect and pay cash at the stall" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c11">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c41" value="Status COMPLETED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c11" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c42" value="Window closed, nobody came" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.714;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c12">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c43" value="Return the produce to stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.750;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c19">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c44" value="Status NO_SHOW" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;entryX=0.750;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c21">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c45" value="No-show count feeds the automatic lock (1.7)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.250;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c12" target="c17">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c46" value="Stars and comment on a COMPLETED order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.000;entryY=0.667;entryDx=0;entryDy=0;" edge="1" parent="1" source="c4" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c47" value="Stall owner review reply" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.857;exitDx=0;exitDy=0;entryX=0.000;entryY=0.333;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c13">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c48" value="Insert the review, then the public reply" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c23">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c49" value="Low ratings or abusive text raise a flag" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c13" target="c14">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c50" value="Hide a review, take down a listing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.333;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c14" target="c23">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c51" value="Open and resolve flags" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c14" target="c27">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c52" value="Moderation decisions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.667;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c14">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c53" value="Date range" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.333;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c5" target="c15">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c54" value="Totals, revenue by market, active stalls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.875;exitY=0.000;exitDx=0;exitDy=0;entryX=0.333;entryY=1.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c21" target="c15">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c55" value="EXPORT_DATA on every download" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.667;exitY=1.000;exitDx=0;exitDy=0;entryX=0.667;entryY=0.000;entryDx=0;entryDy=0;" edge="1" parent="1" source="c15" target="c27">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c56" value="Any state change" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c7" target="c16">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c57" value="Insert and push over WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.667;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c16" target="c25">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c58" value="Queue the email on commit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endSize=8;strokeColor=#000000;strokeWidth=1.5;fontFamily=Times New Roman;fontSize=12;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.333;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" edge="1" parent="1" source="c16" target="c6">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
