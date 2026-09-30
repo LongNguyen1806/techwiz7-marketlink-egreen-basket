@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/media/:path*",
+      "destination": "https://techwiz7-marketlink-egreen-basket.onrender.com/media/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1,3 +1,6 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
@@ -39,6 +42,8 @@ def market_context(request, markets) -> dict:
     }
 
 
+@method_decorator(cache_page(60 * 5), name="get")
+@method_decorator(vary_on_headers("Authorization"), name="get")
 class PublicMarketListView(ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = MarketSummarySerializer
